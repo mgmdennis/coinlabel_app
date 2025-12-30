@@ -1,0 +1,18 @@
+{
+  "name": "coinlabel-app",
+  "version": "1.0.0",
+  "description": "Coin labeling application",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev",
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
+    "heroku-postbuild": "npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": "20.x"
+  }
+}
