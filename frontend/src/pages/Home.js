@@ -19,42 +19,26 @@ const BASE_URL = "http://localhost:5000/api";
 const Home = () => {
   // return <h1>Home</h1>;
 
-  const [todos, setTodos] = useState(null);
-  const [todo, setTodo] = useState("");
-  const [formYear, setFormYear] = useState("");
+  const [coins, setCoins] = useState(null);
   const [numistaNumber, setNumistaNumber] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    getTodos();
+    getCoins();
   }, []);
 
-  const getTodos = () => {
+  const getCoins = () => {
     axios
-      .get(`${BASE_URL}/todos`)
-      .then((res) => setTodos(res.data))
+      .get(`${BASE_URL}/coins`)
+      .then((res) => setCoins(res.data))
       .catch((err) => console.error(err));
   };
 
-  const handleAddTodo = () => {
+  const handleDeleteCoin = (id) => {
     axios
-      .post(`${BASE_URL}/todo/new`, {
-        title: todo,
-        year: formYear,
-      })
-      .then((res) => {
-        setTodos([...todos, res.data]);
-        setTodo("");
-        setFormYear("");
-      })
-      .catch((err) => console.error(err));
-  };
-
-  const handleDeleteTodo = (id) => {
-    axios
-    .delete(`${BASE_URL}/todo/delete/${id}`)
+    .delete(`${BASE_URL}/coin/delete/${id}`)
     .then((res) =>
-      setTodos(todos.filter((todo) => todo._id !== res.data._id))
+      setCoins(coins.filter((coin) => coin._id !== res.data._id))
     )
     .catch((err) =>
         console.error(err)
@@ -63,43 +47,13 @@ const Home = () => {
 
   function handleNumistaNumber () { 
     navigate('/create/' + numistaNumber);
-  }
-
-  const handleTodoClick = (id) => {
-    axios
-      .get(`${BASE_URL}/todo/toggleStatus/${id}`)
-      .then((res) => getTodos())
-      .catch((err) => console.error(err));
   };
   return (
     <div className="App">
       <Button variant="outline-primary">
-        This is an add button too!
+        Coin Collection
       </Button>
-      <div className="todo-input-wrapper">
-
-      <InputGroup className="mb-3">
-        <InputGroup.Text id="basic-addon3">
-          Todo Text
-        </InputGroup.Text>
-        <Form.Control 
-          id="basic-url" 
-          aria-describedby="basic-addon3" 
-          value={todo}
-          onChange={(e) => setTodo(e.target.value)} 
-        />
-      </InputGroup>
-      <InputGroup className="mb-3">
-        <InputGroup.Text id="basic-addon3">
-          Year
-        </InputGroup.Text>
-        <Form.Control 
-          id="basic-url" 
-          aria-describedby="basic-addon3" 
-          value={formYear}
-          onChange={(e) => setFormYear(e.target.value)} 
-        />
-      </InputGroup>
+      <div className="coin-input-wrapper">
 
       <InputGroup className="mb-3">
         <InputGroup.Text id="basic-addon3">
@@ -109,34 +63,33 @@ const Home = () => {
           id="basic-url"
           aria-describedby="basic-addon3"
           value={numistaNumber}
-          onChange={(e) => setNumistaNumber(e.target.value)}
+          onChange={(e) => {
+            // keep only digits and trim whitespace
+            const raw = String(e.target.value || '');
+            const sanitized = raw.trim().replace(/\D+/g, '');
+            setNumistaNumber(sanitized);
+          }}
         />
       </InputGroup>
       <Button variant="outline-primary" onClick={handleNumistaNumber}>
         Go
       </Button>
-        
-      <Button onClick={handleAddTodo}>
-        +
-      </Button>
       </div>
-      <div className="todos-list">
-        {!todos || !todos.length ? (
-          <h3 style={{ textAlign: "center" }}>No Todo Data !!!</h3>
+      <div className="coins-list">
+        {!coins || !coins.length ? (
+          <h3 style={{ textAlign: "center" }}>No Coins Yet !!!</h3>
         ) : (
-          todos.map((todo) => (
-            <div className="todo" key={todo._id}>
+          coins.map((coin) => (
+            <div className="coin" key={coin._id}>
               <div
-                onClick={() => handleTodoClick(todo._id)}
-                className={todo.complete ? "complete" : ""}
-                id="todo-title"
+                id="coin-title"
               >
-                {todo.title}, {todo.year}
+                {coin.issuer} - {coin.denomination}, {coin.year}
               </div>
-              <Button variant="outline-primary" onClick={() => handleDeleteTodo(todo._id)}>
+              <Button variant="outline-primary" onClick={() => handleDeleteCoin(coin._id)}>
                 <img src={deleteIcon} alt="delete" height="20px" width="20px" />
               </Button>
-              <Link to={'/edit/' + todo._id}>EDIT</Link>
+              <Link to={`/create/${coin.numistaNumber}`} state={{ coinId: coin._id }}>EDIT</Link>
             </div>
           ))
         )}
@@ -145,7 +98,12 @@ const Home = () => {
   );
 };
 
-// () => this.nextPath("/edit/" + todo._id)
+  function handleNumistaNumber () { 
+    const n = String(numistaNumber || '').trim();
+    if (!n) return;
+    navigate(`/create/${encodeURIComponent(n)}`);
+  };
+// () => this.nextPath("/edit/" + coin._id)
 
 export default Home;
 

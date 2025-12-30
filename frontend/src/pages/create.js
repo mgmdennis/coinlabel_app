@@ -1,8 +1,7 @@
-import {useParams} from "react-router-dom";
+import {useParams, useNavigate, useLocation} from "react-router-dom";
 import { useState, useEffect } from "react";
 import {QRCode} from "react-qr-code";
 import axios from "axios";
-
 
 import Form from 'react-bootstrap/Form';
 import Stack from 'react-bootstrap/Stack';
@@ -13,7 +12,11 @@ const BASE_URL = "http://localhost:5000/api";
 
 const Create = () => {
     const {numistaNumber} = useParams();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [numistaDetails, setNumistaDetails] = useState({});
+    const [coinId, setCoinId] = useState(null);
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
     const [year, setYear] = useState("");
     const [details, setDetails] = useState("");
@@ -30,6 +33,13 @@ const Create = () => {
     const [dateAdded, setDateAdded] = useState("");
 
     var updateNumistaDetails = (jsonData) => {
+
+        // If we're editing an existing saved coin, do not overwrite its fields with Numista defaults
+        const editCoinId = location && location.state && location.state.coinId ? location.state.coinId : null;
+        if (editCoinId) {
+            setNumistaDetails(jsonData);
+            return;
+        }
 
         console.log("Numista Details: ", jsonData);
 
@@ -88,18 +98,137 @@ const Create = () => {
         getNumistaDetails();
       }, []);
 
+    // Create or load coin record on initial load
+    useEffect(() => {
+        if (!numistaDetails.denomination) return;
+
+        const editCoinId = location && location.state && location.state.coinId ? location.state.coinId : null;
+
+        if (editCoinId && !coinId) {
+            // load coin for editing
+            axios.get(`${BASE_URL}/coin/${editCoinId}`)
+                .then((res) => {
+                        const c = res.data;
+                        setCoinId(c._id);
+                        setYear(c.year || "");
+                        setIssuer(c.issuer || "");
+                        setDenomination(c.denomination || "");
+                        setGrade(c.grade || "");
+                        setGradeDetails(c.gradeDetails || "");
+                        setDetails(c.details || "");
+                        setReference(c.reference || "");
+                        setComposition(c.composition || "");
+                        setMass(c.mass || "");
+                        setDiameter(c.diameter || "");
+                        setOrientation(c.orientation || "");
+                        setMintage(c.mintage || "");
+                        setDateAdded(c.dateAdded || dateAdded);
+                        console.log("Loaded coin for edit:", c._id);
+                        setInitialLoadComplete(true);
+                    })
+                .catch((err) => {
+                    console.error("Error loading coin for edit:", err);
+                    if (!coinId) createCoin();
+                });
+            return;
+        }
+
+        if (!coinId) {
+            createCoin();
+        }
+    }, [numistaDetails]);
+
+    // Update coin whenever any field changes (but not during initial load)
+    useEffect(() => {
+        if (coinId && initialLoadComplete) {
+            updateCoinRemote();
+        }
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, mass, diameter, orientation, dateAdded, coinId, initialLoadComplete]);
+
     const getNumistaDetails = () => {
         axios
           .get(`${BASE_URL}/numista/${numistaNumber}`)
           .then((res) => updateNumistaDetails(res.data))
           .catch((err) => console.error(err));
       };
+
+    const createCoin = () => {
+        axios
+          .post(`${BASE_URL}/coin/new`, {
+            numistaNumber: numistaNumber,
+            year: year,
+            issuer: issuer,
+            denomination: denomination,
+            grade: grade,
+            gradeDetails: gradeDetails,
+            details: details,
+            reference: reference,
+            composition: composition,
+            mass: mass,
+            diameter: diameter,
+            orientation: orientation,
+            mintage: mintage,
+            dateAdded: dateAdded,
+          })
+          .then((res) => {
+            setCoinId(res.data._id);
+            console.log("Coin created with ID:", res.data._id);
+          })
+          .catch((err) => console.error("Error creating coin:", err));
+    };
+
+    const updateCoinRemote = () => {
+        axios
+          .put(`${BASE_URL}/coin/update/${coinId}`, {
+            numistaNumber: numistaNumber,
+            year: year,
+            issuer: issuer,
+            denomination: denomination,
+            grade: grade,
+            gradeDetails: gradeDetails,
+            details: details,
+            reference: reference,
+            composition: composition,
+            mass: mass,
+            diameter: diameter,
+            orientation: orientation,
+            mintage: mintage,
+            dateAdded: dateAdded,
+          })
+          .then((res) => {
+            console.log("Coin updated:", res.data);
+          })
+          .catch((err) => console.error("Error updating coin:", err));
+    };
+
+    const handleDiscard = () => {
+        if (!coinId) return;
+        axios
+          .delete(`${BASE_URL}/coin/delete/${coinId}`)
+          .then((res) => {
+            console.log("Coin discarded:", res.data);
+            navigate("/");
+          })
+          .catch((err) => console.error("Error discarding coin:", err));
+    };
+
+    const handleDone = () => {
+        navigate("/");
+    };
     
     
     return (
         <div>
             <h1>Create</h1>
             <h2>{numistaNumber}</h2>
+            <div>
+                <Button variant="outline-danger" onClick={handleDiscard} style={{ marginBottom: '20px', marginRight: '10px' }}>
+                    Discard
+                </Button>
+                <Button variant="outline-success" onClick={handleDone} style={{ marginBottom: '20px' }}>
+                    Done
+                </Button>
+            </div>
             <div className="numista-details">
                 <Form.Select
                     aria-label="Default select example"
@@ -159,6 +288,7 @@ const Create = () => {
                     <option value="MS-62">MS-62</option>
                     <option value="MS-61">MS-61</option>
                     <option value="MS-60">MS-60</option>
+                    <option value="BU">BU (Brilliant Uncirculated)</option>
                     <option value="UNC">UNC (Uncirculated)</option>
                     <option value="AU">AU (About Uncirculated)</option>
                     <option value="AU-55">AU-55</option>
@@ -305,7 +435,7 @@ const Create = () => {
                 
                 <div className="qr-code">
                     <QRCode
-                        value={`https://numista.com/catalogue/pieces${numistaNumber}.html`}
+                        value={`https://numista.com/${numistaNumber}`}
                      />
                 </div>
             </div>

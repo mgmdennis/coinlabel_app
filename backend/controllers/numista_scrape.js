@@ -119,7 +119,9 @@ async function getNumistaDetailsJSON(numistaNumber) {
     // const $ = $_var;
 
     try {
-        const url = `https://en.numista.com/catalogue/pieces${numistaNumber}.html`;
+        const encodedNum = encodeURIComponent(String(numistaNumber).trim());
+        const url = `https://en.numista.com/${encodedNum}`;
+        console.log('Fetching Numista URL:', url);
 
         const html = await fetchHtml(url); // Wait for the request to complete
         const $ = cheerio.load(html);

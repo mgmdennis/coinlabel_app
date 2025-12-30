@@ -4,7 +4,7 @@ const cors = require("cors");
 
 const connectdb = require("./mongodb");
 
-const todoRoute = require("./routes/todoRoute");
+const coinRoute = require("./routes/coinRoute");
 
 const app = express();
 
@@ -13,7 +13,7 @@ app.use(cors());
 
 connectdb();
 
-app.use("/api", todoRoute);
+app.use("/api", coinRoute);
 
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
