@@ -1,11 +1,24 @@
-require("dotenv").config();
+console.log("SERVER IS ATTEMPTING TO START...");
+
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const express = require("express");
 const cors = require("cors");
 
 const connectdb = require("./mongodb");
 
 const coinRoute = require("./routes/coinRoute");
-const path = require('path');
 const fs = require('fs');
 
 const app = express();
