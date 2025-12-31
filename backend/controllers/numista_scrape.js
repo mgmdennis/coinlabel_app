@@ -1,5 +1,5 @@
 const cheerio = require('cheerio');
-const request = require('request');
+const axios = require('axios');
 
 const isValidString = (element) => element;
 
@@ -13,18 +13,15 @@ function removeTooltips($) {
     $('.tooltip').remove(); // Select all elements with the class 'tooltip' and remove them
 }
 
-function fetchHtml(url) {
-    return new Promise((resolve, reject) => {
-        request(url, (error, response, html) => {
-            if (error) {
-                return reject(error);
-            }
-            if (response.statusCode !== 200) {
-                return reject(new Error(`Failed to load page, status code: ${response.statusCode}`));
-            }
-            resolve(html);
-        });
+async function fetchHtml(url) {
+    const { data } = await axios.get(url, {
+        headers: {
+            // This is vital: Numista blocks requests without a browser-like User-Agent
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
+        timeout: 10000 // Prevents the request from hanging forever
     });
+    return data;
 }
 
 function getVariationData($_var) {
