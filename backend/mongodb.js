@@ -8,10 +8,7 @@ const connectdb = () => {
     return Promise.reject(new Error("MONGODB_URI not set"));
   }
   return mongoose
-    .connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
+    .connect(uri)
     .then(() => console.log("DB connected"))
     .catch(console.error);
 };

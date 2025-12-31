@@ -8,7 +8,7 @@ import Stack from 'react-bootstrap/Stack';
 import Button from 'react-bootstrap/Button';
 import InputGroup from 'react-bootstrap/InputGroup';
 
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
 const Create = () => {
     const {numistaNumber} = useParams();
