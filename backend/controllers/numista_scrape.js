@@ -1,5 +1,19 @@
 const axios = require('axios');
 
+
+/**
+ * Maps Numista orientation strings to arrow symbols.
+ */
+function mapOrientationToArrows(orientation) {
+    const orientationMap = {
+        'medal': '↑↑',
+        'coin': '↑↓',
+        'three': '↑→',
+        'nine': '↑←'
+    };
+    return orientationMap[orientation?.toLowerCase()] || '';
+}
+
 /**
  * Fetches coin details from Numista API v3.
  * Performs parallel calls for type data and mintage issues.
@@ -32,7 +46,7 @@ async function getNumistaDetailsJSON(numistaNumber) {
             composition: typeData.composition?.text || "Unknown",
             mass: typeData.weight ? `${typeData.weight} g` : "Unknown",
             diameter: typeData.size ? `${typeData.size} mm` : "Unknown",
-            orientation: typeData.orientation || "Unknown",
+            orientation: mapOrientationToArrows(typeData.orientation),
             
             // FIXED: references.catalogue is an object containing 'code' (e.g., KM)
             references: typeData.references 
