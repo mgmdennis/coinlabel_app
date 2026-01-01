@@ -1,165 +1,66 @@
-const cheerio = require('cheerio');
 const axios = require('axios');
 
-const isValidString = (element) => element;
-
-const logArrayElements = (element, index /*, array */) => {
-    if(element) {
-        console.log(`a[${index}] = \"${element}\"`);
-    }
-  };
-
-function removeTooltips($) {
-    $('.tooltip').remove(); // Select all elements with the class 'tooltip' and remove them
-}
-
-async function fetchHtml(url) {
-    try {
-        const { data } = await axios.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                'Referer': 'https://en.numista.com/'
-            },
-            timeout: 8000 // If Numista doesn't respond in 8s, stop trying
-        });
-        return data;
-    } catch (error) {
-        // Log the error but don't THROW it yet
-        console.error(`Axios Error fetching ${url}:`, error.message);
-        return null; 
-    }
-}
-
-function getVariationData($_var) {
-    const $ = $_var;
-    var rawDates = $('td.date').map(function (i, el) {
-        // this === el
-        return $(this).text();
-      })
-      .toArray()
-    var rawMintages = $('td.tirage').map(function (i, el) {
-        // this === el
-        return $(this).text();
-      })
-      .toArray()
-    var rawComments = $('td.comment').map(function (i, el) {
-        // this === el
-        return $(this).text();
-      })
-      .toArray()
-
-    var arrayOfData = [];
-
-    for(var i = 1; i < rawDates.length && i < rawMintages.length && i < rawComments.length; i++) {
-        var data = {
-            date: rawDates[i].trimStart().trimEnd(),
-            mintage: rawMintages[i].replaceAll(' ',','),
-            comment: rawComments[i].trimStart().trimEnd()
-        }
-        arrayOfData.push(data);
-        // console.log(JSON.stringify(data));
-    }
-    return arrayOfData;
-}
-
-function getFeatureValue($_var, header) {
-    const $ = $_var;
-    var value = $('th').filter(function() {
-        return $(this).text().indexOf(header) > -1;
-    }).next().text();
-    return value.trimStart().trimEnd();
-}
-
-function getDenomination($_var) {
-    const $ = $_var;
-    var raw = getFeatureValue($, 'Value').split('\n')[0];
-    // const regex = /[0-9A-Za-z =\/]+/g;
-    // const denomination = raw.match(regex)[0].trim();
-    denomination = raw;
-    return denomination;
-}
-
-function getIssuer($_var) {
-    const $ = $_var;
-    const raw = getFeatureValue($, 'Issuer').split('\n');
-    const issuer = raw.find(isValidString).trimStart();
-
-    // raw.forEach(logArrayElements);
-
-    return issuer;
-}
-
-function getReferences($_var) {
-    const $ = $_var
-    var raw = getReferenceFeatureValue($, 'References')
-
-    //const regex = /([A-Za-z]+#\s([A-Za-z]+\s[0-9]+))|([A-Za-z]+#\s([A-Za-z0-9\.-]+))/g;
-    // const references = raw.match(regex);
-    const referencesStr = raw.replace(/#/g, '');
-    const references = referencesStr.split(',').map(ref => ref.trim());
-
-    return references;
-}
-
-function getReferenceFeatureValue($_var, header) {
-    const $ = $_var;
-    var value = $('th').filter(function() {
-        return $(this).text().indexOf(header) > -1;
-    }).next().text();
-    return value.trimStart().trimEnd();
-}
-
-function getDescription($_var) {
-    const $ = $_var;
-    var value = $('h3').filter(function() {
-        return $(this).text().indexOf('Commemorative issue') > -1;
-    }).next().text();
-    return value.trimStart().trimEnd();
-}
-
+/**
+ * Fetches coin details from Numista API v3.
+ * Performs parallel calls for type data and mintage issues.
+ */
 async function getNumistaDetailsJSON(numistaNumber) {
-
-    // const $ = $_var;
+    const apiKey = process.env.NUMISTA_API_KEY;
+    const typeId = String(numistaNumber).trim();
+    const baseUrl = `https://api.numista.com/v3/types/${typeId}`; // Matches Swagger Base URL
 
     try {
-        const cleanId = String(numistaNumber).trim();
-        const url = `https://en.numista.com/catalogue/pieces${cleanId}.html`;
-        
-        console.log('Fetching Corrected Numista URL:', url);
+        console.log('Fetching full Numista API data for ID:', typeId);
 
-        const html = await fetchHtml(url); // Wait for the request to complete
+        // Making parallel calls as established: one for general info, one for mintage issues
+        const [typeResponse, issuesResponse] = await Promise.all([
+            axios.get(baseUrl, {
+                headers: { 'Numista-API-Key': apiKey, 'User-Agent': 'CoinLabelApp/1.0' }
+            }),
+            axios.get(`${baseUrl}/issues`, {
+                headers: { 'Numista-API-Key': apiKey, 'User-Agent': 'CoinLabelApp/1.0' }
+            })
+        ]);
 
-        if (!html) {
-            // Return a safe empty object instead of crashing
-            return { error: "Could not reach Numista" };
-        }
-
-        const $ = cheerio.load(html);
-        removeTooltips($);
+        const typeData = typeResponse.data;
+        const issuesData = issuesResponse.data;
 
         const features = {
-
-            denomination: getDenomination($),
-            issuer: getIssuer($),
-            composition: getFeatureValue($, 'Composition'),
-            mass: getFeatureValue($, 'Weight'),
-            diameter: getFeatureValue($, 'Diameter'),
-            orientation: getFeatureValue($, 'Orientation').slice(-2),
-            references: getReferences($),
-            numistaRef: getFeatureValue($, 'Number'),
-            variations: getVariationData($),
-            description: getDescription($)
+            // General type information from GET /types/{type_id}
+            denomination: typeData.value?.text || "Unknown",
+            issuer: typeData.issuer?.name || "Unknown",
+            composition: typeData.composition?.text || "Unknown",
+            mass: typeData.weight ? `${typeData.weight} g` : "Unknown",
+            diameter: typeData.size ? `${typeData.size} mm` : "Unknown",
+            orientation: typeData.orientation || "Unknown",
+            
+            // FIXED: references.catalogue is an object containing 'code' (e.g., KM)
+            references: typeData.references 
+                ? typeData.references.map(ref => `${ref.catalogue.code} ${ref.number}`) 
+                : [],
+            
+            numistaRef: typeData.id,
+            
+            // Mapping mintage table from GET /types/{type_id}/issues
+            variations: (issuesData || []).map(issue => ({
+                date: issue.year || "N.D.",
+                mintage: issue.mintage ? issue.mintage.toLocaleString() : "---",
+                comment: issue.comment || ""
+            })),
+            
+            description: typeData.title || ""
         };
 
-        console.log("features: " + JSON.stringify(features, null, 2));
-        return features; // Return the features after the request is complete
+        console.log("Verified features structure generated.");
+        return features;
+
     } catch (err) {
-        console.error("General Scraping Logic Error:", err.message);
-        return { error: "Scraping failed" };
+        if (err.response) {
+            console.error(`Numista API Error: ${err.response.status} at ${err.config.url}`);
+        } else {
+            console.error("General API Connection Error:", err.message);
+        }
+        return { error: "Failed to fetch complete data from Numista API" };
     }
 }
 
