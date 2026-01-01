@@ -15,6 +15,45 @@ function mapOrientationToArrows(orientation) {
 }
 
 /**
+ * Identifies the coin dating system and returns a formatted string.
+ * - AD: Returns only the year (no prefix).
+ * - JE: Long-form conversion, no space (e.g., JE5735).
+ * - Japan & China: "Yr. " prefix with space (e.g., Yr. 115).
+ * - Others: No space for prefixes without periods (e.g., AH1447).
+ */
+function formatCoinYear(adYear, coinYear) {
+    const diff = adYear - coinYear;
+    let prefix = '';
+    let displayYear = coinYear;
+
+    // 1. Gregorian (No prefix)
+    if (diff === 0) {
+        return `${coinYear}`;
+    } 
+    // 2. Jewish Era (JE)
+    else if ([ -3760, -3761, 1240, 1241 ].includes(diff)) {
+        prefix = 'JE';
+        if (coinYear < 1000) displayYear = coinYear + 5000;
+    }
+    // 3. Japan & Republic of China (Minguo)
+    else if ([ 1867, 1911, 1925, 1988, 2018 ].includes(diff)) {
+        prefix = 'Yr.';
+    }
+    // 4. Other Major Systems
+    else if (diff === -543) prefix = 'BE';
+    else if (diff === -57)  prefix = 'VS';
+    else if (diff === 621 || diff === 622) prefix = 'SH';
+    else if (diff === 7 || diff === 8) prefix = 'EE';
+    else if (diff >= 575 && diff <= 623) prefix = 'AH';
+    else {
+        return `${coinYear}`; // Default for unknown systems
+    }
+
+    // Format based on the period rule
+    return `${prefix} ${displayYear}`;
+}
+
+/**
  * Fetches coin details from Numista API v3.
  * Performs parallel calls for type data and mintage issues.
  */
@@ -47,8 +86,6 @@ async function getNumistaDetailsJSON(numistaNumber) {
             mass: typeData.weight ? `${typeData.weight} g` : "Unknown",
             diameter: typeData.size ? `${typeData.size} mm` : "Unknown",
             orientation: mapOrientationToArrows(typeData.orientation),
-            
-            // FIXED: references.catalogue is an object containing 'code' (e.g., KM)
             references: typeData.references 
                 ? typeData.references.map(ref => `${ref.catalogue.code} ${ref.number}`) 
                 : [],
@@ -57,7 +94,8 @@ async function getNumistaDetailsJSON(numistaNumber) {
             
             // Mapping mintage table from GET /types/{type_id}/issues
             variations: (issuesData || []).map(issue => ({
-                date: issue.year || "N.D.",
+                // date: issue.year || "N.D.",
+                date: formatCoinYear(issue.gregorian_year, issue.year),
                 mintage: issue.mintage ? issue.mintage.toLocaleString() : "---",
                 comment: issue.comment || ""
             })),
