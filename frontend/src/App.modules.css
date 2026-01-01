@@ -166,6 +166,8 @@ body{
   width: 25%;
 }
 
+
+
 .denomination {
   position: absolute;
   font-weight: bold;
@@ -247,8 +249,39 @@ body{
   width: 70%;
 }
 
+.stack-container {
+  /* This ensures the entire stack starts exactly 8cqw from the top */
+  padding-top: 8.5cqw;
+  
+  display: flex;
+  flex-direction: column;
+  gap: 1cqw; /* Optional: adds a small space between image and text */
+
+}
+
+.marks-picture-wrapper {
+  /* Establish the size based on 5% of the container's width */
+  width: 5cqw;
+  height: 5cqw;
+  flex-shrink: 0; /* Prevents the image from squishing */
+}
+
+.marks-picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  margin: 1.1cqw;
+  padding: .1rem 0;
+  
+  /* object-fit is key here: 
+     'contain' shows the whole image (may leave gaps)
+     'cover' fills the box (may crop edges) */
+  object-fit: contain; 
+}
+
 .details {
-  position: absolute;
+  /* position: absolute; */
   font-weight: lighter;
   /* font-style: italic; */
   font-size: 4.5cqw;
@@ -257,8 +290,6 @@ body{
 
   resize: none;
   
-  top:8cqw;
-  left:0;
   width: 40%;
 
   font-family: 'Fira Sans Extra Condensed', sans-serif;

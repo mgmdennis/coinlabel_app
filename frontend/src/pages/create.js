@@ -31,6 +31,8 @@ const Create = () => {
     const [diameter, setDiameter] = useState("");
     const [orientation, setOrientation] = useState("");
     const [dateAdded, setDateAdded] = useState("");
+    const [marksPicture, setMarksPicture] = useState(null);
+    const [title, setTitle] = useState("");
 
     var updateNumistaDetails = (jsonData) => {
 
@@ -49,6 +51,7 @@ const Create = () => {
         setComposition(jsonData.composition);
         setMass(jsonData.mass);
         setOrientation(jsonData.orientation);
+        setTitle(jsonData.title);
        
         if (jsonData.diameter.length > 0) {
             setDiameter("⌀ " + jsonData.diameter);
@@ -70,6 +73,12 @@ const Create = () => {
             setMintage("m. " + variation.mintage);
         } else {
             setMintage("");
+        }
+
+        if (variation.marks_picture) {
+            setMarksPicture(variation.marks_picture);
+        } else {
+            setMarksPicture(null);
         }
         
         var comments = variation.comment;
@@ -220,7 +229,7 @@ const Create = () => {
     return (
         <div>
             <h1>Create</h1>
-            <h2>{numistaNumber}</h2>
+            <h2>{title}</h2>
             <div>
                 <Button variant="outline-danger" onClick={handleDiscard} style={{ marginBottom: '20px', marginRight: '10px' }}>
                     Discard
@@ -374,16 +383,7 @@ const Create = () => {
                     className="label mintage"
                     onChange={(e) => setMintage(e.target.value)}
                 />
-                <Form.Control
-                    placeholder="Details"
-                    aria-label="Details"
-                    value={details}
-                    plaintext
-                    className="label details"
-                    as="textarea"
-                    rows={6}
-                    onChange={(e) => setDetails(e.target.value)}
-                />
+                
                 <Form.Control
                     placeholder="Ref"
                     aria-label="Ref"
@@ -392,6 +392,26 @@ const Create = () => {
                     className="label reference"
                     onChange={(e) => setReference(e.target.value)}
                 />
+
+                <div className="stack-container">
+                    {marksPicture && 
+                        <div className="marks-picture-wrapper">
+                            <img src={marksPicture} alt="Mint Mark" className="marks-picture" />
+                        </div>
+                    }
+
+                    <Form.Control
+                        placeholder="Details"
+                        aria-label="Details"
+                        value={details}
+                        plaintext
+                        className="label details"
+                        as="textarea"
+                        rows={6}
+                        onChange={(e) => setDetails(e.target.value)}
+                    />
+                </div>
+
             </div>
             <p />
             <div className="parent-label-large">

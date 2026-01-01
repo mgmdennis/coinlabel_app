@@ -54,6 +54,25 @@ function formatCoinYear(adYear, coinYear) {
 }
 
 /**
+ * Removes a denomination and leading special characters from a title.
+ * @param {string} denomination - The prefix to remove (e.g., "1 Dollar").
+ * @param {string} title - The full title string.
+ * @returns {string} - The cleaned title.
+ */
+function cleanTitle(denomination, title) {
+  // Escape special characters in denomination to prevent Regex errors
+  const escapedDenom = denomination.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Regex breakdown:
+    // ^               : Start of the string
+    // ${escapedDenom}     : The specific denomination
+    // [^a-zA-Z0-9'"]* : Match any character that is NOT a letter, number, single quote, or double quote
+    const regex = new RegExp(`^${escapedDenom}[^a-zA-Z0-9'"]*`, 'i');
+
+    return title.replace(regex, '').trim();
+}
+
+/**
  * Fetches coin details from Numista API v3.
  * Performs parallel calls for type data and mintage issues.
  */
@@ -80,6 +99,7 @@ async function getNumistaDetailsJSON(numistaNumber) {
 
         const features = {
             // General type information from GET /types/{type_id}
+            title: typeData.title || "Unknown",
             denomination: typeData.value?.text || "Unknown",
             issuer: typeData.issuer?.name || "Unknown",
             composition: typeData.composition?.text || "Unknown",
@@ -95,12 +115,13 @@ async function getNumistaDetailsJSON(numistaNumber) {
             // Mapping mintage table from GET /types/{type_id}/issues
             variations: (issuesData || []).map(issue => ({
                 // date: issue.year || "N.D.",
-                date: formatCoinYear(issue.gregorian_year, issue.year),
+                date: formatCoinYear(issue.gregorian_year, issue.year) + (issue.mint_letter ? ` ${issue.mint_letter}` : ""),
                 mintage: issue.mintage ? issue.mintage.toLocaleString() : "---",
-                comment: issue.comment || ""
+                comment: cleanTitle(typeData.value?.text || "", issue.comment || ""),
+                marks_picture: issue.marks?.[0]?.picture || null
             })),
-            
-            description: typeData.title || ""
+
+            description: cleanTitle(typeData.value?.text || "Unknown", typeData.title) || ""
         };
 
         console.log("Verified features structure generated.");
