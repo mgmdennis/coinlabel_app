@@ -14,14 +14,22 @@ function removeTooltips($) {
 }
 
 async function fetchHtml(url) {
-    const { data } = await axios.get(url, {
-        headers: {
-            // This is vital: Numista blocks requests without a browser-like User-Agent
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        timeout: 10000 // Prevents the request from hanging forever
-    });
-    return data;
+    try {
+        const { data } = await axios.get(url, {
+            headers: {
+                // Numista blocks "axios/1.7.x" default user agents
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+            },
+            timeout: 8000 // If Numista doesn't respond in 8s, stop trying
+        });
+        return data;
+    } catch (error) {
+        // Log the error but don't THROW it yet
+        console.error(`Axios Error fetching ${url}:`, error.message);
+        return null; 
+    }
 }
 
 function getVariationData($_var) {
@@ -121,6 +129,12 @@ async function getNumistaDetailsJSON(numistaNumber) {
         console.log('Fetching Numista URL:', url);
 
         const html = await fetchHtml(url); // Wait for the request to complete
+
+        if (!html) {
+            // Return a safe empty object instead of crashing
+            return { error: "Could not reach Numista" };
+        }
+
         const $ = cheerio.load(html);
         removeTooltips($);
 
@@ -140,9 +154,9 @@ async function getNumistaDetailsJSON(numistaNumber) {
 
         console.log("features: " + JSON.stringify(features, null, 2));
         return features; // Return the features after the request is complete
-    } catch (error) {
-        console.error("Error fetching Numista details:", error);
-        throw error;
+    } catch (err) {
+        console.error("General Scraping Logic Error:", err.message);
+        return { error: "Scraping failed" };
     }
 }
 
