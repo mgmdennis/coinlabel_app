@@ -17,10 +17,12 @@ async function fetchHtml(url) {
     try {
         const { data } = await axios.get(url, {
             headers: {
-                // Numista blocks "axios/1.7.x" default user agents
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Referer': 'https://en.numista.com/'
             },
             timeout: 8000 // If Numista doesn't respond in 8s, stop trying
         });
@@ -124,9 +126,10 @@ async function getNumistaDetailsJSON(numistaNumber) {
     // const $ = $_var;
 
     try {
-        const encodedNum = encodeURIComponent(String(numistaNumber).trim());
-        const url = `https://en.numista.com/${encodedNum}`;
-        console.log('Fetching Numista URL:', url);
+        const cleanId = String(numistaNumber).trim();
+        const url = `https://en.numista.com/catalogue/pieces${cleanId}.html`;
+        
+        console.log('Fetching Corrected Numista URL:', url);
 
         const html = await fetchHtml(url); // Wait for the request to complete
 
