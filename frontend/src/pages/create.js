@@ -4,12 +4,17 @@ import {QRCode} from "react-qr-code";
 import axios from "axios";
 
 import Form from 'react-bootstrap/Form';
-import Stack from 'react-bootstrap/Stack';
 import Button from 'react-bootstrap/Button';
-import InputGroup from 'react-bootstrap/InputGroup';
+import { FrontLabelContainer, BackLabelContainer } from "./label";
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
+/**
+ * Create Page Component
+ * Fetches Numista coin details and allows creating/editing a coin entry.
+ * @param {object} props - Component props.
+ * @returns {JSX.Element} The Create page component.
+ */
 const Create = () => {
     const {numistaNumber} = useParams();
     const navigate = useNavigate();
@@ -27,9 +32,7 @@ const Create = () => {
     const [reference, setReference] = useState("");
     const [mintage, setMintage] = useState("");
     const [composition, setComposition] = useState("");
-    const [mass, setMass] = useState("");
-    const [diameter, setDiameter] = useState("");
-    const [orientation, setOrientation] = useState("");
+    const [physicalDetails, setPhysicalDetails] = useState("");
     const [dateAdded, setDateAdded] = useState("");
     const [marksPicture, setMarksPicture] = useState(null);
     const [title, setTitle] = useState("");
@@ -45,13 +48,9 @@ const Create = () => {
         setDenomination(jsonData.denomination);
         setIssuer(jsonData.issuer);
         setComposition(jsonData.composition);
-        setMass(jsonData.mass);
-        setOrientation(jsonData.orientation);
         setTitle(jsonData.title);
-       
-        if (jsonData.diameter.length > 0) {
-            setDiameter("⌀ " + jsonData.diameter);
-        }
+
+        setPhysicalDetails(jsonData.orientation + "\n" + jsonData.diameter + "\n" + jsonData.mass);
         
         if (jsonData.variations && jsonData.variations.length > 0) {
             updateFillOutDateAndDetails(jsonData.variations[0], jsonData.description);
@@ -82,8 +81,6 @@ const Create = () => {
         if(comments.includes("Proof")) {
             setGrade("Proof")
             comments = comments.replace("Proof", "");
-        } else {
-            setGrade("");
         }
 
         if (comments.length > 0) {
@@ -103,7 +100,8 @@ const Create = () => {
     useEffect(() => {
         if (!numistaDetails.denomination) return;
 
-        const editCoinId = location && location.state && location.state.coinId ? location.state.coinId : null;
+        // const editCoinId = location && location.state && location.state.coinId ? location.state.coinId : null;
+        const editCoinId = location?.state?.coinId;
 
         if (editCoinId && !coinId) {
             axios.get(`${BASE_URL}/coin/${editCoinId}`)
@@ -118,9 +116,7 @@ const Create = () => {
                         setDetails(c.details || "");
                         setReference(c.reference || "");
                         setComposition(c.composition || "");
-                        setMass(c.mass || "");
-                        setDiameter(c.diameter || "");
-                        setOrientation(c.orientation || "");
+                        setPhysicalDetails(c.physicalDetails || "");
                         setMintage(c.mintage || "");
                         setDateAdded(c.dateAdded || dateAdded);
                         setMarksPicture(c.marksPicture || null); // Load marksPicture from DB
@@ -142,7 +138,7 @@ const Create = () => {
         if (coinId && initialLoadComplete) {
             updateCoinRemote();
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, mass, diameter, orientation, dateAdded, marksPicture, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, coinId, initialLoadComplete]);
 
     const getNumistaDetails = () => {
         axios
@@ -163,15 +159,14 @@ const Create = () => {
             details,
             reference,
             composition,
-            mass,
-            diameter,
-            orientation,
+            physicalDetails,
             mintage,
             dateAdded,
             marksPicture, // Save to DB
           })
           .then((res) => {
             setCoinId(res.data._id);
+            setInitialLoadComplete(true);
           })
           .catch((err) => console.error("Error creating coin:", err));
     };
@@ -188,9 +183,7 @@ const Create = () => {
             details,
             reference,
             composition,
-            mass,
-            diameter,
-            orientation,
+            physicalDetails,
             mintage,
             dateAdded,
             marksPicture, // Update in DB
@@ -223,9 +216,7 @@ const Create = () => {
             details,
             reference,
             composition,
-            mass,
-            diameter,
-            orientation,
+            physicalDetails,
             mintage,
             dateAdded,
             marksPicture, // Duplicate includes image
@@ -239,7 +230,7 @@ const Create = () => {
     const handleDone = () => {
         navigate("/");
     };
-    
+
     return (
         <div>
             <h1>Create</h1>
@@ -257,7 +248,6 @@ const Create = () => {
             </div>
             <div className="numista-details">
                 <Form.Select
-                    aria-label="Default select example"
                     plaintext
                     onChange={(e) => {
                         const selectedIndex = e.target.selectedIndex;
@@ -276,7 +266,6 @@ const Create = () => {
                     }
                 </Form.Select>
                 <Form.Select
-                    aria-label="Default select example"
                     plaintext
                     onChange={(e) => {
                         setReference(e.target.value);
@@ -341,124 +330,64 @@ const Create = () => {
                     <option value="AG">AG (About Good)</option>
                     <option value="AG-3">AG-3 (About Good 3)</option>
                     <option value="Proof">Proof</option>
-                    <option value="Specimen">Specimen</option>
+                    <option value="Spec">Specimen</option>
                 </Form.Select>
             </div>
-            <div className="parent-label-large">
-                <Form.Control
-                    placeholder="Year"
-                    value={year}
-                    plaintext
-                    className={"label date" + (year.length > 4 ? " narrow" : "")}
-                    onChange={(e) => setYear(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Issuer"
-                    value={issuer}
-                    plaintext
-                    className={"label issuer" + (issuer.length > 20 ? " narrow" : "")}
-                    onChange={(e) => setIssuer(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Denomination"
-                    value={denomination}
-                    plaintext
-                    as="textarea"
-                    rows={2}
-                    className={"label denomination" + (denomination.length > 10 ? " narrow" : "")}
-                    onChange={(e) => setDenomination(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Grade"
-                    value={grade}
-                    plaintext
-                    className="label grade"
-                    onChange={(e) => setGrade(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Grade Details"
-                    value={gradeDetails}
-                    plaintext
-                    className="label grade-details"
-                    as="textarea"
-                    rows={6}
-                    onChange={(e) => setGradeDetails(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Mintage"
-                    value={mintage}
-                    plaintext
-                    className="label mintage"
-                    onChange={(e) => setMintage(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Ref"
-                    value={reference}
-                    plaintext
-                    className="label reference"
-                    onChange={(e) => setReference(e.target.value)}
-                />
 
-                <div className="stack-container">
-                    {marksPicture && 
-                        <div className="marks-picture-wrapper">
-                            <img src={marksPicture} alt="Mint Mark" className="marks-picture" />
-                        </div>
-                    }
-                    <Form.Control
-                        placeholder="Details"
-                        value={details}
-                        plaintext
-                        className="label details"
-                        as="textarea"
-                        rows={5}
-                        onChange={(e) => setDetails(e.target.value)}
-                    />
-                </div>
-            </div>
+            <FrontLabelContainer                
+                isEditable={false}
+                year={year}
+                issuer={issuer}
+                denomination={denomination}
+                grade={grade}
+                gradeDetails={gradeDetails}
+                mintage={mintage}
+                reference={reference}
+                details={details}
+                marksPicture={marksPicture}
+            />
+
+            <BackLabelContainer
+                isEditable={false}
+                composition={composition}
+                physicalDetails={physicalDetails}
+                numistaNumber={numistaNumber}
+                dateAdded={dateAdded}
+            />
+
             <p />
-            <div className="parent-label-large">
-                <p className="label composition">
-                    {composition}
-                </p>
-                <Form.Control
-                    placeholder="Mass"
-                    value={mass}
-                    plaintext
-                    className="label mass"
-                    onChange={(e) => setMass(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Diameter"
-                    value={diameter}
-                    plaintext
-                    className="label diameter"
-                    onChange={(e) => setDiameter(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Date Added"
-                    value={dateAdded}
-                    plaintext
-                    className="label date-added"
-                    onChange={(e) => setDateAdded(e.target.value)}
-                />
-                <Form.Control
-                    placeholder="Orientation"
-                    value={orientation}
-                    plaintext
-                    className="label orientation"
-                    onChange={(e) => setOrientation(e.target.value)}
-                />
-                <p className="label numista-number">{`N# ${numistaNumber}`}</p>
-                
-                <div className="qr-code">
-                    <QRCode
-        value={`https://numista.com/${numistaNumber}`}
 
-        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-  
-    /> </div>
-            </div>
+            <FrontLabelContainer
+                isEditable={true}
+                year={year}
+                setYear={setYear}
+                issuer={issuer}
+                setIssuer={setIssuer}
+                denomination={denomination}
+                setDenomination={setDenomination}
+                grade={grade}
+                setGrade={setGrade}
+                gradeDetails={gradeDetails}
+                setGradeDetails={setGradeDetails}
+                mintage={mintage}
+                setMintage={setMintage}
+                reference={reference}
+                setReference={setReference}
+                marksPicture={marksPicture}
+                details={details}
+                setDetails={setDetails}
+            />
+            <p />
+            <BackLabelContainer
+                isEditable={true}
+                composition={composition}
+                setComposition={setComposition}
+                physicalDetails={physicalDetails}
+                setPhysicalDetails={setPhysicalDetails}
+                numistaNumber={numistaNumber}
+                dateAdded={dateAdded}
+                setDateAdded={setDateAdded}
+            />
         </div>
     );
 }

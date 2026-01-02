@@ -73,6 +73,37 @@ function cleanTitle(denomination, title) {
 }
 
 /**
+ * Formats a title with its primary date and an optional Gregorian date.
+ * * @param {string} title - The title of the entry.
+ * @param {string} date - The primary date string.
+ * @param {string} gregorianDate - The Gregorian date string to compare.
+ * @param {string} denomination - The denomination to clean from the title.
+ * @returns {string} The formatted string.
+ */
+function formatComments(title, date, gregorianDate, denomination) {
+    // Convert inputs to strings and handle null/undefined with empty strings
+    const strDate = String(date || "");
+    const strGregorianDate = String(gregorianDate || "");
+
+    // Remove all non-numeric characters
+    const cleanDate = strDate.replace(/[^\d]/g, '');
+    const cleanGregorianDate = strGregorianDate.replace(/[^\d]/g, '');
+
+    console.log("Raw Details: ", { title, date, gregorianDate, denomination });
+
+    let result = title ? cleanTitle(denomination, title) : "";
+
+    // Compare the cleaned numeric versions
+    if (cleanDate !== cleanGregorianDate && cleanGregorianDate !== "") {
+        result = `(${cleanGregorianDate})\n${result}`;
+    }
+
+    console.log("Formatted Details: ", result);
+
+    return result;
+}
+
+/**
  * Fetches coin details from Numista API v3.
  * Performs parallel calls for type data and mintage issues.
  */
@@ -117,7 +148,12 @@ async function getNumistaDetailsJSON(numistaNumber) {
                 // date: issue.year || "N.D.",
                 date: formatCoinYear(issue.gregorian_year, issue.year) + (issue.mint_letter ? ` ${issue.mint_letter}` : ""),
                 mintage: issue.mintage ? issue.mintage.toLocaleString() : "---",
-                comment: cleanTitle(typeData.value?.text || "", issue.comment || ""),
+                comment: formatComments(
+                    issue.comment || "",
+                    issue.year || "",
+                    issue.gregorian_year ? String(issue.gregorian_year) : "",
+                    typeData.value?.text || ""
+                ),
                 marks_picture: issue.marks?.[0]?.picture || null
             })),
 

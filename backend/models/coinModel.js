@@ -42,15 +42,7 @@ const CoinSchema = new Schema({
         type: String,
         trim: true,
     },
-    mass: {
-        type: String,
-        trim: true,
-    },
-    diameter: {
-        type: String,
-        trim: true,
-    },
-    orientation: {
+    physicalDetails: {
         type: String,
         trim: true,
     },

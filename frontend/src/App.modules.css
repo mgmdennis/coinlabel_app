@@ -153,6 +153,8 @@ body{
 	margin: 1.1cqw;
   padding: .1rem 0;
 	font-family: 'Fira Sans', sans-serif;
+  white-space: pre-wrap; /* This preserves new lines and spaces */
+    word-wrap: break-word; /* Ensures long words don't break the layout */
 }
 
 .date {
@@ -165,9 +167,6 @@ body{
   left:0;
   width: 30%;
 }
-
-
-
 .denomination {
   position: absolute;
   font-weight: bold;
@@ -193,14 +192,35 @@ body{
   font-weight: 300;
 }
 
-.grade {
-  position: absolute;
+.primary-text, .issuer, .grade, .denomination, .date {
   font-weight: bold;
   font-size: 7cqw;
+}
+
+.secondary-text, 
+.details, 
+.grade-details, 
+.mintage, 
+.catalogNumber,
+.composition,
+.mass,
+.diameter,
+.orientation,
+.physical-details,
+.date-added, 
+.reference, 
+.numista-number {
+  font-weight: lighter;
+  font-size: 6cqw;
+  font-family: "Fira Sans Extra Condensed", sans-serif;
+}
+
+.grade {
+  position: absolute;
   text-align: right;
   top: 0;
-  right: 1.5cqw; /* Safety gap from the very edge */
-  width: 35%;    /* More room for UNC/Proof */
+  right: 1cqw; /* Safety gap from the very edge */
+  width: 22%;    /* More room for UNC/Proof */
 }
 
 .grade-details {
@@ -211,15 +231,13 @@ body{
   font-size: 6cqw;
   text-align: right;
   padding-right: 1cqw;
-  top: 8cqw;
+  top: 10.5cqw;
   right: 2cqw; 
   width: 30%;
 }
 
 .issuer {
   position: absolute;
-  font-weight: bold;
-  font-size: 7cqw;
   text-align: left;
   
   bottom:0;
@@ -229,8 +247,6 @@ body{
 
 .catalogNumber {
   position: absolute;
-  font-weight: lighter;
-  font-size: 6cqw;
   text-align: right;
   
   bottom:0;
@@ -240,8 +256,6 @@ body{
 
 .mintage {
   position: absolute;
-  font-weight: lighter;
-  font-size: 6cqw;
   text-align: left;
   
   bottom:9cqw;
@@ -249,14 +263,22 @@ body{
   width: 70%;
 }
 
-.stack-container {
+.details-stack-container {
   /* This ensures the entire stack starts exactly 8cqw from the top */
   padding-top: 10.5cqw;
+
+  padding-left: 1cqw;
   
   display: flex;
   flex-direction: column;
   gap: 1cqw; /* Optional: adds a small space between image and text */
 
+}
+
+.bottom-right-stack, .physical-details-stack {
+  display: flex;
+  flex-direction: column;
+  gap: -0.5cqw;
 }
 
 .marks-picture-wrapper {
@@ -281,92 +303,68 @@ body{
 }
 
 .details {
-  /* position: absolute; */
-  font-weight: lighter;
-  /* font-style: italic; */
-  font-size: 6cqw;
-  font-weight: 300;
   text-align: left;
-
   resize: none;
-  
   width: 40%;
-
-  font-family: 'Fira Sans Extra Condensed', sans-serif;
 }
 
 .composition {
   position: absolute;
-  font-size: 6cqw;
-  font-weight: lighter;
   text-align: right;
-  width: 70%;
+  width: 80%;
   bottom: 1cqw;
-  right: 1.5cqw;
+  right: 1cqw;
   line-height: 1.1;
-
-  font-family: 'Fira Sans Extra Condensed', sans-serif;
 
   z-index: 11; /* Sit on top of QR background if they touch */
 }
 
 .numista-number {
   position: absolute;
-  font-size: 6cqw;
-  font-weight: lighter;
   text-align: left;
-  
+  left: 1cqw;
   top: 0;
   left: 0;
   width: 40%;
 }
 
-.mass {
+.physical-details-stack {
   position: absolute;
-  font-size: 6cqw;
-  font-weight: lighter;
+  bottom: 1cqw;
+}
+            
+.physical-details {
+  position:absolute;
+  left: 1cqw;
+  bottom: 1cqw;
   text-align: left;
+  width: 25%;
+  line-height: 1.1;
 
-  font-family: 'Fira Sans Extra Condensed', sans-serif;
-  
-  bottom:0;
-  left:0;
+  overflow: hidden;
+  resize: none;
+}
+
+.mass {
+
+  text-align: left;
   width: 30%;
 }
 
 .diameter {
-  position: absolute;
-  font-size: 6cqw;
-  font-weight: lighter;
   text-align: left;
-
-  font-family: 'Fira Sans Extra Condensed', sans-serif;
   
-  bottom:6.5cqw;
-  left:0;
   width: 30%;
 }
 
 .orientation {
-  position: absolute;
-  font-weight: lighter;
-  font-size: 6cqw;
   text-align: left;
-
-  font-family: 'Fira Sans Extra Condensed', sans-serif;
-  
-  bottom:12.5cqw;
-  left:0;
-  width: 10%;
+  width: 30%;
 }
 
 .date-added {
   position: absolute;
-  font-weight: lighter;
-  font-size: 6cqw;
   text-align: right;
-
-  font-family: "Fira Sans Extra Condensed", sans-serif;
   
   top:0;
   right:1cqw;
@@ -375,20 +373,14 @@ body{
 
 .reference {
   position: absolute;
-  font-weight: lighter;
-  font-size: 6cqw;
   text-align: right;
-
-  
-  
   bottom:0;
   right:0;
-  width: 25%;
+  width: 28%;
 }
 
 .qr-code {
   position: absolute;
-  background: white; /* Blocks out text underneath */
   padding: 1cqw;
   
   /* Use fixed percentages so it stays a perfect square */
@@ -409,9 +401,20 @@ body{
   z-index: 10;
 }
 
-.parent-label-large {
+.parent-label-for-edit {
   container-type: size;
   background: #FAF9F6;
+  position: relative;
+
+  box-shadow: 10px 10px 5px lightblue;
+
+  width: 110mm;
+  height: 110mm;
+}
+
+.parent-label-for-print {
+  container-type: size;
+  background: white;
   position: relative;
 
   box-shadow: 10px 10px 5px lightblue;
