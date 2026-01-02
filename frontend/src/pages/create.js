@@ -349,7 +349,7 @@ const Create = () => {
                     placeholder="Year"
                     value={year}
                     plaintext
-                    className="label date"
+                    className={"label date" + (year.length > 4 ? " narrow" : "")}
                     onChange={(e) => setYear(e.target.value)}
                 />
                 <Form.Control
@@ -365,7 +365,7 @@ const Create = () => {
                     plaintext
                     as="textarea"
                     rows={2}
-                    className={"label denomination" + (denomination.length > 15 ? " narrow" : "")}
+                    className={"label denomination" + (denomination.length > 10 ? " narrow" : "")}
                     onChange={(e) => setDenomination(e.target.value)}
                 />
                 <Form.Control
