@@ -418,7 +418,7 @@ const Create = () => {
             </div>
             <p />
             <div className="parent-label-large">
-                <p className={"label composition " + (composition.length > 45 ? " narrow light" : "")}>
+                <p className="label composition">
                     {composition}
                 </p>
                 <Form.Control

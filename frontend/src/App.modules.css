@@ -298,11 +298,15 @@ body{
 .composition {
   position: absolute;
   font-size: 6cqw;
+  font-weight: lighter;
   text-align: right;
   width: 70%;
   bottom: 1cqw;
   right: 1.5cqw;
   line-height: 1.1;
+
+  font-family: 'Fira Sans Extra Condensed', sans-serif;
+
   z-index: 11; /* Sit on top of QR background if they touch */
 }
 
