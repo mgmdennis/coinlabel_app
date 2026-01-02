@@ -158,7 +158,7 @@ body{
 .date {
   position: absolute;
   font-weight: bold;
-  font-size: 5cqw;
+  font-size: 7cqw;
   text-align: left;
   
   top:0;
@@ -171,7 +171,7 @@ body{
 .denomination {
   position: absolute;
   font-weight: bold;
-  font-size: 5cqw;
+  font-size: 7cqw;
   text-align: center;
 
   resize: none;
@@ -196,12 +196,11 @@ body{
 .grade {
   position: absolute;
   font-weight: bold;
-  font-size: 5cqw;
+  font-size: 7cqw;
   text-align: right;
-  
-  top:0;
-  right:0;
-  width: 15%;
+  top: 0;
+  right: 1.5cqw; /* Safety gap from the very edge */
+  width: 35%;    /* More room for UNC/Proof */
 }
 
 .grade-details {
@@ -209,18 +208,18 @@ body{
   font-style: italic;
   font-family: "Fira Sans Extra Condensed", sans-serif;
   font-weight: lighter;
-  font-size: 4cqw;
+  font-size: 6cqw;
   text-align: right;
-  
+  padding-right: 1cqw;
   top: 8cqw;
-  right: 0;
+  right: 2cqw; 
   width: 30%;
 }
 
 .issuer {
   position: absolute;
   font-weight: bold;
-  font-size: 5cqw;
+  font-size: 7cqw;
   text-align: left;
   
   bottom:0;
@@ -231,7 +230,7 @@ body{
 .catalogNumber {
   position: absolute;
   font-weight: lighter;
-  font-size: 5cqw;
+  font-size: 6cqw;
   text-align: right;
   
   bottom:0;
@@ -241,7 +240,8 @@ body{
 
 .mintage {
   position: absolute;
-  font-size: 4.5cqw;
+  font-weight: lighter;
+  font-size: 6cqw;
   text-align: left;
   
   bottom:9cqw;
@@ -251,7 +251,7 @@ body{
 
 .stack-container {
   /* This ensures the entire stack starts exactly 8cqw from the top */
-  padding-top: 8.5cqw;
+  padding-top: 10.5cqw;
   
   display: flex;
   flex-direction: column;
@@ -261,8 +261,8 @@ body{
 
 .marks-picture-wrapper {
   /* Establish the size based on 5% of the container's width */
-  width: 5cqw;
-  height: 5cqw;
+  width: 8.5cqw;
+  height: 8.5cqw;
   flex-shrink: 0; /* Prevents the image from squishing */
 }
 
@@ -284,7 +284,7 @@ body{
   /* position: absolute; */
   font-weight: lighter;
   /* font-style: italic; */
-  font-size: 4.5cqw;
+  font-size: 6cqw;
   font-weight: 300;
   text-align: left;
 
@@ -297,27 +297,19 @@ body{
 
 .composition {
   position: absolute;
-  font-size: 4.5cqw;
+  font-size: 6cqw;
   text-align: right;
-  /* display: flex;
-  align-items: flex-end; */
-
-  /* color: red; */
-
-
-  resize: none;
-
-  /* font-family: 'Fira Sans', sans-serif; */
-
-  width: 65%;
-  
-  bottom: 0;
-  right: 0;
+  width: 70%;
+  bottom: 1cqw;
+  right: 1.5cqw;
+  line-height: 1.1;
+  z-index: 11; /* Sit on top of QR background if they touch */
 }
 
 .numista-number {
   position: absolute;
-  font-size: 4.5cqw;
+  font-size: 6cqw;
+  font-weight: lighter;
   text-align: left;
   
   top: 0;
@@ -327,8 +319,11 @@ body{
 
 .mass {
   position: absolute;
-  font-size: 4.5cqw;
+  font-size: 6cqw;
+  font-weight: lighter;
   text-align: left;
+
+  font-family: 'Fira Sans Extra Condensed', sans-serif;
   
   bottom:0;
   left:0;
@@ -337,8 +332,11 @@ body{
 
 .diameter {
   position: absolute;
-  font-size: 4.5cqw;
+  font-size: 6cqw;
+  font-weight: lighter;
   text-align: left;
+
+  font-family: 'Fira Sans Extra Condensed', sans-serif;
   
   bottom:6.5cqw;
   left:0;
@@ -347,8 +345,11 @@ body{
 
 .orientation {
   position: absolute;
-  font-size: 4.5cqw;
+  font-weight: lighter;
+  font-size: 6cqw;
   text-align: left;
+
+  font-family: 'Fira Sans Extra Condensed', sans-serif;
   
   bottom:12.5cqw;
   left:0;
@@ -357,19 +358,24 @@ body{
 
 .date-added {
   position: absolute;
-  font-size: 4.5cqw;
+  font-weight: lighter;
+  font-size: 6cqw;
   text-align: right;
+
+  font-family: "Fira Sans Extra Condensed", sans-serif;
   
   top:0;
-  right:0;
-  width: 30%;
+  right:1cqw;
+  width: 40%;
 }
 
 .reference {
   position: absolute;
-  font-weight: bold;
-  font-size: 4.5cqw;
+  font-weight: lighter;
+  font-size: 6cqw;
   text-align: right;
+
+  
   
   bottom:0;
   right:0;
@@ -378,11 +384,25 @@ body{
 
 .qr-code {
   position: absolute;
+  background: white; /* Blocks out text underneath */
+  padding: 1cqw;
   
-  top:12.5cqw;
-  bottom: 16.5cqw;
-  left:16.5cqw;
-  right:16.5cqw;
+  /* Use fixed percentages so it stays a perfect square */
+
+  
+  /* Center it in the middle of the bottom half */
+  top: 12cqw; 
+  
+  
+  width:100%;
+  height:62%;
+  
+
+  
+  display: flex;
+  /* align-items: center;
+  justify-content: center; */
+  z-index: 10;
 }
 
 .parent-label-large {
@@ -392,8 +412,8 @@ body{
 
   box-shadow: 10px 10px 5px lightblue;
 
-  width: 104mm;
-  height: 104mm;
+  width: 48mm;
+  height: 48mm;
 }
 
 .input-group>:not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {

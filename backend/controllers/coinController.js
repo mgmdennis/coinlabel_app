@@ -39,6 +39,7 @@ const createCoin = (req, res) => {
     orientation: req.body.orientation,
     mintage: req.body.mintage,
     dateAdded: req.body.dateAdded,
+    marksPicture: req.body.marksPicture,
   });
 
   coin.save();

@@ -35,15 +35,11 @@ const Create = () => {
     const [title, setTitle] = useState("");
 
     var updateNumistaDetails = (jsonData) => {
-
-        // If we're editing an existing saved coin, do not overwrite its fields with Numista defaults
         const editCoinId = location && location.state && location.state.coinId ? location.state.coinId : null;
         if (editCoinId) {
             setNumistaDetails(jsonData);
             return;
         }
-
-        console.log("Numista Details: ", jsonData);
 
         setNumistaDetails(jsonData);
         setDenomination(jsonData.denomination);
@@ -90,15 +86,12 @@ const Create = () => {
             setGrade("");
         }
 
-        console.log("updateFillout: " + description);
-
         if (comments.length > 0) {
             setDetails(comments + "\n" + description);
         } else {
             setDetails(description);
         }
     }
-
 
     useEffect(() => {
         const currentDate = new Date();
@@ -107,14 +100,12 @@ const Create = () => {
         getNumistaDetails();
       }, []);
 
-    // Create or load coin record on initial load
     useEffect(() => {
         if (!numistaDetails.denomination) return;
 
         const editCoinId = location && location.state && location.state.coinId ? location.state.coinId : null;
 
         if (editCoinId && !coinId) {
-            // load coin for editing
             axios.get(`${BASE_URL}/coin/${editCoinId}`)
                 .then((res) => {
                         const c = res.data;
@@ -132,7 +123,7 @@ const Create = () => {
                         setOrientation(c.orientation || "");
                         setMintage(c.mintage || "");
                         setDateAdded(c.dateAdded || dateAdded);
-                        console.log("Loaded coin for edit:", c._id);
+                        setMarksPicture(c.marksPicture || null); // Load marksPicture from DB
                         setInitialLoadComplete(true);
                     })
                 .catch((err) => {
@@ -147,12 +138,11 @@ const Create = () => {
         }
     }, [numistaDetails]);
 
-    // Update coin whenever any field changes (but not during initial load)
     useEffect(() => {
         if (coinId && initialLoadComplete) {
             updateCoinRemote();
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, mass, diameter, orientation, dateAdded, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, mass, diameter, orientation, dateAdded, marksPicture, coinId, initialLoadComplete]);
 
     const getNumistaDetails = () => {
         axios
@@ -164,24 +154,24 @@ const Create = () => {
     const createCoin = () => {
         axios
           .post(`${BASE_URL}/coin/new`, {
-            numistaNumber: numistaNumber,
-            year: year,
-            issuer: issuer,
-            denomination: denomination,
-            grade: grade,
-            gradeDetails: gradeDetails,
-            details: details,
-            reference: reference,
-            composition: composition,
-            mass: mass,
-            diameter: diameter,
-            orientation: orientation,
-            mintage: mintage,
-            dateAdded: dateAdded,
+            numistaNumber,
+            year,
+            issuer,
+            denomination,
+            grade,
+            gradeDetails,
+            details,
+            reference,
+            composition,
+            mass,
+            diameter,
+            orientation,
+            mintage,
+            dateAdded,
+            marksPicture, // Save to DB
           })
           .then((res) => {
             setCoinId(res.data._id);
-            console.log("Coin created with ID:", res.data._id);
           })
           .catch((err) => console.error("Error creating coin:", err));
     };
@@ -189,20 +179,21 @@ const Create = () => {
     const updateCoinRemote = () => {
         axios
           .put(`${BASE_URL}/coin/update/${coinId}`, {
-            numistaNumber: numistaNumber,
-            year: year,
-            issuer: issuer,
-            denomination: denomination,
-            grade: grade,
-            gradeDetails: gradeDetails,
-            details: details,
-            reference: reference,
-            composition: composition,
-            mass: mass,
-            diameter: diameter,
-            orientation: orientation,
-            mintage: mintage,
-            dateAdded: dateAdded,
+            numistaNumber,
+            year,
+            issuer,
+            denomination,
+            grade,
+            gradeDetails,
+            details,
+            reference,
+            composition,
+            mass,
+            diameter,
+            orientation,
+            mintage,
+            dateAdded,
+            marksPicture, // Update in DB
           })
           .then((res) => {
             console.log("Coin updated:", res.data);
@@ -215,16 +206,39 @@ const Create = () => {
         axios
           .delete(`${BASE_URL}/coin/delete/${coinId}`)
           .then((res) => {
-            console.log("Coin discarded:", res.data);
             navigate("/");
           })
           .catch((err) => console.error("Error discarding coin:", err));
     };
 
+    const handleDuplicate = () => {
+        axios
+          .post(`${BASE_URL}/coin/new`, {
+            numistaNumber,
+            year,
+            issuer,
+            denomination,
+            grade,
+            gradeDetails,
+            details,
+            reference,
+            composition,
+            mass,
+            diameter,
+            orientation,
+            mintage,
+            dateAdded,
+            marksPicture, // Duplicate includes image
+          })
+          .then((res) => {
+            navigate("/");
+          })
+          .catch((err) => console.error("Error duplicating coin:", err));
+    };
+
     const handleDone = () => {
         navigate("/");
     };
-    
     
     return (
         <div>
@@ -233,6 +247,9 @@ const Create = () => {
             <div>
                 <Button variant="outline-danger" onClick={handleDiscard} style={{ marginBottom: '20px', marginRight: '10px' }}>
                     Discard
+                </Button>
+                <Button variant="outline-primary" onClick={handleDuplicate} style={{ marginBottom: '20px', marginRight: '10px' }}>
+                    Duplicate
                 </Button>
                 <Button variant="outline-success" onClick={handleDone} style={{ marginBottom: '20px' }}>
                     Done
@@ -244,8 +261,6 @@ const Create = () => {
                     plaintext
                     onChange={(e) => {
                         const selectedIndex = e.target.selectedIndex;
-                        console.log("Selected Index:", selectedIndex);
-
                         updateFillOutDateAndDetails(numistaDetails.variations[selectedIndex], numistaDetails.description);
                     }}>
                     {
@@ -332,7 +347,6 @@ const Create = () => {
             <div className="parent-label-large">
                 <Form.Control
                     placeholder="Year"
-                    aria-label="Year"
                     value={year}
                     plaintext
                     className="label date"
@@ -340,7 +354,6 @@ const Create = () => {
                 />
                 <Form.Control
                     placeholder="Issuer"
-                    aria-label="Issuer"
                     value={issuer}
                     plaintext
                     className={"label issuer" + (issuer.length > 20 ? " narrow" : "")}
@@ -348,7 +361,6 @@ const Create = () => {
                 />
                 <Form.Control
                     placeholder="Denomination"
-                    aria-label="Denom"
                     value={denomination}
                     plaintext
                     as="textarea"
@@ -358,16 +370,13 @@ const Create = () => {
                 />
                 <Form.Control
                     placeholder="Grade"
-                    aria-label="Grade"
                     value={grade}
                     plaintext
                     className="label grade"
                     onChange={(e) => setGrade(e.target.value)}
                 />
-
                 <Form.Control
                     placeholder="Grade Details"
-                    aria-label="Grade Details"
                     value={gradeDetails}
                     plaintext
                     className="label grade-details"
@@ -377,16 +386,13 @@ const Create = () => {
                 />
                 <Form.Control
                     placeholder="Mintage"
-                    aria-label="Mintage"
                     value={mintage}
                     plaintext
                     className="label mintage"
                     onChange={(e) => setMintage(e.target.value)}
                 />
-                
                 <Form.Control
                     placeholder="Ref"
-                    aria-label="Ref"
                     value={reference}
                     plaintext
                     className="label reference"
@@ -399,29 +405,24 @@ const Create = () => {
                             <img src={marksPicture} alt="Mint Mark" className="marks-picture" />
                         </div>
                     }
-
                     <Form.Control
                         placeholder="Details"
-                        aria-label="Details"
                         value={details}
                         plaintext
                         className="label details"
                         as="textarea"
-                        rows={6}
+                        rows={5}
                         onChange={(e) => setDetails(e.target.value)}
                     />
                 </div>
-
             </div>
             <p />
             <div className="parent-label-large">
-                <p
-                    className={"label composition " + (composition.length > 45 ? " narrow light" : "")}>
+                <p className={"label composition " + (composition.length > 45 ? " narrow light" : "")}>
                     {composition}
                 </p>
                 <Form.Control
                     placeholder="Mass"
-                    aria-label="Mass"
                     value={mass}
                     plaintext
                     className="label mass"
@@ -429,7 +430,6 @@ const Create = () => {
                 />
                 <Form.Control
                     placeholder="Diameter"
-                    aria-label="Diameter"
                     value={diameter}
                     plaintext
                     className="label diameter"
@@ -437,7 +437,6 @@ const Create = () => {
                 />
                 <Form.Control
                     placeholder="Date Added"
-                    aria-label="Date Added"
                     value={dateAdded}
                     plaintext
                     className="label date-added"
@@ -445,7 +444,6 @@ const Create = () => {
                 />
                 <Form.Control
                     placeholder="Orientation"
-                    aria-label="Orientation"
                     value={orientation}
                     plaintext
                     className="label orientation"
@@ -455,11 +453,12 @@ const Create = () => {
                 
                 <div className="qr-code">
                     <QRCode
-                        value={`https://numista.com/${numistaNumber}`}
-                     />
-                </div>
+        value={`https://numista.com/${numistaNumber}`}
+
+        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+  
+    /> </div>
             </div>
-            
         </div>
     );
 }

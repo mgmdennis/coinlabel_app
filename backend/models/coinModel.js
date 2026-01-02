@@ -63,6 +63,10 @@ const CoinSchema = new Schema({
         default: new Date().toISOString(),
         trim: true,
     },
+    marksPicture: {
+        type: String,
+        trim: true,
+    },
 })
 
 const Coin = mongoose.model("Coin", CoinSchema)
