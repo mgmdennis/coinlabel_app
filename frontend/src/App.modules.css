@@ -6,7 +6,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: monospace;
+  /* font-family: monospace; */
 }
 
 body{
@@ -401,14 +401,34 @@ body{
 }
 
 .parent-label-for-edit {
+  /* Scaling Logic */
+  width: 100%;
+  aspect-ratio: 1 / 1;
   container-type: size;
-  background: #FAF9F6;
+  
+  /* Background & Depth */
+  background: white;
   position: relative;
+  margin: 0 auto;
+  
+  /* The "Small Shadow" and subtle border */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 2px; /* Tiny rounding looks more professional for paper */
 
-  box-shadow: 10px 10px 5px lightblue;
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  padding: 0; /* Padding removed as requested */
+  overflow: hidden;
+  
+  /* Ensure content doesn't jitter during scaling */
+  transition: box-shadow 0.3s ease;
+}
 
-  width: 110mm;
-  height: 110mm;
+/* Optional: Hover effect to make it feel interactive */
+.parent-label-for-edit:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .parent-label-for-print {

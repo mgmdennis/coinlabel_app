@@ -1,28 +1,36 @@
-import {useParams, useNavigate, useLocation} from "react-router-dom";
-import { useState, useEffect } from "react";
-import {QRCode} from "react-qr-code";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
+// React Bootstrap Components
+import { 
+    Form, 
+    Button, 
+    Row, 
+    Col, 
+    Card, 
+    InputGroup, 
+    Container, 
+    Badge 
+} from 'react-bootstrap';
+
+// Your Custom Label Components
 import { FrontLabelContainer, BackLabelContainer } from "./label";
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
-/**
- * Create Page Component
- * Fetches Numista coin details and allows creating/editing a coin entry.
- * @param {object} props - Component props.
- * @returns {JSX.Element} The Create page component.
- */
 const Create = () => {
-    const {numistaNumber} = useParams();
+    const { numistaNumber } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // App State
     const [numistaDetails, setNumistaDetails] = useState({});
     const [coinId, setCoinId] = useState(null);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+    const [title, setTitle] = useState("");
 
+    // Label Field State
     const [year, setYear] = useState("");
     const [details, setDetails] = useState("");
     const [denomination, setDenomination] = useState("");
@@ -35,361 +43,319 @@ const Create = () => {
     const [physicalDetails, setPhysicalDetails] = useState("");
     const [dateAdded, setDateAdded] = useState("");
     const [marksPicture, setMarksPicture] = useState(null);
-    const [title, setTitle] = useState("");
 
-    var updateNumistaDetails = (jsonData) => {
-        const editCoinId = location && location.state && location.state.coinId ? location.state.coinId : null;
-        if (editCoinId) {
-            setNumistaDetails(jsonData);
-            return;
+    // --- Logic Functions ---
+
+    const updateFillOutDateAndDetails = (variation, description) => {
+        if (!variation) return;
+        setYear(variation.date);
+        setMintage(variation.mintage.length > 0 ? `m. ${variation.mintage}` : "");
+        setMarksPicture(variation.marks_picture || null);
+        
+        let comments = variation.comment || "";
+        if (comments.includes("Proof")) {
+            setGrade("Proof");
+            comments = comments.replace("Proof", "").trim();
         }
 
+        setDetails(comments.length > 0 ? `${comments}\n${description}` : description);
+    };
+
+    const updateNumistaDetails = (jsonData) => {
+        const editCoinId = location?.state?.coinId;
         setNumistaDetails(jsonData);
+        setTitle(jsonData.title);
+
+        if (editCoinId) return;
+
         setDenomination(jsonData.denomination);
         setIssuer(jsonData.issuer);
         setComposition(jsonData.composition);
-        setTitle(jsonData.title);
-
-        setPhysicalDetails(jsonData.orientation + "\n" + jsonData.diameter + "\n" + jsonData.mass);
+        setPhysicalDetails(`${jsonData.orientation || ''}\n${jsonData.diameter || ''}\n${jsonData.mass || ''}`);
         
-        if (jsonData.variations && jsonData.variations.length > 0) {
+        if (jsonData.variations?.length > 0) {
             updateFillOutDateAndDetails(jsonData.variations[0], jsonData.description);
         }
-
-        if (jsonData.references && jsonData.references.length > 0) {
+        if (jsonData.references?.length > 0) {
             setReference(jsonData.references[0]);
         }
-    }
+    };
 
-    var updateFillOutDateAndDetails = (variation, description) => {
-        setYear(variation.date);
+    // --- API Interactions ---
 
-        if (variation.mintage.length > 0) {
-            setMintage("m. " + variation.mintage);
-        } else {
-            setMintage("");
-        }
+    const createCoin = useCallback(() => {
+        axios.post(`${BASE_URL}/coin/new`, {
+            numistaNumber, year, issuer, denomination, grade, gradeDetails,
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture
+        })
+        .then((res) => {
+            setCoinId(res.data._id);
+            setInitialLoadComplete(true);
+        })
+        .catch((err) => console.error("Error creating coin:", err));
+    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture]);
 
-        if (variation.marks_picture) {
-            setMarksPicture(variation.marks_picture);
-        } else {
-            setMarksPicture(null);
-        }
-        
-        var comments = variation.comment;
+    const updateCoinRemote = useCallback(() => {
+        if (!coinId) return;
+        axios.put(`${BASE_URL}/coin/update/${coinId}`, {
+            numistaNumber, year, issuer, denomination, grade, gradeDetails,
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture
+        })
+        .then((res) => console.log("Auto-saved changes"))
+        .catch((err) => console.error("Error updating coin:", err));
+    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture]);
 
-        if(comments.includes("Proof")) {
-            setGrade("Proof")
-            comments = comments.replace("Proof", "");
-        }
-
-        if (comments.length > 0) {
-            setDetails(comments + "\n" + description);
-        } else {
-            setDetails(description);
-        }
-    }
+    // --- Effects ---
 
     useEffect(() => {
         const currentDate = new Date();
         const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;
         setDateAdded(formattedDate);
-        getNumistaDetails();
-      }, []);
+        
+        axios.get(`${BASE_URL}/numista/${numistaNumber}`)
+            .then((res) => updateNumistaDetails(res.data))
+            .catch((err) => console.error(err));
+    }, [numistaNumber]);
 
     useEffect(() => {
         if (!numistaDetails.denomination) return;
-
-        // const editCoinId = location && location.state && location.state.coinId ? location.state.coinId : null;
         const editCoinId = location?.state?.coinId;
 
         if (editCoinId && !coinId) {
             axios.get(`${BASE_URL}/coin/${editCoinId}`)
                 .then((res) => {
-                        const c = res.data;
-                        setCoinId(c._id);
-                        setYear(c.year || "");
-                        setIssuer(c.issuer || "");
-                        setDenomination(c.denomination || "");
-                        setGrade(c.grade || "");
-                        setGradeDetails(c.gradeDetails || "");
-                        setDetails(c.details || "");
-                        setReference(c.reference || "");
-                        setComposition(c.composition || "");
-                        setPhysicalDetails(c.physicalDetails || "");
-                        setMintage(c.mintage || "");
-                        setDateAdded(c.dateAdded || dateAdded);
-                        setMarksPicture(c.marksPicture || null); // Load marksPicture from DB
-                        setInitialLoadComplete(true);
-                    })
-                .catch((err) => {
-                    console.error("Error loading coin for edit:", err);
-                    if (!coinId) createCoin();
-                });
-            return;
-        }
-
-        if (!coinId) {
+                    const c = res.data;
+                    setCoinId(c._id);
+                    setYear(c.year || "");
+                    setIssuer(c.issuer || "");
+                    setDenomination(c.denomination || "");
+                    setGrade(c.grade || "");
+                    setGradeDetails(c.gradeDetails || "");
+                    setDetails(c.details || "");
+                    setReference(c.reference || "");
+                    setComposition(c.composition || "");
+                    setPhysicalDetails(c.physicalDetails || "");
+                    setMintage(c.mintage || "");
+                    setDateAdded(c.dateAdded || dateAdded);
+                    setMarksPicture(c.marksPicture || null);
+                    setInitialLoadComplete(true);
+                })
+                .catch(() => !coinId && createCoin());
+        } else if (!coinId) {
             createCoin();
         }
-    }, [numistaDetails]);
+    }, [numistaDetails, coinId, location, dateAdded, createCoin]);
 
     useEffect(() => {
         if (coinId && initialLoadComplete) {
-            updateCoinRemote();
+            const delayDebounceFn = setTimeout(() => {
+                updateCoinRemote();
+            }, 1000); 
+            return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, updateCoinRemote, coinId, initialLoadComplete]);
 
-    const getNumistaDetails = () => {
-        axios
-          .get(`${BASE_URL}/numista/${numistaNumber}`)
-          .then((res) => updateNumistaDetails(res.data))
-          .catch((err) => console.error(err));
-      };
-
-    const createCoin = () => {
-        axios
-          .post(`${BASE_URL}/coin/new`, {
-            numistaNumber,
-            year,
-            issuer,
-            denomination,
-            grade,
-            gradeDetails,
-            details,
-            reference,
-            composition,
-            physicalDetails,
-            mintage,
-            dateAdded,
-            marksPicture, // Save to DB
-          })
-          .then((res) => {
-            setCoinId(res.data._id);
-            setInitialLoadComplete(true);
-          })
-          .catch((err) => console.error("Error creating coin:", err));
-    };
-
-    const updateCoinRemote = () => {
-        axios
-          .put(`${BASE_URL}/coin/update/${coinId}`, {
-            numistaNumber,
-            year,
-            issuer,
-            denomination,
-            grade,
-            gradeDetails,
-            details,
-            reference,
-            composition,
-            physicalDetails,
-            mintage,
-            dateAdded,
-            marksPicture, // Update in DB
-          })
-          .then((res) => {
-            console.log("Coin updated:", res.data);
-          })
-          .catch((err) => console.error("Error updating coin:", err));
-    };
+    // --- Handlers ---
 
     const handleDiscard = () => {
-        if (!coinId) return;
-        axios
-          .delete(`${BASE_URL}/coin/delete/${coinId}`)
-          .then((res) => {
-            navigate("/");
-          })
-          .catch((err) => console.error("Error discarding coin:", err));
+        if (window.confirm("Are you sure you want to discard this entry?")) {
+            axios.delete(`${BASE_URL}/coin/delete/${coinId}`).then(() => navigate("/"));
+        }
     };
 
     const handleDuplicate = () => {
-        axios
-          .post(`${BASE_URL}/coin/new`, {
-            numistaNumber,
-            year,
-            issuer,
-            denomination,
-            grade,
-            gradeDetails,
-            details,
-            reference,
-            composition,
-            physicalDetails,
-            mintage,
-            dateAdded,
-            marksPicture, // Duplicate includes image
-          })
-          .then((res) => {
-            navigate("/");
-          })
-          .catch((err) => console.error("Error duplicating coin:", err));
-    };
-
-    const handleDone = () => {
-        navigate("/");
+        axios.post(`${BASE_URL}/coin/new`, {
+            numistaNumber, year, issuer, denomination, grade, gradeDetails,
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture
+        }).then(() => navigate("/"));
     };
 
     return (
-        <div>
-            <h1>Create</h1>
-            <h2>{title}</h2>
-            <div>
-                <Button variant="outline-danger" onClick={handleDiscard} style={{ marginBottom: '20px', marginRight: '10px' }}>
-                    Discard
-                </Button>
-                <Button variant="outline-primary" onClick={handleDuplicate} style={{ marginBottom: '20px', marginRight: '10px' }}>
-                    Duplicate
-                </Button>
-                <Button variant="outline-success" onClick={handleDone} style={{ marginBottom: '20px' }}>
-                    Done
-                </Button>
-            </div>
-            <div className="numista-details">
-                <Form.Select
-                    plaintext
-                    onChange={(e) => {
-                        const selectedIndex = e.target.selectedIndex;
-                        updateFillOutDateAndDetails(numistaDetails.variations[selectedIndex], numistaDetails.description);
-                    }}>
-                    {
-                        (numistaDetails && numistaDetails.variations && numistaDetails.variations.length > 0) ? (
-                            numistaDetails.variations.map((variation, index) => (
-                                <option key={index} value={variation.date}>
-                                    {variation.date} {variation.comment && `(${variation.comment})`}
-                                </option>
-                            ))
-                        ) : (
-                            <option value="0">No Variations</option>
-                        )
-                    }
-                </Form.Select>
-                <Form.Select
-                    plaintext
-                    onChange={(e) => {
-                        setReference(e.target.value);
-                    }}>
-                    {
-                        (numistaDetails && numistaDetails.references && numistaDetails.references.length > 0) ? (
-                            numistaDetails.references.map((ref, index) => (
-                                <option key={index} value={ref}>
-                                    {ref}
-                                </option>
-                            ))
-                        ) : (
-                            <option value="0">No References</option>
-                        )
-                    }
-                </Form.Select>
-                <Form.Select
-                    aria-label="Select Sheldon Grade"
-                    plaintext
-                    onChange={(e) => {
-                        setGrade(e.target.value);
-                    }}
-                >
-                    <option value="">Select Sheldon Grade</option>
-                    <option value="MS-70">MS-70</option>
-                    <option value="MS-69">MS-69</option>
-                    <option value="MS-68">MS-68</option>
-                    <option value="MS-67">MS-67</option>
-                    <option value="MS-66">MS-66</option>
-                    <option value="MS-65">MS-65</option>
-                    <option value="MS-64">MS-64</option>
-                    <option value="MS-63">MS-63</option>
-                    <option value="MS-62">MS-62</option>
-                    <option value="MS-61">MS-61</option>
-                    <option value="MS-60">MS-60</option>
-                    <option value="BU">BU (Brilliant Uncirculated)</option>
-                    <option value="UNC">UNC (Uncirculated)</option>
-                    <option value="AU">AU (About Uncirculated)</option>
-                    <option value="AU-55">AU-55</option>
-                    <option value="AU-50">AU-50</option>
-                    <option value="EF+">EF+ (Extremely Fine Plus)</option>
-                    <option value="EF">EF (Extremely Fine)</option>
-                    <option value="EF-45">EF-45</option>
-                    <option value="EF-40">EF-40</option>
-                    <option value="VF+">VF+ (Very Fine Plus)</option>
-                    <option value="VF">VF (Very Fine)</option>
-                    <option value="VF-30">VF-30</option>
-                    <option value="VF-20">VF-20</option>
-                    <option value="F+">F+ (Fine Plus)</option>
-                    <option value="F">F (Fine)</option>
-                    <option value="F-15">F-15 (Fine 15)</option>
-                    <option value="F-12">F-12 (Fine 12)</option>
-                    <option value="VG+">VG+ (Very Good Plus)</option>
-                    <option value="VG">VG (Very Good)</option>
-                    <option value="VG-10">VG-10 (Very Good 10)</option>
-                    <option value="VG-8">VG-8 (Very Good 8)</option>
-                    <option value="G+">G+ (Good Plus)</option>
-                    <option value="G">G (Good)</option>
-                    <option value="G-6">G-6 (Good 6)</option>
-                    <option value="G-4">G-4 (Good 4)</option>
-                    <option value="AG+">AG+ (About Good Plus)</option>
-                    <option value="AG">AG (About Good)</option>
-                    <option value="AG-3">AG-3 (About Good 3)</option>
-                    <option value="Proof">Proof</option>
-                    <option value="Spec">Specimen</option>
-                </Form.Select>
+        <Container className="py-4">
+            {/* Action Header */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                <div>
+                    <Badge bg="primary" className="mb-2">NumisTag Cataloger</Badge>
+                    <h1 className="h2 mb-0">{title || "Loading Coin..."}</h1>
+                    <small className="text-muted">Numista #{numistaNumber}</small>
+                </div>
+                <div className="d-flex gap-2">
+                    <Button variant="outline-danger" onClick={handleDiscard}>Discard</Button>
+                    <Button variant="outline-secondary" onClick={handleDuplicate}>Duplicate</Button>
+                    <Button variant="success" onClick={() => navigate("/")} className="px-4 fw-bold">Done</Button>
+                </div>
             </div>
 
-            <FrontLabelContainer                
-                isEditable={false}
-                year={year}
-                issuer={issuer}
-                denomination={denomination}
-                grade={grade}
-                gradeDetails={gradeDetails}
-                mintage={mintage}
-                reference={reference}
-                details={details}
-                marksPicture={marksPicture}
-            />
+            <Row>
+                <Col lg={7}>
+                    <Card className="shadow-sm mb-4">
+                        <Card.Header className="bg-light fw-bold">Automatic Data (Numista)</Card.Header>
+                        <Card.Body>
+                            <Form.Group className="mb-3">
+                                <Form.Label className="small fw-bold">Variations & Years</Form.Label>
+                                <Form.Select 
+                                    className="mb-2"
+                                    onChange={(e) => updateFillOutDateAndDetails(numistaDetails.variations[e.target.selectedIndex], numistaDetails.description)}
+                                >
+                                    {numistaDetails.variations?.map((v, i) => (
+                                        <option key={i} value={v.date}>{v.date} {v.comment && `(${v.comment})`}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
 
-            <BackLabelContainer
-                isEditable={false}
-                composition={composition}
-                physicalDetails={physicalDetails}
-                numistaNumber={numistaNumber}
-                dateAdded={dateAdded}
-            />
+                            <Form.Group className="mb-3">
+                                <Form.Label className="small fw-bold">Reference System</Form.Label>
+                                <InputGroup size="sm">
+                                    <Form.Select value={reference} onChange={(e) => setReference(e.target.value)}>
+                                        {numistaDetails.references?.map((ref, i) => (
+                                            <option key={i} value={ref}>{ref}</option>
+                                        ))}
+                                    </Form.Select>
+                                    <Form.Control 
+                                        placeholder="Manual Reference" 
+                                        value={reference} 
+                                        onChange={(e) => setReference(e.target.value)}
+                                    />
+                                </InputGroup>
+                            </Form.Group>
+                        </Card.Body>
+                    </Card>
 
-            <p />
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-light fw-bold">Label Specifics</Card.Header>
+                        <Card.Body>
+                            <Row className="g-3">
+                                <Col md={12}>
+                                    <Form.Group>
+                                        <Form.Label className="small fw-bold text-uppercase">Sheldon Grade</Form.Label>
+                                        <Form.Select value={grade} onChange={(e) => setGrade(e.target.value)}>
+                                            <option value="">Select Sheldon Grade</option>
+                                            
+                                            <optgroup label="Mint State (Uncirculated)">
+                                                <option value="MS-70">MS-70</option>
+                                                <option value="MS-69">MS-69</option>
+                                                <option value="MS-68">MS-68</option>
+                                                <option value="MS-67">MS-67</option>
+                                                <option value="MS-66">MS-66</option>
+                                                <option value="MS-65">MS-65</option>
+                                                <option value="MS-64">MS-64</option>
+                                                <option value="MS-63">MS-63</option>
+                                                <option value="MS-62">MS-62</option>
+                                                <option value="MS-61">MS-61</option>
+                                                <option value="MS-60">MS-60</option>
+                                                <option value="BU">BU (Brilliant Uncirculated)</option>
+                                                <option value="UNC">UNC (Uncirculated)</option>
+                                            </optgroup>
 
-            <FrontLabelContainer
-                isEditable={true}
-                year={year}
-                setYear={setYear}
-                issuer={issuer}
-                setIssuer={setIssuer}
-                denomination={denomination}
-                setDenomination={setDenomination}
-                grade={grade}
-                setGrade={setGrade}
-                gradeDetails={gradeDetails}
-                setGradeDetails={setGradeDetails}
-                mintage={mintage}
-                setMintage={setMintage}
-                reference={reference}
-                setReference={setReference}
-                marksPicture={marksPicture}
-                details={details}
-                setDetails={setDetails}
-            />
-            <p />
-            <BackLabelContainer
-                isEditable={true}
-                composition={composition}
-                setComposition={setComposition}
-                physicalDetails={physicalDetails}
-                setPhysicalDetails={setPhysicalDetails}
-                numistaNumber={numistaNumber}
-                dateAdded={dateAdded}
-                setDateAdded={setDateAdded}
-            />
-        </div>
+                                            <optgroup label="About Uncirculated">
+                                                <option value="AU">AU (About Uncirculated)</option>
+                                                <option value="AU-55">AU-55</option>
+                                                <option value="AU-50">AU-50</option>
+                                            </optgroup>
+
+                                            <optgroup label="Extremely Fine">
+                                                <option value="EF+">EF+ (Extremely Fine Plus)</option>
+                                                <option value="EF">EF (Extremely Fine)</option>
+                                                <option value="EF-45">EF-45</option>
+                                                <option value="EF-40">EF-40</option>
+                                            </optgroup>
+
+                                            <optgroup label="Very Fine">
+                                                <option value="VF+">VF+ (Very Fine Plus)</option>
+                                                <option value="VF">VF (Very Fine)</option>
+                                                <option value="VF-30">VF-30</option>
+                                                <option value="VF-20">VF-20</option>
+                                            </optgroup>
+
+                                            <optgroup label="Fine">
+                                                <option value="F+">F+ (Fine Plus)</option>
+                                                <option value="F">F (Fine)</option>
+                                                <option value="F-15">F-15</option>
+                                                <option value="F-12">F-12</option>
+                                            </optgroup>
+
+                                            <optgroup label="Very Good / Good">
+                                                <option value="VG+">VG+ (Very Good Plus)</option>
+                                                <option value="VG">VG (Very Good)</option>
+                                                <option value="VG-10">VG-10</option>
+                                                <option value="VG-8">VG-8</option>
+                                                <option value="G+">G+ (Good Plus)</option>
+                                                <option value="G">G (Good)</option>
+                                                <option value="G-6">G-6</option>
+                                                <option value="G-4">G-4</option>
+                                            </optgroup>
+
+                                            <optgroup label="About Good / Basal">
+                                                <option value="AG+">AG+ (About Good Plus)</option>
+                                                <option value="AG">AG (About Good)</option>
+                                                <option value="AG-3">AG-3</option>
+                                            </optgroup>
+
+                                            <optgroup label="Special Strikings">
+                                                <option value="Proof">Proof</option>
+                                                <option value="Spec">Specimen</option>
+                                            </optgroup>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={12}>
+                                    <Form.Group>
+                                        <Form.Label className="small fw-bold text-uppercase">Grade Details</Form.Label>
+                                        <Form.Control 
+                                            placeholder="e.g. Red-Brown, Small Motto, Scratched"
+                                            value={gradeDetails}
+                                            onChange={(e) => setGradeDetails(e.target.value)}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                        </Card.Body>
+                    </Card>
+                </Col>
+
+                <Col lg={5} className="mt-4 mt-lg-0">
+                    <div className="sticky-top" style={{ top: '1rem' }}>
+                        <Card className="border-info shadow">
+                            <Card.Header className="bg-info text-white fw-bold">
+                                Live 2x2 Preview
+                            </Card.Header>
+                            <Card.Body className="bg-light d-flex flex-column align-items-center gap-4 py-4">
+                                <div className="preview-section text-center w-100">
+                                    <span className="badge bg-secondary mb-2">Front Side</span>
+                                        <FrontLabelContainer
+                                            isEditable={true}
+                                            year={year} setYear={setYear}
+                                            issuer={issuer} setIssuer={setIssuer}
+                                            denomination={denomination} setDenomination={setDenomination}
+                                            grade={grade} setGrade={setGrade}
+                                            gradeDetails={gradeDetails} setGradeDetails={setGradeDetails}
+                                            mintage={mintage} setMintage={setMintage}
+                                            reference={reference} setReference={setReference}
+                                            marksPicture={marksPicture}
+                                            details={details} setDetails={setDetails}
+                                        />
+                                    </div>
+
+                                <div className="preview-section text-center w-100 border-top pt-4">
+                                    <span className="badge bg-secondary mb-2">Back Side</span>
+                                    <BackLabelContainer
+                                        isEditable={true}
+                                        composition={composition} setComposition={setComposition}
+                                        physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
+                                        numistaNumber={numistaNumber}
+                                        dateAdded={dateAdded} setDateAdded={setDateAdded}
+                                    />
+                                </div>
+                            </Card.Body>
+                            <Card.Footer className="text-center small">
+                                <span className="text-success">●</span> Autosaving enabled
+                            </Card.Footer>
+                        </Card>
+                    </div>
+                </Col>
+            </Row>
+        </Container>
     );
-}
-  
+};
+
 export default Create;
