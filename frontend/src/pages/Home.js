@@ -4,6 +4,7 @@ import deleteIcon from "./assets/delete.svg";
 import Button from 'react-bootstrap/Button';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Form from 'react-bootstrap/Form';
+import {FrontLabelContainer, BackLabelContainer} from "./label";
 
 import {
   BrowserRouter as Router,
@@ -80,6 +81,7 @@ const Home = () => {
           <h3 style={{ textAlign: "center" }}>No Coins Yet !!!</h3>
         ) : (
           coins.map((coin) => (
+            <div>
             <div className="coin" key={coin._id}>
               <div
                 id="coin-title"
@@ -90,6 +92,30 @@ const Home = () => {
                 <img src={deleteIcon} alt="delete" height="20px" width="20px" />
               </Button>
               <Link to={`/create/${coin.numistaNumber}`} state={{ coinId: coin._id }}>EDIT</Link>
+            </div>
+            <FrontLabelContainer
+              isEditable={false}
+              numistaNumber={coin.numistaNumber}
+              year={coin.year}
+              issuer={coin.issuer}
+              denomination={coin.denomination}
+              grade={coin.grade}
+              gradeDetails={coin.gradeDetails}
+              details={coin.details}
+              reference={coin.reference}
+              composition={coin.composition}
+              physicalDetails={coin.physicalDetails}
+              mintage={coin.mintage}
+              dateAdded={coin.dateAdded}
+              marksPicture={coin.marksPicture}
+            />
+            <BackLabelContainer
+              isEditable={false}
+              numistaNumber={coin.numistaNumber}
+              composition={coin.composition}
+              physicalDetails={coin.physicalDetails}
+              dateAdded={coin.dateAdded}
+            />
             </div>
           ))
         )}
@@ -103,114 +129,8 @@ const Home = () => {
     if (!n) return;
     navigate(`/create/${encodeURIComponent(n)}`);
   };
-// () => this.nextPath("/edit/" + coin._id)
+
 
 export default Home;
 
-  // function App() {
-//   const [todos, setTodos] = useState(null);
-//   const [todo, setTodo] = useState("");
-//   const [formYear, setFormYear] = useState("");
-
-//   useEffect(() => {
-//     getTodos();
-//   }, []);
-
-//   const getTodos = () => {
-//     axios
-//       .get(`${BASE_URL}/todos`)
-//       .then((res) => setTodos(res.data))
-//       .catch((err) => console.error(err));
-//   };
-
-//   const handleAddTodo = () => {
-//     axios
-//       .post(`${BASE_URL}/todo/new`, {
-//         title: todo,
-//         year: formYear,
-//       })
-//       .then((res) => {
-//         setTodos([...todos, res.data]);
-//         setTodo("");
-//         setFormYear("");
-//       })
-//       .catch((err) => console.error(err));
-//   };
-
-//   const handleDeleteTodo = (id) => {
-//     axios
-//     .delete(`${BASE_URL}/todo/delete/${id}`)
-//     .then((res) =>
-//       setTodos(todos.filter((todo) => todo._id !== res.data._id))
-//     )
-//     .catch((err) =>
-//         console.error(err)
-//       );
-//   };
-
-//   const handleTodoClick = (id) => {
-//     axios
-//       .get(`${BASE_URL}/todo/toggleStatus/${id}`)
-//       .then((res) => getTodos())
-//       .catch((err) => console.error(err));
-//   };
-
-//   return (
-//     <div className="App">
-//       {/* <Button variant="outline-primary" onClick={handleAddTodo}> */}
-//       <Button variant="outline-primary">
-//         This is an add button too!
-//       </Button>
-//       <div className="todo-input-wrapper">
-
-//       <InputGroup className="mb-3">
-//         <InputGroup.Text id="basic-addon3">
-//           Todo Text
-//         </InputGroup.Text>
-//         <Form.Control 
-//           id="basic-url" 
-//           aria-describedby="basic-addon3" 
-//           value={todo}
-//           onChange={(e) => setTodo(e.target.value)} 
-//         />
-//       </InputGroup>
-//       <InputGroup className="mb-3">
-//         <InputGroup.Text id="basic-addon3">
-//           Year
-//         </InputGroup.Text>
-//         <Form.Control 
-//           id="basic-url" 
-//           aria-describedby="basic-addon3" 
-//           value={formYear}
-//           onChange={(e) => setFormYear(e.target.value)} 
-//         />
-//       </InputGroup>
-        
-//       <Button onClick={handleAddTodo}>
-//         +
-//       </Button>
-//       </div>
-//       <div className="todos-list">
-//         {!todos || !todos.length ? (
-//           <h3 style={{ textAlign: "center" }}>No Todo Data !!!</h3>
-//         ) : (
-//           todos.map((todo) => (
-//             <div className="todo" key={todo._id}>
-//               <div
-//                 onClick={() => handleTodoClick(todo._id)}
-//                 className={todo.complete ? "complete" : ""}
-//                 id="todo-title"
-//               >
-//                 {todo.title}, {todo.year}
-//               </div>
-//               <Button variant="outline-primary" onClick={() => handleDeleteTodo(todo._id)}>
-//                 <img src={deleteIcon} alt="delete" height="20px" width="20px" />
-//               </Button>
-//             </div>
-//           ))
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
   
