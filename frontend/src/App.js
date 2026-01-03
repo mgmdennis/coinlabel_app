@@ -1,10 +1,4 @@
 import "./App.modules.css";
-import { useState, useEffect } from "react";
-import axios from "axios";
-// import deleteIcon from "./assets/delete.svg";
-import Button from 'react-bootstrap/Button';
-import InputGroup from 'react-bootstrap/InputGroup';
-import Form from 'react-bootstrap/Form';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./pages/Layout";
 import Home from "./pages/Home";

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useLocation } from "react-router-dom"; // Import useLocation
+import { useLocation } from "react-router-dom";
 import { FrontLabelContainer, BackLabelContainer } from "./label";
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
@@ -10,7 +10,6 @@ const Print = () => {
   const location = useLocation();
 
   // 1. Extract selectedIds from the navigation state
-  // We use optional chaining and default to null if nothing was passed
   const selectedIds = location.state?.selectedIds || null;
 
   useEffect(() => {
@@ -33,15 +32,13 @@ const Print = () => {
     return chunks;
   };
 
-  // 2. Filter Logic using the state
+  // 2. Filter Logic
   let displayedCoins = [];
-
   if (coins) {
     if (selectedIds && Array.isArray(selectedIds)) {
-      // Show only the coins whose _id is in the selectedIds array
       displayedCoins = coins.filter(coin => selectedIds.includes(coin._id));
     } else {
-      // If no state was passed, show everything (like a full platter of maple cookies!)
+      // If no state was passed, show everything
       displayedCoins = coins;
     }
   }
@@ -49,8 +46,20 @@ const Print = () => {
   const coinPairs = chunkArray(displayedCoins, 2);
 
   return (
-    <div className="page-container">
-      <h1 className="no-print">Print Labels</h1>
+    <div className="page-container" style={{ padding: '20px' }}>
+      
+      {/* Tiny Bootstrap Back Button and Header */}
+      <div className="no-print d-flex align-items-center mb-4">
+        <button 
+          type="button" 
+          className="btn btn-outline-secondary btn-sm me-3" 
+          onClick={() => window.history.back()}
+          style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+        >
+          &larr; Back
+        </button>
+        <h1 className="m-0" style={{ fontSize: '1.5rem' }}>Print Labels</h1>
+      </div>
 
       <table style={tableStyle}>
         <tbody>
@@ -101,7 +110,7 @@ const Print = () => {
 
       <style>{`
         @media print {
-          .no-print { display: none; }
+          .no-print { display: none !important; }
           body { margin: 0; padding: 0; }
           .page-container { padding: 0 !important; }
         }

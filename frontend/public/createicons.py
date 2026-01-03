@@ -2,56 +2,48 @@ import io
 import cairosvg
 from PIL import Image
 
-# --- Your SVG Code ---
-svg_code = """
+# The SVG source for the NumisTag logo
+SVG_CODE = """
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
 <rect width="128" height="128" fill="#24313E"/>
 <circle cx="64" cy="64" r="48" stroke="white" stroke-width="16"/>
 </svg>
 """
 
-def generate_assets():
-    print("🚀 Starting asset generation...")
+def make_assets():
+    print("🍪 Starting the NumisTag asset bakery...")
 
-    # 1. Generate logo192.png
-    cairosvg.svg2png(
-        bytestring=svg_code.encode('utf-8'),
-        output_width=192,
-        output_height=192,
-        write_to='logo192.png'
-    )
-    print("✅ Created logo192.png")
+    # 1. Create the PNGs (192 and 512)
+    for size in [192, 512]:
+        filename = f"logo{size}.png"
+        cairosvg.svg2png(bytestring=SVG_CODE.encode('utf-8'), 
+                         output_width=size, 
+                         output_height=size, 
+                         write_to=filename)
+        print(f"✅ Created {filename}")
 
-    # 2. Generate logo512.png
-    cairosvg.svg2png(
-        bytestring=svg_code.encode('utf-8'),
-        output_width=512,
-        output_height=512,
-        write_to='logo512.png'
-    )
-    print("✅ Created logo512.png")
-
-    # 3. Generate multi-resolution favicon.ico
-    ico_sizes = [(16, 16), (32, 32), (48, 48), (64, 64)]
-    pil_images = []
+    # 2. Create the multi-size favicon.ico
+    # We generate 4 standard sizes for the .ico container
+    ico_sizes = [16, 32, 48, 64]
+    ico_images = []
 
     for size in ico_sizes:
-        png_data = cairosvg.svg2png(
-            bytestring=svg_code.encode('utf-8'),
-            output_width=size[0],
-            output_height=size[1]
-        )
-        pil_images.append(Image.open(io.BytesIO(png_data)))
+        # Convert SVG to PNG in memory
+        png_data = cairosvg.svg2png(bytestring=SVG_CODE.encode('utf-8'), 
+                                    output_width=size, 
+                                    output_height=size)
+        # Open with Pillow
+        img = Image.open(io.BytesIO(png_data))
+        ico_images.append(img)
 
-    pil_images[0].save(
-        'favicon.ico',
-        format='ICO',
-        append_images=pil_images[1:],
-        optimize=True
+    # Save the first image as an ICO and bundle the rest inside it
+    ico_images[0].save(
+        "favicon.ico",
+        format="ICO",
+        append_images=ico_images[1:]
     )
-    print("✅ Created favicon.ico")
-
-    print("\nDone! All assets are ready for your public folder.")
+    print("✅ Created favicon.ico (containing 16px, 32px, 48px, and 64px)")
+    print("\nAll done! Your public/ folder is ready for the model's judgment.")
 
 if __name__ == "__main__":
-    generate_assets()
+    make_assets()
