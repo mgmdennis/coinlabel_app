@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom"; // Import useLocation
 import { FrontLabelContainer, BackLabelContainer } from "./label";
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
-const Home = () => {
+const Print = () => {
   const [coins, setCoins] = useState(null);
-  const navigate = useNavigate();
+  const location = useLocation();
+
+  // 1. Extract selectedIds from the navigation state
+  // We use optional chaining and default to null if nothing was passed
+  const selectedIds = location.state?.selectedIds || null;
 
   useEffect(() => {
     getCoins();
@@ -29,7 +33,20 @@ const Home = () => {
     return chunks;
   };
 
-  const coinPairs = chunkArray(coins, 2);
+  // 2. Filter Logic using the state
+  let displayedCoins = [];
+
+  if (coins) {
+    if (selectedIds && Array.isArray(selectedIds)) {
+      // Show only the coins whose _id is in the selectedIds array
+      displayedCoins = coins.filter(coin => selectedIds.includes(coin._id));
+    } else {
+      // If no state was passed, show everything (like a full platter of maple cookies!)
+      displayedCoins = coins;
+    }
+  }
+
+  const coinPairs = chunkArray(displayedCoins, 2);
 
   return (
     <div className="page-container">
@@ -37,42 +54,48 @@ const Home = () => {
 
       <table style={tableStyle}>
         <tbody>
-          {coinPairs && coinPairs.map((pair, rowIndex) => (
-            <tr key={rowIndex} style={rowStyle}>
-              {/* Coin 1: Front and Back */}
-              <td style={cellStyle}>
-                <div className="label-wrapper">
-                  <FrontLabelContainer {...pair[0]} isEditable={false} />
-                </div>
-              </td>
-              <td style={cellStyle}>
-                <div className="label-wrapper">
-                  <BackLabelContainer {...pair[0]} isEditable={false} />
-                </div>
-              </td>
+          {coinPairs.length > 0 ? (
+            coinPairs.map((pair, rowIndex) => (
+              <tr key={rowIndex} style={rowStyle}>
+                <td style={cellStyle}>
+                  <div className="label-wrapper">
+                    <FrontLabelContainer key={`front-${pair[0]._id}`} {...pair[0]} isEditable={false} />
+                  </div>
+                </td>
+                <td style={cellStyle}>
+                  <div className="label-wrapper">
+                    <BackLabelContainer key={`back-${pair[0]._id}`} {...pair[0]} isEditable={false} />
+                  </div>
+                </td>
 
-              {/* Coin 2: Front and Back (if exists) */}
-              {pair[1] ? (
-                <>
-                  <td style={cellStyle}>
-                    <div className="label-wrapper">
-                      <FrontLabelContainer {...pair[1]} isEditable={false} />
-                    </div>
-                  </td>
-                  <td style={cellStyle}>
-                    <div className="label-wrapper">
-                      <BackLabelContainer {...pair[1]} isEditable={false} />
-                    </div>
-                  </td>
-                </>
-              ) : (
-                <>
-                  <td style={cellStyle}></td>
-                  <td style={cellStyle}></td>
-                </>
-              )}
+                {pair[1] ? (
+                  <>
+                    <td style={cellStyle}>
+                      <div className="label-wrapper">
+                        <FrontLabelContainer key={`front-${pair[1]._id}`} {...pair[1]} isEditable={false} />
+                      </div>
+                    </td>
+                    <td style={cellStyle}>
+                      <div className="label-wrapper">
+                        <BackLabelContainer key={`back-${pair[1]._id}`} {...pair[1]} isEditable={false} />
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td style={cellStyle}></td>
+                    <td style={cellStyle}></td>
+                  </>
+                )}
+              </tr>
+            ))
+          ) : (
+            <tr className="no-print">
+              <td colSpan="4" style={{ padding: '20px', textAlign: 'center' }}>
+                {coins ? "No matching coins found." : "Loading coin data..."}
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
 
@@ -82,7 +105,6 @@ const Home = () => {
           body { margin: 0; padding: 0; }
           .page-container { padding: 0 !important; }
         }
-        /* Ensure the labels themselves don't bring their own margins */
         .label-wrapper > div {
           margin: 0 !important;
           padding: 0 !important;
@@ -94,29 +116,23 @@ const Home = () => {
 };
 
 // --- Styles ---
-
 const tableStyle = {
   borderCollapse: "collapse",
   borderTop: "1px dashed #bbb",
   borderLeft: "1px dashed #bbb",
   width: "auto",
-  tableLayout: "fixed", // Forces the browser to respect cell widths
+  tableLayout: "fixed", 
 };
-
-const rowStyle = {
-  margin: 0,
-  padding: 0,
-};
-
+const rowStyle = { margin: 0, padding: 0 };
 const cellStyle = {
   borderRight: "1px dashed #bbb",
   borderBottom: "1px dashed #bbb",
   padding: "0",
   margin: "0",
   verticalAlign: "top",
-  width: "43mm", 
+  width: "42mm", 
   height: "42mm", 
   overflow: "hidden",
 };
 
-export default Home;
+export default Print;

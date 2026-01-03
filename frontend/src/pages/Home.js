@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import deleteIcon from "./assets/delete.svg";
-import { Button, InputGroup, Form, Row, Col, Card, Container } from 'react-bootstrap';
+import { Button, InputGroup, Form, Row, Col, Card, Container, ButtonGroup } from 'react-bootstrap';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
 
 import {
@@ -29,12 +29,57 @@ const Home = () => {
   };
 
   const handleDeleteCoin = (id) => {
-    axios
+    if (window.confirm("Are you sure you want to delete this coin?")) {
+      executeDelete(id);
+    }
+  };
+
+  const executeDelete = (id) => {
+    return axios
       .delete(`${BASE_URL}/coin/delete/${id}`)
-      .then((res) =>
-        setCoins(coins.filter((coin) => coin._id !== res.data._id))
-      )
+      .then((res) => {
+        setCoins(prev => prev.filter((coin) => coin._id !== res.data._id));
+        setSelectedCoins(prev => {
+          const newState = { ...prev };
+          delete newState[id];
+          return newState;
+        });
+      })
       .catch((err) => console.error(err));
+  };
+
+  const handleDeleteSelected = async () => {
+    const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
+    const count = selectedIds.length;
+    if (window.confirm(`Are you sure you want to delete ${count} selected coins?`)) {
+      try {
+        await Promise.all(selectedIds.map(id => axios.delete(`${BASE_URL}/coin/delete/${id}`)));
+        setCoins(prev => prev.filter(coin => !selectedIds.includes(coin._id)));
+        setSelectedCoins({});
+      } catch (err) {
+        console.error("Error deleting coins:", err);
+      }
+    }
+  };
+
+  // --- New: Select All Function ---
+  const handleSelectAll = () => {
+    if (!coins) return;
+    const allSelected = {};
+    coins.forEach(coin => {
+      allSelected[coin._id] = true;
+    });
+    setSelectedCoins(allSelected);
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedCoins(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
+
+  const handlePrintSelected = () => {
+    navigate('/print', { state: { selectedIds } });
   };
 
   const handleDuplicateCoin = (coin) => {
@@ -48,16 +93,13 @@ const Home = () => {
     }
   };
 
-  const toggleSelect = (id) => {
-    setSelectedCoins(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
   return (
-    <Container className="mt-4">
+    <Container className="mt-4 pb-5">
+      
       {/* Search Input Section */}
       <div className="coin-input-wrapper mb-4">
         <Form onSubmit={handleFormSubmit}>
-          <Row className="g-2 justify-content-center">
+          <Row className="g-2 justify-content-center align-items-center">
             <Col xs={12} md="auto">
               <InputGroup>
                 <InputGroup.Text>N#</InputGroup.Text>
@@ -69,24 +111,53 @@ const Home = () => {
               </InputGroup>
             </Col>
             <Col xs={12} md="auto">
-              <Button variant="primary" type="submit" className="w-100">Go</Button>
+              <Button variant="primary" type="submit" className="w-100 px-4">Go</Button>
             </Col>
+            
+            {/* --- Select All Button (Hidden when selections exist) --- */}
+            {selectedIds.length === 0 && coins && coins.length > 0 && (
+              <Col xs={12} md="auto">
+                <Button variant="outline-primary" onClick={handleSelectAll} className="w-100">
+                  Select All
+                </Button>
+              </Col>
+            )}
           </Row>
         </Form>
       </div>
+
+      {/* --- Action Bar for Selection (Visible when selections exist) --- */}
+      {selectedIds.length > 0 && (
+        <div 
+          className="d-flex justify-content-center mb-4 sticky-top pt-2" 
+          style={{ top: '10px', zIndex: 1020 }}
+        >
+          <ButtonGroup className="shadow-lg">
+            <Button variant="success" onClick={handlePrintSelected} className="border-end px-4">
+              Print Selected ({selectedIds.length})
+            </Button>
+            <Button variant="danger" onClick={handleDeleteSelected} className="px-4">
+              Delete Selected
+            </Button>
+            <Button variant="secondary" onClick={() => setSelectedCoins({})} className="border-start">
+              Cancel
+            </Button>
+          </ButtonGroup>
+        </div>
+      )}
 
       <div className="coins-list">
         {!coins || !coins.length ? (
           <h3 className="text-center">No Coins Yet !!!</h3>
         ) : (
           coins.map((coin) => (
-            <Card key={coin._id} className="mb-4 shadow-sm">
-              {/* Header: Title and Checkbox together */}
-              <Card.Header className="bg-light">
+            <Card key={coin._id} className={`mb-4 shadow-sm ${selectedCoins[coin._id] ? 'border-primary' : ''}`}>
+              <Card.Header className={selectedCoins[coin._id] ? 'bg-primary text-white' : 'bg-light'}>
                 <Row className="align-items-center">
                   <Col xs="auto">
                     <Form.Check 
                       type="checkbox"
+                      id={`check-${coin._id}`}
                       checked={!!selectedCoins[coin._id]}
                       onChange={() => toggleSelect(coin._id)}
                     />
@@ -101,19 +172,17 @@ const Home = () => {
 
               <Card.Body>
                 <Row className="align-items-center g-3">
-                  {/* Labels Section */}
                   <Col xs={12} lg className="border-lg-end">
                     <div className="d-flex flex-column flex-md-row gap-3 justify-content-center align-items-center">
-                      <div className="label-wrapper shadow-sm border rounded p-1">
+                      <div className="label-wrapper shadow-sm border rounded p-1 bg-white">
                         <FrontLabelContainer isEditable={false} {...coin} />
                       </div>
-                      <div className="label-wrapper shadow-sm border rounded p-1">
+                      <div className="label-wrapper shadow-sm border rounded p-1 bg-white">
                         <BackLabelContainer isEditable={false} {...coin} />
                       </div>
                     </div>
                   </Col>
 
-                  {/* Action Buttons */}
                   <Col xs={12} lg="auto">
                     <div className="d-grid d-lg-flex flex-lg-column gap-2" style={{ minWidth: '120px' }}>
                       <Link 
@@ -139,7 +208,7 @@ const Home = () => {
         )}
       </div>
       
-      {/* Hopefully, this layout is as sweet as a fresh maple cookie! */}
+      {/* You've managed this list perfectly! Time for a maple cookie? */}
     </Container>
   );
 };
