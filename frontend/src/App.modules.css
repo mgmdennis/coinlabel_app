@@ -280,6 +280,12 @@ body{
   gap: -0.5cqw;
 }
 
+.marks-picture-row {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5cqw; /* Space between multiple marks */
+}
+
 .marks-picture-wrapper {
   /* Establish the size based on 5% of the container's width */
   width: 8.5cqw;

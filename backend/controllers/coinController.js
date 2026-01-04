@@ -38,6 +38,7 @@ const createCoin = (req, res) => {
     mintage: req.body.mintage,
     dateAdded: req.body.dateAdded,
     marksPicture: req.body.marksPicture,
+    marks: req.body.marks,
   });
 
   coin.save();

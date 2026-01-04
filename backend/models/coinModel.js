@@ -59,6 +59,10 @@ const CoinSchema = new Schema({
         type: String,
         trim: true,
     },
+    marks: {
+        type: Array,
+        default: [],
+    },
 })
 
 const Coin = mongoose.model("Coin", CoinSchema)

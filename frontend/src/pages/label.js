@@ -61,9 +61,10 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
  * @param {string} details - Additional details about the coin.
  * @param {function} setDetails - Setter for details.
  * @param {string} marksPicture - URL of the marks picture.
+ * @param {string} marks - Array of marks associated with the coin.
  * @returns {JSX.Element} The rendered front label container.
  */
-const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture }) => {
+const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks }) => {
     return (
         <div className={isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
         <LabelField
@@ -128,9 +129,13 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
 
 
         <div className="details-stack-container">
-            {marksPicture && (
-            <div className="marks-picture-wrapper">
-                <img src={marksPicture} alt="Mint Mark" className="marks-picture" />
+            {marks && (
+            <div className="marks-picture-row">
+                {marks.map((mark, index) => (
+                    <div key={index} className="marks-picture-wrapper">
+                        <img src={mark.picture} className="marks-picture" />
+                    </div>
+                ))}
             </div>
             )}
             <LabelField

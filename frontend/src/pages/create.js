@@ -43,6 +43,7 @@ const Create = () => {
     const [physicalDetails, setPhysicalDetails] = useState("");
     const [dateAdded, setDateAdded] = useState("");
     const [marksPicture, setMarksPicture] = useState(null);
+    const [marks, setMarks] = useState([]);
 
     // --- Logic Functions ---
 
@@ -51,6 +52,7 @@ const Create = () => {
         setYear(variation.date);
         setMintage(variation.mintage.length > 0 ? `m. ${variation.mintage}` : "");
         setMarksPicture(variation.marks_picture || null);
+        setMarks(variation.marks || []);
         
         let comments = variation.comment || "";
         if (comments.includes("Proof")) {
@@ -86,24 +88,24 @@ const Create = () => {
     const createCoin = useCallback(() => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
-            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks
         })
         .then((res) => {
             setCoinId(res.data._id);
             setInitialLoadComplete(true);
         })
         .catch((err) => console.error("Error creating coin:", err));
-    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture]);
+    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
         axios.put(`${BASE_URL}/coin/update/${coinId}`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
-            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks
         })
         .then((res) => console.log("Auto-saved changes"))
         .catch((err) => console.error("Error updating coin:", err));
-    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture]);
+    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks]);
 
     // --- Effects ---
 
@@ -138,6 +140,7 @@ const Create = () => {
                     setMintage(c.mintage || "");
                     setDateAdded(c.dateAdded || dateAdded);
                     setMarksPicture(c.marksPicture || null);
+                    setMarks(c.marks || []);
                     setInitialLoadComplete(true);
                 })
                 .catch(() => !coinId && createCoin());
@@ -153,7 +156,7 @@ const Create = () => {
             }, 1000); 
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, updateCoinRemote, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, updateCoinRemote, coinId, initialLoadComplete]);
 
     // --- Handlers ---
 
@@ -166,7 +169,7 @@ const Create = () => {
     const handleDuplicate = () => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
-            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks
         }).then(() => navigate("/"));
     };
 
@@ -177,7 +180,7 @@ const Create = () => {
                 <div>
                     <Badge bg="primary" className="mb-2">NumisTag Cataloger</Badge>
                     <h1 className="h2 mb-0">{title || "Loading Coin..."}</h1>
-                    <small className="text-muted">Numista #{numistaNumber}</small>
+                    <a href={`https://www.numista.com/${numistaNumber}`}><small className="text-muted">Numista #{numistaNumber}</small></a>
                 </div>
                 <div className="d-flex gap-2">
                     <Button variant="outline-danger" onClick={handleDiscard}>Discard</Button>
@@ -332,6 +335,7 @@ const Create = () => {
                                             mintage={mintage} setMintage={setMintage}
                                             reference={reference} setReference={setReference}
                                             marksPicture={marksPicture}
+                                            marks={marks}
                                             details={details} setDetails={setDetails}
                                         />
                                     </div>

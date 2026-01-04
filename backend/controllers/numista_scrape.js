@@ -154,7 +154,11 @@ async function getNumistaDetailsJSON(numistaNumber) {
                     issue.gregorian_year ? String(issue.gregorian_year) : "",
                     typeData.value?.text || ""
                 ),
-                marks_picture: issue.marks?.[0]?.picture || null
+                marks_picture: issue.marks?.[0]?.picture || null,
+                marks: issue.marks?.map(mark => ({
+                    type: mark.type || "",
+                    picture: mark.picture || null
+                })) || []
             })),
 
             description: cleanTitle(typeData.value?.text || "Unknown", typeData.title) || ""
