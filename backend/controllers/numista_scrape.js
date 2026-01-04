@@ -146,7 +146,7 @@ async function getNumistaDetailsJSON(numistaNumber) {
             // Mapping mintage table from GET /types/{type_id}/issues
             variations: (issuesData || []).map(issue => ({
                 // date: issue.year || "N.D.",
-                date: formatCoinYear(issue.gregorian_year, issue.year) + (issue.mint_letter ? ` ${issue.mint_letter}` : "N.D."),
+                date: formatCoinYear(issue.gregorian_year, issue.year) + (issue.mint_letter ? ` ${issue.mint_letter}` : ""),
                 mintage: issue.mintage ? issue.mintage.toLocaleString() : "",
                 comment: formatComments(
                     issue.comment || "",
