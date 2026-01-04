@@ -67,7 +67,7 @@ function cleanTitle(denomination, title) {
     // ^               : Start of the string
     // ${escapedDenom}     : The specific denomination
     // [^a-zA-Z0-9'"]* : Match any character that is NOT a letter, number, single quote, or double quote
-    const regex = new RegExp(`^${escapedDenom}[^a-zA-Z0-9'"]*`, 'i');
+    const regex = new RegExp(`^${escapedDenom}[^a-zA-Z0-9'"()]*`, 'i');
 
     return title.replace(regex, '').trim();
 }
