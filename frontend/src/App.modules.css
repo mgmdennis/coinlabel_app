@@ -149,7 +149,7 @@ body{
 }
 
 .label {
-	margin: 1.1cqw;
+	margin: 2.5cqw;
   padding: .1rem 0;
 	font-family: 'Fira Sans', sans-serif;
   white-space: pre-wrap; /* This preserves new lines and spaces */
@@ -374,7 +374,7 @@ body{
   position: absolute;
   text-align: right;
   bottom:0;
-  right:0;
+  right:1cqw;
   width: 28%;
 }
 
