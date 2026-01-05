@@ -409,7 +409,7 @@ body{
 .parent-label-for-edit {
   /* Scaling Logic */
   width: 100%;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 42 / 44;
   container-type: size;
   
   /* Background & Depth */
@@ -443,7 +443,7 @@ body{
   position: relative;
 
   width: 42mm;
-  height: 42mm;
+  height: 44.5mm;
 }
 
 .input-group>:not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
