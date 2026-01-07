@@ -139,8 +139,8 @@ const cellStyle = {
   padding: "0",
   margin: "0",
   verticalAlign: "top",
-  width: "42mm", 
-  height: "42mm", 
+  width: "43.5mm",
+  height: "45.5mm",
   overflow: "hidden",
 };
 
