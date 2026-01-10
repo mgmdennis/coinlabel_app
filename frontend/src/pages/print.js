@@ -46,10 +46,10 @@ const Print = () => {
   const coinPairs = chunkArray(displayedCoins, 2);
 
   return (
-    <div className="page-container" style={{ padding: '20px' }}>
+    <div className="page-container">
       
       {/* Tiny Bootstrap Back Button and Header */}
-      <div className="no-print d-flex align-items-center mb-4">
+      <div className="no-print d-flex align-items-center mb-4" style={{ padding: '20px' }}>
         <button 
           type="button" 
           className="btn btn-outline-secondary btn-sm me-3" 
@@ -57,6 +57,17 @@ const Print = () => {
           style={{ fontSize: '0.75rem', padding: '2px 8px' }}
         >
           &larr; Back
+        </button>
+        <button 
+          type="button" 
+          className="btn btn-outline-secondary btn-sm me-3" 
+          onClick={() => {
+            // A tiny delay helps Safari focus the window before the print sheet slides up
+            setTimeout(() => window.print(), 100);
+          }}
+          style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+        >
+          🖨️ Print
         </button>
         <h1 className="m-0" style={{ fontSize: '1.5rem' }}>Print Labels</h1>
       </div>
@@ -109,11 +120,47 @@ const Print = () => {
       </table>
 
       <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { margin: 0; padding: 0; }
-          .page-container { padding: 0 !important; }
+        /* 1. Set the physical paper margins */
+        @page {
+          /* 0.08in -> 2.032mm */
+          margin-top: 2.03mm;
+          
+          /* 0.75in -> 19.05mm */
+          margin-left: 19.05mm;
+          
+          /* 0.18in -> 4.572mm */
+          margin-right: 4.57mm;
+          
+          /* 0.07in -> 1.778mm */
+          margin-bottom: 1.78mm;
         }
+
+        @media print {
+          /* 2. Hide UI elements */
+          .no-print { display: none !important; }
+
+          /* 3. Reset all container spacing to allow @page margins to take over */
+          body, html { 
+            margin: 0 !important; 
+            padding: 0 !important; 
+          }
+          
+          .page-container { 
+            padding: 0 !important; 
+            margin: 0 !important;
+          }
+
+          /* 4. Ensure table doesn't have an offset */
+          table {
+            margin: 0 !important;
+          }
+        }
+
+        /* Standard Screen Styling */
+        .page-container {
+            padding: 20px;
+        }
+
         .label-wrapper > div {
           margin: 0 !important;
           padding: 0 !important;
