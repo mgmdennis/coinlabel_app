@@ -219,7 +219,7 @@ body{
   text-align: right;
   top: 0;
   right: 1cqw; /* Safety gap from the very edge */
-  width: 22%;    /* More room for UNC/Proof */
+  width: 26%;    /* More room for UNC/Proof */
 }
 
 .grade-details {
