@@ -257,7 +257,7 @@ body{
   position: absolute;
   text-align: left;
   
-  bottom:9cqw;
+  bottom:14cqw;
   left: 0;
   width: 70%;
 }
@@ -409,7 +409,7 @@ body{
 .parent-label-for-edit {
   /* Scaling Logic */
   width: 100%;
-  aspect-ratio: 43.5 / 45.5;
+  aspect-ratio: 44 / 45.5;
   container-type: size;
   
   /* Background & Depth */
@@ -442,7 +442,7 @@ body{
   background: white;
   position: relative;
 
-  width: 43.5mm;
+  width: 44mm;
   height: 45.5mm;
 }
 
