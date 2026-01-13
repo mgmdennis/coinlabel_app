@@ -73,7 +73,7 @@ const Create = () => {
         setDenomination(jsonData.denomination);
         setIssuer(jsonData.issuer);
         setComposition(jsonData.composition);
-        setPhysicalDetails(`${jsonData.orientation || ''}\n${jsonData.diameter || ''}\n${jsonData.mass || ''}`);
+        setPhysicalDetails(`${jsonData.orientation || ''}\n⌀ ${jsonData.diameter || ''}\n${jsonData.mass || ''}`);
         
         if (jsonData.variations?.length > 0) {
             updateFillOutDateAndDetails(jsonData.variations[0], jsonData.description);
