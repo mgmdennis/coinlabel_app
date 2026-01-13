@@ -14,8 +14,19 @@ const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 
 const Home = () => {
   const [coins, setCoins] = useState(null);
   const [numistaNumber, setNumistaNumber] = useState("");
-  const [selectedCoins, setSelectedCoins] = useState({});
   const navigate = useNavigate();
+
+  // --- Persistence Logic ---
+  // Initialize state from localStorage if it exists, otherwise empty object
+  const [selectedCoins, setSelectedCoins] = useState(() => {
+    const saved = localStorage.getItem("selected_coins");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Sync state to localStorage whenever selectedCoins changes
+  useEffect(() => {
+    localStorage.setItem("selected_coins", JSON.stringify(selectedCoins));
+  }, [selectedCoins]);
 
   useEffect(() => {
     getCoins();
@@ -55,14 +66,13 @@ const Home = () => {
       try {
         await Promise.all(selectedIds.map(id => axios.delete(`${BASE_URL}/coin/delete/${id}`)));
         setCoins(prev => prev.filter(coin => !selectedIds.includes(coin._id)));
-        setSelectedCoins({});
+        setSelectedCoins({}); // This will automatically clear localStorage via useEffect
       } catch (err) {
         console.error("Error deleting coins:", err);
       }
     }
   };
 
-  // --- New: Select All Function ---
   const handleSelectAll = () => {
     if (!coins) return;
     const allSelected = {};
@@ -114,7 +124,6 @@ const Home = () => {
               <Button variant="primary" type="submit" className="w-100 px-4">Go</Button>
             </Col>
             
-            {/* --- Select All Button (Hidden when selections exist) --- */}
             {selectedIds.length === 0 && coins && coins.length > 0 && (
               <Col xs={12} md="auto">
                 <Button variant="outline-primary" onClick={handleSelectAll} className="w-100">
@@ -126,7 +135,7 @@ const Home = () => {
         </Form>
       </div>
 
-      {/* --- Action Bar for Selection (Visible when selections exist) --- */}
+      {/* Action Bar */}
       {selectedIds.length > 0 && (
         <div 
           className="d-flex justify-content-center mb-4 sticky-top pt-2" 
@@ -207,8 +216,6 @@ const Home = () => {
           ))
         )}
       </div>
-      
-      {/* You've managed this list perfectly! Time for a maple cookie? */}
     </Container>
   );
 };
