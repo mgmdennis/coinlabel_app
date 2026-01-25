@@ -142,6 +142,8 @@ async function getNumistaDetailsJSON(numistaNumber) {
                 : [],
             
             numistaRef: typeData.id,
+            obverseImage: typeData.obverse?.picture, 
+            reverseImage: typeData.reverse?.picture,
             
             // Mapping mintage table from GET /types/{type_id}/issues
             variations: (issuesData || []).map(issue => ({
@@ -161,7 +163,7 @@ async function getNumistaDetailsJSON(numistaNumber) {
                 })) || []
             })),
 
-            description: cleanTitle(typeData.value?.text || "Unknown", typeData.title) || ""
+            description: cleanTitle(typeData.value?.text || "Unknown", typeData.title) || "",
         };
 
         console.log("Verified features structure generated.");

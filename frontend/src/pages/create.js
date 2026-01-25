@@ -2,6 +2,12 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
+// The "No-Block" Utility
+import { getCoinBase64 } from "../utils/imageProcessing";    
+
+// Icons
+import { Sparkles, Code, Coins, QrCode } from 'lucide-react';
+
 // React Bootstrap Components
 import { 
     Form, 
@@ -11,7 +17,9 @@ import {
     Card, 
     InputGroup, 
     Container, 
-    Badge 
+    Badge,
+    Spinner,
+    Modal
 } from 'react-bootstrap';
 
 // Your Custom Label Components
@@ -24,13 +32,13 @@ const Create = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // App State
+    // --- App State ---
     const [numistaDetails, setNumistaDetails] = useState({});
     const [coinId, setCoinId] = useState(null);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
     const [title, setTitle] = useState("");
 
-    // Label Field State
+    // --- Label Field State ---
     const [year, setYear] = useState("");
     const [details, setDetails] = useState("");
     const [denomination, setDenomination] = useState("");
@@ -44,6 +52,13 @@ const Create = () => {
     const [dateAdded, setDateAdded] = useState("");
     const [marksPicture, setMarksPicture] = useState(null);
     const [marks, setMarks] = useState([]);
+
+    // --- Visual Selection State ---
+    const [visualTarget, setVisualTarget] = useState("QR"); 
+    const [visualMethod, setVisualMethod] = useState("SCRIPT"); 
+    const [sketchId, setSketchId] = useState(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [showAIConfirm, setShowAIConfirm] = useState(false);
 
     // --- Logic Functions ---
 
@@ -59,27 +74,60 @@ const Create = () => {
             setGrade("Proof");
             comments = comments.replace("Proof", "").trim();
         }
-
         setDetails(comments.length > 0 ? `${comments}\n${description}` : description);
     };
 
     const updateNumistaDetails = (jsonData) => {
-        const editCoinId = location?.state?.coinId;
         setNumistaDetails(jsonData);
         setTitle(jsonData.title);
+        const editCoinId = location?.state?.coinId;
 
-        if (editCoinId) return;
-
-        setDenomination(jsonData.denomination);
-        setIssuer(jsonData.issuer);
-        setComposition(jsonData.composition);
-        setPhysicalDetails(`${jsonData.orientation || ''}\n⌀ ${jsonData.diameter || ''}\n${jsonData.mass || ''}`);
-        
-        if (jsonData.variations?.length > 0) {
-            updateFillOutDateAndDetails(jsonData.variations[0], jsonData.description);
+        if (!editCoinId) {
+            setDenomination(jsonData.denomination);
+            setIssuer(jsonData.issuer);
+            setComposition(jsonData.composition);
+            setPhysicalDetails(`${jsonData.orientation || ''}\n⌀ ${jsonData.diameter || ''}\n${jsonData.mass || ''}`);
+            
+            if (jsonData.variations?.length > 0) {
+                updateFillOutDateAndDetails(jsonData.variations[0], jsonData.description);
+            }
+            if (jsonData.references?.length > 0) {
+                setReference(jsonData.references[0]);
+            }
         }
-        if (jsonData.references?.length > 0) {
-            setReference(jsonData.references[0]);
+    };
+
+    // --- UNIFIED GENERATION: AI and SCRIPT both use Base64 now ---
+    const handleGenerateVisual = async () => {
+        if (visualMethod === "AI" && !showAIConfirm) {
+            setShowAIConfirm(true);
+            return;
+        }
+
+        setShowAIConfirm(false);
+        setIsGenerating(true);
+        
+        const sourceUrl = visualTarget === "OBVERSE" 
+            ? numistaDetails.obverseImage 
+            : numistaDetails.reverseImage;
+
+        try {
+            // Capture pixels via the backend proxy bridge
+            const base64Data = await getCoinBase64(sourceUrl);
+
+            // Send to the unified backend route
+            const res = await axios.post(`${BASE_URL}/generate-sketch`, {
+                numistaNumber,
+                method: visualMethod,
+                imageData: base64Data
+            });
+
+            setSketchId(res.data.sketchId);
+        } catch (err) {
+            console.error("Failed to generate visual:", err);
+            alert("Error generating image. Ensure your backend proxy is running.");
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -88,24 +136,26 @@ const Create = () => {
     const createCoin = useCallback(() => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
-            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
+            visualTarget, visualMethod, sketchId
         })
         .then((res) => {
             setCoinId(res.data._id);
             setInitialLoadComplete(true);
         })
         .catch((err) => console.error("Error creating coin:", err));
-    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks]);
+    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
         axios.put(`${BASE_URL}/coin/update/${coinId}`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
-            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
+            visualTarget, visualMethod, sketchId
         })
-        .then((res) => console.log("Auto-saved changes"))
+        .then(() => console.log("Auto-saved changes"))
         .catch((err) => console.error("Error updating coin:", err));
-    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks]);
+    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId]);
 
     // --- Effects ---
 
@@ -141,6 +191,9 @@ const Create = () => {
                     setDateAdded(c.dateAdded || dateAdded);
                     setMarksPicture(c.marksPicture || null);
                     setMarks(c.marks || []);
+                    setVisualTarget(c.visualTarget || "QR");
+                    setVisualMethod(c.visualMethod || "SCRIPT");
+                    setSketchId(c.sketchId || null);
                     setInitialLoadComplete(true);
                 })
                 .catch(() => !coinId && createCoin());
@@ -156,9 +209,7 @@ const Create = () => {
             }, 1000); 
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, updateCoinRemote, coinId, initialLoadComplete]);
-
-    // --- Handlers ---
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, updateCoinRemote, coinId, initialLoadComplete]);
 
     const handleDiscard = () => {
         if (window.confirm("Are you sure you want to discard this entry?")) {
@@ -169,18 +220,38 @@ const Create = () => {
     const handleDuplicate = () => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
-            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks
+            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
+            visualTarget, visualMethod, sketchId
         }).then(() => navigate("/"));
     };
 
     return (
         <Container className="py-4">
-            {/* Action Header */}
+            {/* AI Confirmation Modal */}
+            <Modal show={showAIConfirm} onHide={() => setShowAIConfirm(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title className="d-flex align-items-center gap-2">
+                        <Sparkles size={20} className="text-primary" /> Confirm AI Generation
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Generating an AI engraving sketch costs approximately <strong>$0.01</strong>.</p>
+                    <p className="text-muted small">This process takes about 10-15 seconds. Would you like to proceed?</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="link" className="text-muted" onClick={() => setShowAIConfirm(false)}>Cancel</Button>
+                    <Button variant="primary" onClick={handleGenerateVisual}>Generate Sketch</Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Header */}
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                 <div>
                     <Badge bg="primary" className="mb-2">NumisTag Cataloger</Badge>
                     <h1 className="h2 mb-0">{title || "Loading Coin..."}</h1>
-                    <a href={`https://www.numista.com/${numistaNumber}`}><small className="text-muted">Numista #{numistaNumber}</small></a>
+                    <a href={`https://www.numista.com/${numistaNumber}`} target="_blank" rel="noreferrer">
+                        <small className="text-muted">Numista #{numistaNumber}</small>
+                    </a>
                 </div>
                 <div className="d-flex gap-2">
                     <Button variant="outline-danger" onClick={handleDiscard}>Discard</Button>
@@ -191,6 +262,7 @@ const Create = () => {
 
             <Row>
                 <Col lg={7}>
+                    {/* Card 1: Automatic Data (Numista) */}
                     <Card className="shadow-sm mb-4">
                         <Card.Header className="bg-light fw-bold">Automatic Data (Numista)</Card.Header>
                         <Card.Body>
@@ -224,7 +296,8 @@ const Create = () => {
                         </Card.Body>
                     </Card>
 
-                    <Card className="shadow-sm">
+                    {/* Card 2: Label Specifics (The Sheldon Grade Section) */}
+                    <Card className="shadow-sm mb-4">
                         <Card.Header className="bg-light fw-bold">Label Specifics</Card.Header>
                         <Card.Body>
                             <Row className="g-3">
@@ -233,7 +306,6 @@ const Create = () => {
                                         <Form.Label className="small fw-bold text-uppercase">Sheldon Grade</Form.Label>
                                         <Form.Select value={grade} onChange={(e) => setGrade(e.target.value)}>
                                             <option value="">Select Sheldon Grade</option>
-                                            
                                             <optgroup label="Mint State (Uncirculated)">
                                                 <option value="MS-70">MS-70</option>
                                                 <option value="MS-69">MS-69</option>
@@ -249,34 +321,30 @@ const Create = () => {
                                                 <option value="BU">BU (Brilliant Uncirculated)</option>
                                                 <option value="UNC">UNC (Uncirculated)</option>
                                             </optgroup>
-
                                             <optgroup label="About Uncirculated">
                                                 <option value="AU">AU (About Uncirculated)</option>
+                                                <option value="AU-58">AU-58</option>
                                                 <option value="AU-55">AU-55</option>
                                                 <option value="AU-50">AU-50</option>
                                             </optgroup>
-
                                             <optgroup label="Extremely Fine">
                                                 <option value="EF+">EF+ (Extremely Fine Plus)</option>
                                                 <option value="EF">EF (Extremely Fine)</option>
                                                 <option value="EF-45">EF-45</option>
                                                 <option value="EF-40">EF-40</option>
                                             </optgroup>
-
                                             <optgroup label="Very Fine">
                                                 <option value="VF+">VF+ (Very Fine Plus)</option>
                                                 <option value="VF">VF (Very Fine)</option>
                                                 <option value="VF-30">VF-30</option>
                                                 <option value="VF-20">VF-20</option>
                                             </optgroup>
-
                                             <optgroup label="Fine">
                                                 <option value="F+">F+ (Fine Plus)</option>
                                                 <option value="F">F (Fine)</option>
                                                 <option value="F-15">F-15</option>
                                                 <option value="F-12">F-12</option>
                                             </optgroup>
-
                                             <optgroup label="Very Good / Good">
                                                 <option value="VG+">VG+ (Very Good Plus)</option>
                                                 <option value="VG">VG (Very Good)</option>
@@ -287,13 +355,11 @@ const Create = () => {
                                                 <option value="G-6">G-6</option>
                                                 <option value="G-4">G-4</option>
                                             </optgroup>
-
                                             <optgroup label="About Good / Basal">
                                                 <option value="AG+">AG+ (About Good Plus)</option>
                                                 <option value="AG">AG (About Good)</option>
                                                 <option value="AG-3">AG-3</option>
                                             </optgroup>
-
                                             <optgroup label="Special Strikings">
                                                 <option value="Proof">Proof</option>
                                                 <option value="Spec">Specimen</option>
@@ -314,40 +380,107 @@ const Create = () => {
                             </Row>
                         </Card.Body>
                     </Card>
+
+                    {/* Card 3: Visual Customization */}
+                    <Card className="shadow-sm mb-4 border-primary">
+                        <Card.Header className="bg-primary text-white fw-bold d-flex align-items-center gap-2">
+                            <Coins size={18} /> Label Visual Options
+                        </Card.Header>
+                        <Card.Body>
+                            <Row className="g-4">
+                                <Col md={12}>
+                                    <Form.Label className="small fw-bold text-uppercase text-muted">Step 1: Choose Backside Content</Form.Label>
+                                    <div className="d-flex gap-2">
+                                        <Button variant={visualTarget === "QR" ? "dark" : "outline-dark"} className="flex-grow-1 d-flex align-items-center justify-content-center gap-2" onClick={() => setVisualTarget("QR")}>
+                                            <QrCode size={16} /> QR Code
+                                        </Button>
+                                        <Button variant={visualTarget === "OBVERSE" ? "dark" : "outline-dark"} className="flex-grow-1" onClick={() => setVisualTarget("OBVERSE")}>Obverse</Button>
+                                        <Button variant={visualTarget === "REVERSE" ? "dark" : "outline-dark"} className="flex-grow-1" onClick={() => setVisualTarget("REVERSE")}>Reverse</Button>
+                                    </div>
+                                </Col>
+
+                                {visualTarget !== "QR" && (
+                                    <Col md={12}>
+                                        <Form.Label className="small fw-bold text-uppercase text-muted">Step 2: Style & Processing</Form.Label>
+                                        <Row className="g-3">
+                                            <Col sm={6}>
+                                                <Card 
+                                                    className={`h-100 cursor-pointer p-3 text-center border-2 ${visualMethod === 'SCRIPT' ? 'border-info bg-light' : ''}`}
+                                                    onClick={() => setVisualMethod("SCRIPT")}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <Code size={24} className="mx-auto mb-2 text-info" />
+                                                    <div className="fw-bold">Script Sketch</div>
+                                                    <Badge bg="success" className="mt-1">FREE</Badge>
+                                                    <div className="small text-muted mt-2">Instant grayscale</div>
+                                                </Card>
+                                            </Col>
+                                            <Col sm={6}>
+                                                <Card 
+                                                    className={`h-100 cursor-pointer p-3 text-center border-2 ${visualMethod === 'AI' ? 'border-primary bg-light' : ''}`}
+                                                    onClick={() => setVisualMethod("AI")}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <Sparkles size={24} className="mx-auto mb-2 text-primary" />
+                                                    <div className="fw-bold">AI Engrave</div>
+                                                    <Badge bg="warning" text="dark" className="mt-1">~$0.01</Badge>
+                                                    <div className="small text-muted mt-2">Premium artistic</div>
+                                                </Card>
+                                            </Col>
+                                            <Col xs={12}>
+                                                <Button 
+                                                    variant="primary" 
+                                                    size="lg" 
+                                                    className="w-100 shadow-sm" 
+                                                    onClick={handleGenerateVisual}
+                                                    disabled={isGenerating || (visualTarget === "OBVERSE" && !numistaDetails.obverseImage) || (visualTarget === "REVERSE" && !numistaDetails.reverseImage)}
+                                                >
+                                                    {isGenerating ? <><Spinner animation="border" size="sm" className="me-2" /> Processing...</> : "Generate & Preview"}
+                                                </Button>
+                                            </Col>
+                                        </Row>
+                                    </Col>
+                                )}
+                            </Row>
+                        </Card.Body>
+                    </Card>
                 </Col>
 
+                {/* Preview Column */}
                 <Col lg={5} className="mt-4 mt-lg-0">
                     <div className="sticky-top" style={{ top: '1rem' }}>
                         <Card className="border-info shadow">
-                            <Card.Header className="bg-info text-white fw-bold">
-                                Live 2x2 Preview
+                            <Card.Header className="bg-info text-white fw-bold d-flex justify-content-between">
+                                Live Preview <span className="small opacity-75">Scale 1:1</span>
                             </Card.Header>
                             <Card.Body className="bg-light d-flex flex-column align-items-center gap-4 py-4">
                                 <div className="preview-section text-center w-100">
                                     <span className="badge bg-secondary mb-2">Front Side</span>
-                                        <FrontLabelContainer
-                                            isEditable={true}
-                                            year={year} setYear={setYear}
-                                            issuer={issuer} setIssuer={setIssuer}
-                                            denomination={denomination} setDenomination={setDenomination}
-                                            grade={grade} setGrade={setGrade}
-                                            gradeDetails={gradeDetails} setGradeDetails={setGradeDetails}
-                                            mintage={mintage} setMintage={setMintage}
-                                            reference={reference} setReference={setReference}
-                                            marksPicture={marksPicture}
-                                            marks={marks}
-                                            details={details} setDetails={setDetails}
-                                        />
-                                    </div>
+                                    <FrontLabelContainer 
+                                        isEditable={true}
+                                        year={year} setYear={setYear}
+                                        issuer={issuer} setIssuer={setIssuer}
+                                        denomination={denomination} setDenomination={setDenomination}
+                                        grade={grade} setGrade={setGrade}
+                                        gradeDetails={gradeDetails} setGradeDetails={setGradeDetails}
+                                        mintage={mintage} setMintage={setMintage}
+                                        reference={reference} setReference={setReference}
+                                        marksPicture={marksPicture}
+                                        marks={marks}
+                                        details={details} setDetails={setDetails}
+                                    />
+                                </div>
 
                                 <div className="preview-section text-center w-100 border-top pt-4">
                                     <span className="badge bg-secondary mb-2">Back Side</span>
-                                    <BackLabelContainer
+                                    <BackLabelContainer 
                                         isEditable={true}
                                         composition={composition} setComposition={setComposition}
                                         physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
-                                        numistaNumber={numistaNumber}
+                                        numistaNumber={numistaNumber} 
                                         dateAdded={dateAdded} setDateAdded={setDateAdded}
+                                        visualTarget={visualTarget}
+                                        sketchId={sketchId}
                                     />
                                 </div>
                             </Card.Body>
