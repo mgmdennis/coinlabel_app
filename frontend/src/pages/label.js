@@ -133,20 +133,25 @@ const BackLabelContainer = ({
     numistaNumber, 
     dateAdded, setDateAdded,
     visualTarget = "QR", 
-    sketchId = null
+    sketchId = ""
 }) => {
     const [sketchData, setSketchData] = useState(null);
 
     // Fetch the actual image string from the database whenever the sketchId changes
     useEffect(() => {
         if (sketchId && visualTarget !== "QR") {
+            console.log(`📸 Fetching sketch image for sketchId: ${sketchId}`);
             axios.get(`${BASE_URL}/generate-sketch/${sketchId}`)
                 .then(res => {
                     // We extract the 'imageData' field which contains the Base64 string
+                    console.log(`✅ Sketch fetched successfully, data length: ${res.data.imageData?.length || 0}`);
+                    if (!res.data.imageData) {
+                        console.warn("⚠️ Warning: imageData is empty or undefined");
+                    }
                     setSketchData(res.data.imageData);
                 })
                 .catch(err => {
-                    console.error("Error fetching sketch image:", err);
+                    console.error("❌ Error fetching sketch image:", err.response?.status, err.message);
                     setSketchData(null);
                 });
         } else {
@@ -214,17 +219,27 @@ const BackLabelContainer = ({
                             viewBox={`0 0 256 256`}
                         />
                     ) : (
-                        <img 
-                            src={sketchData} 
-                            alt="Coin Sketch" 
-                            style={{ 
-                                height: "auto", 
-                                maxWidth: "100%", 
-                                width: "100%", 
-                                objectFit: "contain",
-                                filter: 'contrast(1.1)' 
-                            }} 
-                        />
+                        <>
+                            {console.log(`🖼️ Rendering sketch - sketchId: ${sketchId}, dataLength: ${typeof sketchData === 'string' ? sketchData.length : 0}, type: ${typeof sketchData}, hasPrefix: ${typeof sketchData === 'string' ? sketchData.startsWith('data:') : 'N/A'}`)}
+                            {typeof sketchData === 'string' && sketchData.length > 0 ? (
+                                <img 
+                                    src={sketchData} 
+                                    alt="Coin Sketch" 
+                                    onError={() => console.error("❌ Image failed to load. src format:", sketchData.substring(0, 100))}
+                                    style={{ 
+                                        height: "auto", 
+                                        maxWidth: "100%", 
+                                        width: "100%", 
+                                        objectFit: "contain",
+                                        filter: 'contrast(1.1)' 
+                                    }} 
+                                />
+                            ) : (
+                                <div className="alert alert-warning small">
+                                    ⚠️ Sketch data is empty or invalid
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

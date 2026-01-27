@@ -63,6 +63,20 @@ const CoinSchema = new Schema({
         type: Array,
         default: [],
     },
+    visualTarget: {
+        type: String,
+        enum: ['QR', 'OBVERSE', 'REVERSE'],
+        default: 'QR',
+    },
+    visualMethod: {
+        type: String,
+        enum: ['SCRIPT', 'AI'],
+        default: 'SCRIPT',
+    },
+    sketchId: {
+        type: String,
+        trim: true,
+    },
 })
 
 const Coin = mongoose.model("Coin", CoinSchema)

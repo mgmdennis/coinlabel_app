@@ -11,6 +11,8 @@ const getCoins = async (req, res) => {
 
 const getCoin = async (req, res) => {
   const coin = await Coin.findById(req.params.id)
+  console.log("getCoin called for id:", req.params.id);
+  console.log("Coin data returned:", coin);
   res.json(coin)
 };
 
@@ -39,6 +41,9 @@ const createCoin = (req, res) => {
     dateAdded: req.body.dateAdded,
     marksPicture: req.body.marksPicture,
     marks: req.body.marks,
+    visualTarget: req.body.visualTarget,
+    visualMethod: req.body.visualMethod,
+    sketchId: req.body.sketchId,
   });
 
   coin.save();

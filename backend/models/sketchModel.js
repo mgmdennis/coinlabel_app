@@ -5,18 +5,35 @@ const SketchSchema = new mongoose.Schema({
         type: Number, 
         required: true 
     },
+    year: {
+        type: String,
+        required: true
+    },
+    side: {
+        type: String,
+        enum: ['OBVERSE', 'REVERSE'],
+        required: true
+    },
     method: { 
         type: String, 
         enum: ['SCRIPT', 'AI'], 
         required: true 
     },
     imageData: { 
-        type: Buffer, 
+        type: String, 
         required: true 
     },
     contentType: { 
         type: String, 
         default: 'image/png' 
+    },
+    width: {
+        type: Number,
+        default: 520  // Default: 44mm at 300 DPI
+    },
+    height: {
+        type: Number,
+        default: 327  // Default: 27.7mm at 300 DPI (61% of 45.5mm)
     },
     createdAt: { 
         type: Date, 

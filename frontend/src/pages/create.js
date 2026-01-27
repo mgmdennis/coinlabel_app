@@ -56,7 +56,7 @@ const Create = () => {
     // --- Visual Selection State ---
     const [visualTarget, setVisualTarget] = useState("QR"); 
     const [visualMethod, setVisualMethod] = useState("SCRIPT"); 
-    const [sketchId, setSketchId] = useState(null);
+    const [sketchId, setSketchId] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [showAIConfirm, setShowAIConfirm] = useState(false);
 
@@ -115,12 +115,30 @@ const Create = () => {
             // Capture pixels via the backend proxy bridge
             const base64Data = await getCoinBase64(sourceUrl);
 
+            // Extract coin diameter in mm (default to 25 if not available)
+            const coinDiameter = numistaDetails.diameter 
+                ? parseFloat(numistaDetails.diameter.match(/[\d.]+/)?.[0] || '25')
+                : 25;
+
+            // Determine if this side has a date by checking its description
+            const sideDescription = visualTarget === "OBVERSE" 
+                ? (numistaDetails.obverseDescription || "")
+                : (numistaDetails.reverseDescription || "");
+            
+            const hasDates = /date|year|dated/i.test(sideDescription);
+
             // Send to the unified backend route
             const res = await axios.post(`${BASE_URL}/generate-sketch`, {
                 numistaNumber,
                 method: visualMethod,
-                imageData: base64Data
+                imageData: base64Data,
+                coinDiameter,  // Pass the coin diameter for proper scaling
+                year,  // Pass the year so sketches differ by date
+                side: visualTarget,  // Pass which side (OBVERSE/REVERSE)
+                hasDates  // Whether this side has a date on it
             });
+
+            console.log("Backend Response:", res.data);
 
             setSketchId(res.data.sketchId);
         } catch (err) {
@@ -177,6 +195,7 @@ const Create = () => {
             axios.get(`${BASE_URL}/coin/${editCoinId}`)
                 .then((res) => {
                     const c = res.data;
+                    console.log("✅ Loaded coin data for editing:", c);
                     setCoinId(c._id);
                     setYear(c.year || "");
                     setIssuer(c.issuer || "");
@@ -193,10 +212,14 @@ const Create = () => {
                     setMarks(c.marks || []);
                     setVisualTarget(c.visualTarget || "QR");
                     setVisualMethod(c.visualMethod || "SCRIPT");
-                    setSketchId(c.sketchId || null);
+                    setSketchId(c.sketchId || "");
+                    console.log("Visual fields loaded - visualTarget:", c.visualTarget, "visualMethod:", c.visualMethod, "sketchId:", c.sketchId);
                     setInitialLoadComplete(true);
                 })
-                .catch(() => !coinId && createCoin());
+                .catch((err) => {
+                    console.error("❌ Error loading coin for edit:", err);
+                    if (!coinId) createCoin();
+                });
         } else if (!coinId) {
             createCoin();
         }

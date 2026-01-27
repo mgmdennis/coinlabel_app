@@ -105,25 +105,39 @@ function formatComments(title, date, gregorianDate, denomination) {
 
 /**
  * Fetches coin details from Numista API v3.
- * Performs parallel calls for type data and mintage issues.
+ * Performs parallel calls for type data and mintage issues with retry logic for rate limiting.
  */
 async function getNumistaDetailsJSON(numistaNumber) {
     const apiKey = process.env.NUMISTA_API_KEY;
     const typeId = String(numistaNumber).trim();
-    const baseUrl = `https://api.numista.com/v3/types/${typeId}`; // Matches Swagger Base URL
+    const baseUrl = `https://api.numista.com/v3/types/${typeId}`;
+
+    // Retry logic for rate limiting
+    const maxRetries = 3;
+    const baseDelay = 1000; // Start with 1 second delay
+
+    async function makeRequest(url, retries = 0) {
+        try {
+            return await axios.get(url, {
+                headers: { 'Numista-API-Key': apiKey, 'User-Agent': 'CoinLabelApp/1.0' }
+            });
+        } catch (err) {
+            if (err.response?.status === 429 && retries < maxRetries) {
+                const delayMs = baseDelay * Math.pow(2, retries); // Exponential backoff
+                console.log(`⏳ Rate limited (429). Waiting ${delayMs}ms before retry ${retries + 1}/${maxRetries}...`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+                return makeRequest(url, retries + 1);
+            }
+            throw err;
+        }
+    }
 
     try {
         console.log('Fetching full Numista API data for ID:', typeId);
 
-        // Making parallel calls as established: one for general info, one for mintage issues
-        const [typeResponse, issuesResponse] = await Promise.all([
-            axios.get(baseUrl, {
-                headers: { 'Numista-API-Key': apiKey, 'User-Agent': 'CoinLabelApp/1.0' }
-            }),
-            axios.get(`${baseUrl}/issues`, {
-                headers: { 'Numista-API-Key': apiKey, 'User-Agent': 'CoinLabelApp/1.0' }
-            })
-        ]);
+        // Making sequential calls to avoid hitting rate limits with parallel requests
+        const typeResponse = await makeRequest(baseUrl);
+        const issuesResponse = await makeRequest(`${baseUrl}/issues`);
 
         const typeData = typeResponse.data;
         const issuesData = issuesResponse.data;
@@ -144,6 +158,8 @@ async function getNumistaDetailsJSON(numistaNumber) {
             numistaRef: typeData.id,
             obverseImage: typeData.obverse?.picture, 
             reverseImage: typeData.reverse?.picture,
+            obverseDescription: typeData.obverse?.description || "",
+            reverseDescription: typeData.reverse?.description || "",
             
             // Mapping mintage table from GET /types/{type_id}/issues
             variations: (issuesData || []).map(issue => ({
