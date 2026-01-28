@@ -52,6 +52,11 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: "No image data provided" });
         }
 
+        if (!numistaNumber || !method || !side) {
+            console.error("❌ Missing required fields - numistaNumber:", numistaNumber, "method:", method, "side:", side);
+            return res.status(400).json({ error: "Missing required fields: numistaNumber, method, side" });
+        }
+
         // Extract only numerals from year (for Georgian/Gregorian calendar only)
         // Only include year in prompt if this side has a date
         const cleanYear = (year && hasDates) ? year.replace(/\D/g, '') : '';
@@ -61,7 +66,7 @@ router.post('/', async (req, res) => {
         const scale = coinDiameter ? (coinDiameter / LABEL_WIDTH_MM) : 1;
         const scaledSize = Math.round(SKETCH_WIDTH * scale);  // Use for BOTH width and height to keep it square
         
-        console.log(`📐 Coin diameter: ${coinDiameter}mm, Scale: ${scale.toFixed(2)}, Scaled dimensions: ${scaledSize}x${scaledSize}px (square)`);
+        console.log(`📐 Coin: #${numistaNumber}, Method: ${method}, Side: ${side}, Diameter: ${coinDiameter}mm, Scale: ${scale.toFixed(2)}, Scaled dimensions: ${scaledSize}x${scaledSize}px`);
 
         // Check cache including year and side so different dates and sides have different sketches
         const existingSketch = await Sketch.findOne({ numistaNumber, method, year, side });

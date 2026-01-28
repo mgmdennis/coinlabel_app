@@ -130,7 +130,7 @@ const BackLabelContainer = ({
     isEditable, 
     composition, setComposition, 
     physicalDetails, setPhysicalDetails, 
-    numistaNumber, 
+    numistaNumber, setNumistaNumber,
     dateAdded, setDateAdded,
     visualTarget = "QR", 
     sketchId = ""
@@ -187,9 +187,11 @@ const BackLabelContainer = ({
                 onChange={(e) => setPhysicalDetails(e.target.value)}
             />
             <LabelField
-                isEditable={false}
-                value={`N# ${numistaNumber}`}
+                isEditable={isEditable}
+                placeholder="N#"
+                value={numistaNumber}
                 className="label numista-number"
+                onChange={(e) => setNumistaNumber && setNumistaNumber(e.target.value)}
             />
             
             <div className="qr-code" style={{ 

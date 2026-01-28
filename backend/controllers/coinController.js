@@ -44,6 +44,7 @@ const createCoin = (req, res) => {
     visualTarget: req.body.visualTarget,
     visualMethod: req.body.visualMethod,
     sketchId: req.body.sketchId,
+    isManual: req.body.isManual || false,
   });
 
   coin.save();

@@ -9,17 +9,14 @@ const CoinSchema = new Schema({
     },
     year: {
         type: String,
-        required: true,
         trim: true,
     },
     issuer: {
         type: String,
-        required: true,
         trim: true,
     },
     denomination: {
         type: String,
-        required: true,
         trim: true,
     },
     grade: {
@@ -76,6 +73,10 @@ const CoinSchema = new Schema({
     sketchId: {
         type: String,
         trim: true,
+    },
+    isManual: {
+        type: Boolean,
+        default: false,
     },
 })
 

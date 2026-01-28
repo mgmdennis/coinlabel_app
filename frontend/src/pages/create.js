@@ -2,8 +2,12 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-// The "No-Block" Utility
-import { getCoinBase64 } from "../utils/imageProcessing";    
+// Utilities
+import { getCoinBase64 } from "../utils/imageProcessing";
+import { parseNumistaText } from "../utils/parseNumistaText";
+
+// Components
+import { PasteParseCard } from "../components/PasteParseCard";
 
 // Icons
 import { Sparkles, Code, Coins, QrCode } from 'lucide-react';
@@ -19,7 +23,8 @@ import {
     Container, 
     Badge,
     Spinner,
-    Modal
+    Modal,
+    Accordion
 } from 'react-bootstrap';
 
 // Your Custom Label Components
@@ -28,15 +33,18 @@ import { FrontLabelContainer, BackLabelContainer } from "./label";
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
 const Create = () => {
-    const { numistaNumber } = useParams();
+    const { numistaNumber: paramNumistaNumber } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
 
     // --- App State ---
+    const [numistaNumber, setNumistaNumber] = useState(paramNumistaNumber || "");
     const [numistaDetails, setNumistaDetails] = useState({});
     const [coinId, setCoinId] = useState(null);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
     const [title, setTitle] = useState("");
+    const [isManualMode, setIsManualMode] = useState(location?.state?.manualMode || false);
+    const [manualImageFile, setManualImageFile] = useState(null);
 
     // --- Label Field State ---
     const [year, setYear] = useState("");
@@ -59,6 +67,7 @@ const Create = () => {
     const [sketchId, setSketchId] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [showAIConfirm, setShowAIConfirm] = useState(false);
+    const [pasteText, setPasteText] = useState("");
 
     // --- Logic Functions ---
 
@@ -107,14 +116,34 @@ const Create = () => {
         setShowAIConfirm(false);
         setIsGenerating(true);
         
-        const sourceUrl = visualTarget === "OBVERSE" 
-            ? numistaDetails.obverseImage 
-            : numistaDetails.reverseImage;
+        let imageSource = null;
+        
+        // In manual mode, use the uploaded file; otherwise use Numista URL
+        if (isManualMode) {
+            if (!manualImageFile) {
+                alert(`Please upload an image`);
+                setIsGenerating(false);
+                return;
+            }
+            // Convert file to base64
+            const reader = new FileReader();
+            reader.onload = async () => {
+                await generateSketch(reader.result);
+            };
+            reader.readAsDataURL(manualImageFile);
+            return;
+        } else {
+            imageSource = visualTarget === "OBVERSE" 
+                ? numistaDetails.obverseImage 
+                : numistaDetails.reverseImage;
+        }
+        
+        const base64Data = await getCoinBase64(imageSource);
+        await generateSketch(base64Data);
+    };
 
+    const generateSketch = async (base64Data) => {
         try {
-            // Capture pixels via the backend proxy bridge
-            const base64Data = await getCoinBase64(sourceUrl);
-
             // Extract coin diameter in mm (default to 25 if not available)
             const coinDiameter = numistaDetails.diameter 
                 ? parseFloat(numistaDetails.diameter.match(/[\d.]+/)?.[0] || '25')
@@ -149,31 +178,47 @@ const Create = () => {
         }
     };
 
+    // --- Handle Text Parsing ---
+    const handleParseText = () => {
+        parseNumistaText(
+            pasteText,
+            setNumistaNumber,
+            setIssuer,
+            setYear,
+            setComposition,
+            setPhysicalDetails,
+            setReference,
+            setDenomination
+        );
+        setPasteText("");
+        alert("Data extracted and populated!");
+    };
+
     // --- API Interactions ---
 
     const createCoin = useCallback(() => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId
+            visualTarget, visualMethod, sketchId, isManual: isManualMode
         })
         .then((res) => {
             setCoinId(res.data._id);
             setInitialLoadComplete(true);
         })
         .catch((err) => console.error("Error creating coin:", err));
-    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId]);
+    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
         axios.put(`${BASE_URL}/coin/update/${coinId}`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId
+            visualTarget, visualMethod, sketchId, isManual: isManualMode
         })
         .then(() => console.log("Auto-saved changes"))
         .catch((err) => console.error("Error updating coin:", err));
-    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId]);
+    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode]);
 
     // --- Effects ---
 
@@ -182,21 +227,34 @@ const Create = () => {
         const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;
         setDateAdded(formattedDate);
         
-        axios.get(`${BASE_URL}/numista/${numistaNumber}`)
-            .then((res) => updateNumistaDetails(res.data))
-            .catch((err) => console.error(err));
-    }, [numistaNumber]);
+        // Only fetch from Numista if not in manual mode
+        if (!isManualMode && paramNumistaNumber) {
+            axios.get(`${BASE_URL}/numista/${paramNumistaNumber}`)
+                .then((res) => updateNumistaDetails(res.data))
+                .catch((err) => console.error(err));
+        } else if (isManualMode) {
+            // In manual mode, set placeholder values
+            setTitle("Manual Entry");
+            setInitialLoadComplete(true);
+        }
+    }, [paramNumistaNumber, isManualMode]);
 
+    // Load coin data when editing (works for both manual and API coins)
     useEffect(() => {
-        if (!numistaDetails.denomination) return;
         const editCoinId = location?.state?.coinId;
-
         if (editCoinId && !coinId) {
             axios.get(`${BASE_URL}/coin/${editCoinId}`)
                 .then((res) => {
                     const c = res.data;
                     console.log("✅ Loaded coin data for editing:", c);
+                    
+                    // Detect if this is a manually-created coin and switch mode if needed
+                    if (c.isManual && !isManualMode) {
+                        setIsManualMode(true);
+                    }
+                    
                     setCoinId(c._id);
+                    setNumistaNumber(c.numistaNumber || "");
                     setYear(c.year || "");
                     setIssuer(c.issuer || "");
                     setDenomination(c.denomination || "");
@@ -213,6 +271,7 @@ const Create = () => {
                     setVisualTarget(c.visualTarget || "QR");
                     setVisualMethod(c.visualMethod || "SCRIPT");
                     setSketchId(c.sketchId || "");
+
                     console.log("Visual fields loaded - visualTarget:", c.visualTarget, "visualMethod:", c.visualMethod, "sketchId:", c.sketchId);
                     setInitialLoadComplete(true);
                 })
@@ -220,10 +279,24 @@ const Create = () => {
                     console.error("❌ Error loading coin for edit:", err);
                     if (!coinId) createCoin();
                 });
-        } else if (!coinId) {
-            createCoin();
         }
-    }, [numistaDetails, coinId, location, dateAdded, createCoin]);
+    }, [location, coinId, dateAdded, createCoin]);
+
+    useEffect(() => {
+        // In manual mode, skip Numista details check
+        if (isManualMode) {
+            // In manual mode, set placeholder values
+            setTitle("Manual Entry");
+            setInitialLoadComplete(true);
+            return;
+        }
+
+        if (!numistaDetails.denomination) return;
+        
+        // Create a new coin if not editing
+        if (!coinId) {
+        }
+    }, [numistaDetails, coinId, location, dateAdded, createCoin, isManualMode]);
 
     useEffect(() => {
         if (coinId && initialLoadComplete) {
@@ -268,24 +341,26 @@ const Create = () => {
             </Modal>
 
             {/* Header */}
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <Badge bg="primary" className="mb-2">NumisTag Cataloger</Badge>
-                    <h1 className="h2 mb-0">{title || "Loading Coin..."}</h1>
-                    <a href={`https://www.numista.com/${numistaNumber}`} target="_blank" rel="noreferrer">
-                        <small className="text-muted">Numista #{numistaNumber}</small>
-                    </a>
+                    <h1 className="h3 mb-0">{title || (isManualMode ? "Manual Coin Entry" : "Loading Coin...")}</h1>
+                    {!isManualMode && (
+                        <a href={`https://numista.com/catalogue/pieces${numistaNumber}.html`} target="_blank" rel="noreferrer" className="text-muted small">
+                            Numista #{numistaNumber}
+                        </a>
+                    )}
                 </div>
                 <div className="d-flex gap-2">
-                    <Button variant="outline-danger" onClick={handleDiscard}>Discard</Button>
                     <Button variant="outline-secondary" onClick={handleDuplicate}>Duplicate</Button>
-                    <Button variant="success" onClick={() => navigate("/")} className="px-4 fw-bold">Done</Button>
+                    <Button variant="outline-danger" onClick={handleDiscard}>Discard</Button>
+                    <Button variant="primary" onClick={() => navigate("/")} className="px-4">Done</Button>
                 </div>
             </div>
 
             <Row>
                 <Col lg={7}>
                     {/* Card 1: Automatic Data (Numista) */}
+                    {!isManualMode && (
                     <Card className="shadow-sm mb-4">
                         <Card.Header className="bg-light fw-bold">Automatic Data (Numista)</Card.Header>
                         <Card.Body>
@@ -318,6 +393,7 @@ const Create = () => {
                             </Form.Group>
                         </Card.Body>
                     </Card>
+                    )}
 
                     {/* Card 2: Label Specifics (The Sheldon Grade Section) */}
                     <Card className="shadow-sm mb-4">
@@ -404,6 +480,22 @@ const Create = () => {
                         </Card.Body>
                     </Card>
 
+                    {/* Paste & Parse Numista Data (Manual Mode Only) - After Label Specifics */}
+                    {isManualMode && (
+                        <Accordion className="mb-4">
+                            <Accordion.Item eventKey="0">
+                                <Accordion.Header className="bg-light fw-bold">Paste Numista Data (Optional)</Accordion.Header>
+                                <Accordion.Body>
+                                    <PasteParseCard 
+                                        pasteText={pasteText}
+                                        setPasteText={setPasteText}
+                                        onParse={handleParseText}
+                                    />
+                                </Accordion.Body>
+                            </Accordion.Item>
+                        </Accordion>
+                    )}
+
                     {/* Card 3: Visual Customization */}
                     <Card className="shadow-sm mb-4 border-primary">
                         <Card.Header className="bg-primary text-white fw-bold d-flex align-items-center gap-2">
@@ -417,12 +509,33 @@ const Create = () => {
                                         <Button variant={visualTarget === "QR" ? "dark" : "outline-dark"} className="flex-grow-1 d-flex align-items-center justify-content-center gap-2" onClick={() => setVisualTarget("QR")}>
                                             <QrCode size={16} /> QR Code
                                         </Button>
-                                        <Button variant={visualTarget === "OBVERSE" ? "dark" : "outline-dark"} className="flex-grow-1" onClick={() => setVisualTarget("OBVERSE")}>Obverse</Button>
-                                        <Button variant={visualTarget === "REVERSE" ? "dark" : "outline-dark"} className="flex-grow-1" onClick={() => setVisualTarget("REVERSE")}>Reverse</Button>
+                                        {!isManualMode && (
+                                            <>
+                                                <Button variant={visualTarget === "OBVERSE" ? "dark" : "outline-dark"} className="flex-grow-1" onClick={() => setVisualTarget("OBVERSE")}>Obverse</Button>
+                                                <Button variant={visualTarget === "REVERSE" ? "dark" : "outline-dark"} className="flex-grow-1" onClick={() => setVisualTarget("REVERSE")}>Reverse</Button>
+                                            </>
+                                        )}
+                                        {isManualMode && (
+                                            <Button variant={visualTarget === "SKETCH" ? "dark" : "outline-dark"} className="flex-grow-1" onClick={() => setVisualTarget("SKETCH")}>Sketch</Button>
+                                        )}
                                     </div>
                                 </Col>
 
-                                {visualTarget !== "QR" && (
+                                {isManualMode && visualTarget === "SKETCH" && (
+                                    <Col md={12}>
+                                        <Form.Label className="small fw-bold text-uppercase text-muted">Step 1b: Upload Image</Form.Label>
+                                        <Form.Group>
+                                            <Form.Control
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => setManualImageFile(e.target.files[0])}
+                                            />
+                                            {manualImageFile && <small className="text-success">✓ {manualImageFile.name}</small>}
+                                        </Form.Group>
+                                    </Col>
+                                )}
+
+                                {(visualTarget !== "QR" && !isManualMode) || (visualTarget === "SKETCH" && isManualMode) && (
                                     <Col md={12}>
                                         <Form.Label className="small fw-bold text-uppercase text-muted">Step 2: Style & Processing</Form.Label>
                                         <Row className="g-3">
@@ -456,7 +569,11 @@ const Create = () => {
                                                     size="lg" 
                                                     className="w-100 shadow-sm" 
                                                     onClick={handleGenerateVisual}
-                                                    disabled={isGenerating || (visualTarget === "OBVERSE" && !numistaDetails.obverseImage) || (visualTarget === "REVERSE" && !numistaDetails.reverseImage)}
+                                                    disabled={isGenerating || (
+                                                        isManualMode 
+                                                            ? !manualImageFile
+                                                            : (visualTarget === "OBVERSE" && !numistaDetails.obverseImage) || (visualTarget === "REVERSE" && !numistaDetails.reverseImage)
+                                                    )}
                                                 >
                                                     {isGenerating ? <><Spinner animation="border" size="sm" className="me-2" /> Processing...</> : "Generate & Preview"}
                                                 </Button>
@@ -500,7 +617,7 @@ const Create = () => {
                                         isEditable={true}
                                         composition={composition} setComposition={setComposition}
                                         physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
-                                        numistaNumber={numistaNumber} 
+                                        numistaNumber={numistaNumber} setNumistaNumber={setNumistaNumber}
                                         dateAdded={dateAdded} setDateAdded={setDateAdded}
                                         visualTarget={visualTarget}
                                         sketchId={sketchId}
@@ -517,5 +634,4 @@ const Create = () => {
         </Container>
     );
 };
-
 export default Create;

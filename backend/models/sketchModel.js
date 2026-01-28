@@ -2,16 +2,16 @@ const mongoose = require('mongoose');
 
 const SketchSchema = new mongoose.Schema({
     numistaNumber: { 
-        type: Number, 
+        type: String,  // Changed to String to support both numeric and custom IDs from manual mode
         required: true 
     },
     year: {
         type: String,
-        required: true
+        default: ''
     },
     side: {
         type: String,
-        enum: ['OBVERSE', 'REVERSE'],
+        enum: ['OBVERSE', 'REVERSE', 'SKETCH'],
         required: true
     },
     method: { 
