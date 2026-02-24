@@ -29,22 +29,22 @@ export const parseNumistaText = (
         setYear(yearMatch[1]);
     }
 
-    // Extract Weight/Mass (e.g., "Weight\t8 g" or "Weight\t8g")
-    const weightMatch = text.match(/Weight\s+(\d+(?:\.\d+)?)\s*g/i);
-    if (weightMatch) {
-        setPhysicalDetails(prev => {
-            const lines = prev.split('\n').filter(line => line.trim() && !line.includes('g'));
-            lines.push(`${weightMatch[1]} g`);
-            return lines.join('\n');
-        });
-    }
-
     // Extract Diameter (e.g., "Diameter\t27.3 mm")
     const diameterMatch = text.match(/Diameter\s+(\d+(?:\.\d+)?)\s*mm/i);
     if (diameterMatch) {
         setPhysicalDetails(prev => {
             const lines = prev.split('\n').filter(line => line.trim() && !line.match(/\d+(?:\.\d+)?\s*mm/));
             lines.push(`⌀ ${diameterMatch[1]} mm`);
+            return lines.join('\n');
+        });
+    }
+
+        // Extract Weight/Mass (e.g., "Weight\t8 g" or "Weight\t8g")
+    const weightMatch = text.match(/Weight\s+(\d+(?:\.\d+)?)\s*g/i);
+    if (weightMatch) {
+        setPhysicalDetails(prev => {
+            const lines = prev.split('\n').filter(line => line.trim() && !line.includes('g'));
+            lines.push(`${weightMatch[1]} g`);
             return lines.join('\n');
         });
     }

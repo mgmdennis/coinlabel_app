@@ -58,33 +58,45 @@ router.post('/', async (req, res) => {
         }
 
         // Extract only numerals from year (for Georgian/Gregorian calendar only)
-        // Only include year in prompt if this side has a date
-        const cleanYear = (year && hasDates) ? year.replace(/\D/g, '') : '';
+        // Include year if it exists, regardless of whether description mentions dates
+        const cleanYear = year ? year.replace(/\D/g, '') : '';
 
         // Calculate scale based on coin diameter
         // If coin is 22mm and label is 44mm, scale = 0.5
         const scale = coinDiameter ? (coinDiameter / LABEL_WIDTH_MM) : 1;
         const scaledSize = Math.round(SKETCH_WIDTH * scale);  // Use for BOTH width and height to keep it square
         
-        console.log(`📐 Coin: #${numistaNumber}, Method: ${method}, Side: ${side}, Diameter: ${coinDiameter}mm, Scale: ${scale.toFixed(2)}, Scaled dimensions: ${scaledSize}x${scaledSize}px`);
+        console.log(`📐 Coin: #${numistaNumber}, Method: ${method}, Side: ${side}, Year: "${year}", CleanYear: "${cleanYear}", HasDates: ${hasDates}, Diameter: ${coinDiameter}mm, Scale: ${scale.toFixed(2)}, Scaled dimensions: ${scaledSize}x${scaledSize}px`);
 
         // Check cache including year and side so different dates and sides have different sketches
         const existingSketch = await Sketch.findOne({ numistaNumber, method, year, side });
         if (existingSketch) {
-            console.log(`♻️ Returning cached ${method} sketch for #${numistaNumber} (${year}) - ${side}`);
+            console.log(`♻️ Returning cached ${method} sketch for #${numistaNumber} (Year: "${year}") - ${side}`);
             return res.json({ sketchId: existingSketch._id });
         }
 
         if (method === 'AI') {
-            console.log(`🎨 Requesting AI Engraving for #${numistaNumber}...`);
+            console.log(`🎨 Requesting AI Engraving for #${numistaNumber} (Year: "${year}", CleanYear: "${cleanYear}")...`);
             console.log(`📤 Image data received: ${imageData.substring(0, 100)}...`);
 
-            // Build prompt with year only if the side has dates
-            let prompt = `Convert this coin image EXACTLY to a bold line art sketch for printing at ${coinDiameter}mm diameter.`;
-            if (cleanYear) {
-                prompt += ` Year variant: ${cleanYear}.`;
+            // Build prompt with year emphasis based on whether there are multiple date variations
+            // Calculate recommended line thickness as percentage of diameter
+            const lineThicknessPercent = Math.max(2, Math.min(5, 100 / coinDiameter)); // 2-5% of diameter
+            const lineThicknessMM = (coinDiameter * lineThicknessPercent / 100).toFixed(2);
+            
+            let prompt = `Create a PRECISE black and white line art tracing of this coin image for printing at ${coinDiameter}mm diameter. STRICT REQUIREMENTS:
+1. ONLY trace elements that are CLEARLY VISIBLE in the source image - if an area is blank or empty in the source, leave it blank and empty
+2. DO NOT add ANY decorative elements, flourishes, ornaments, sprigs, leaves, dots, stars, or filler of any kind that are not in the source image
+3. DO NOT fill empty space - if there is empty space on the coin, LEAVE IT EMPTY
+4. Use a woodcut or engraving style with clear, bold lines suitable for small-scale printing at ${coinDiameter}mm size reminiscent of coin catalog engravings, focusing on clarity and accuracy over artistic flair
+5. Use BOLD, THICK black lines on pure white background - lines should be approximately ${lineThicknessMM}mm thick (${lineThicknessPercent.toFixed(1)}% of coin diameter)
+6. Lines must be thick enough to remain visible when printed at ${coinDiameter}mm size - err on the side of thicker rather than thinner
+7. For coins under 20mm, use EXTRA BOLD lines to ensure visibility
+8. ABSOLUTELY NO HALLUCINATION - compare your output against the source image element by element. Every mark in your output must correspond to something visible in the source. Remove anything you are not 100% certain is in the original.`;
+            if (cleanYear && hasDates) {
+                prompt += `\n9. If NO year/date is visible in the source image, do NOT add one. If a year/date is visible in the source image, replace it with "${cleanYear}".`;
             }
-            prompt += ` CRITICAL: Preserve the EXACT design of the coin - DO NOT add, remove, or hallucinate any details not clearly visible in the original image. Convert only the visible elements to black line art. Use CLEAR, DARK BLACK LINES on pure white background. Scale line weight appropriately for ${coinDiameter}mm printing - thicker lines for visibility at small sizes. DO NOT modify, embellish, or creatively reinterpret the design. Strict faithful reproduction of the coin's actual design.`;
+            prompt += `\n\nTHIS IS A STRICT TRACING TASK. Trace ONLY what exists. Do NOT add any text, numbers, or symbols that are not clearly visible in the source image.`;
 
             const output = await replicate.run(
                 "google/nano-banana", 
@@ -92,6 +104,9 @@ router.post('/', async (req, res) => {
                     input: {
                         prompt: prompt,
                         image_input: [imageData],
+                        creativity: 0.3,  // Lower creativity to reduce hallucinations
+                        output_format: "png",
+                        output_quality: 100
                     }
                 }
             );

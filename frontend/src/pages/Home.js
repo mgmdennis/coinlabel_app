@@ -125,7 +125,7 @@ const Home = () => {
             </Col>
             <Col xs={12} md="auto">
               <Button 
-                variant="info" 
+                variant="outline-secondary" 
                 onClick={() => navigate("/create/manual", { state: { manualMode: true } })}
                 className="w-100 px-4"
               >

@@ -137,14 +137,24 @@ const BackLabelContainer = ({
 }) => {
     const [sketchData, setSketchData] = useState(null);
 
+    // Extract coin diameter from physicalDetails (e.g. "⌀ 25.75 mm")
+    const coinDiameter = physicalDetails 
+        ? parseFloat(physicalDetails.match(/⌀\s*([\d.]+)/)?.[1] || '0')
+        : 0;
+
+    // Calculate size: mm for print, cqw for edit (label is 44mm = 100cqw)
+    const LABEL_WIDTH_MM = 44;
+    const sketchSize = coinDiameter
+        ? (isEditable ? `${(coinDiameter / LABEL_WIDTH_MM) * 100}cqw` : `${coinDiameter}mm`)
+        : '100%';
+
     // Fetch the actual image string from the database whenever the sketchId changes
     useEffect(() => {
         if (sketchId && visualTarget !== "QR") {
-            console.log(`📸 Fetching sketch image for sketchId: ${sketchId}`);
+            console.log(`📸 Fetching sketch for sketchId: ${sketchId}, coinDiameter: ${coinDiameter}mm`);
             axios.get(`${BASE_URL}/generate-sketch/${sketchId}`)
                 .then(res => {
-                    // We extract the 'imageData' field which contains the Base64 string
-                    console.log(`✅ Sketch fetched successfully, data length: ${res.data.imageData?.length || 0}`);
+                    console.log(`✅ Sketch fetched successfully`);
                     if (!res.data.imageData) {
                         console.warn("⚠️ Warning: imageData is empty or undefined");
                     }
@@ -157,7 +167,7 @@ const BackLabelContainer = ({
         } else {
             setSketchData(null);
         }
-    }, [sketchId, visualTarget]);
+    }, [sketchId, visualTarget, coinDiameter]);
 
     return (
         <div className={isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
@@ -194,56 +204,36 @@ const BackLabelContainer = ({
                 onChange={(e) => setNumistaNumber && setNumistaNumber(e.target.value)}
             />
             
-            <div className="qr-code" style={{ 
-                flex: '1 1 auto', 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                width: '100%',
-                minHeight: 0,
-                overflow: 'hidden',
-                marginTop: '4px'
-            }}>
-                <div style={{
-                    width: 'auto',
-                    height: 'auto',
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    aspectRatio: '1 / 1', 
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    {(visualTarget === "QR" || !sketchId || !sketchData) ? (
-                        <QRCode 
-                            value={`https://en.numista.com/catalogue/pieces${numistaNumber}.html`} 
-                            style={{ height: "auto", maxWidth: "100%", width: "100%" }} 
-                            viewBox={`0 0 256 256`}
-                        />
-                    ) : (
-                        <>
-                            {console.log(`🖼️ Rendering sketch - sketchId: ${sketchId}, dataLength: ${typeof sketchData === 'string' ? sketchData.length : 0}, type: ${typeof sketchData}, hasPrefix: ${typeof sketchData === 'string' ? sketchData.startsWith('data:') : 'N/A'}`)}
-                            {typeof sketchData === 'string' && sketchData.length > 0 ? (
-                                <img 
-                                    src={sketchData} 
-                                    alt="Coin Sketch" 
-                                    onError={() => console.error("❌ Image failed to load. src format:", sketchData.substring(0, 100))}
-                                    style={{ 
-                                        height: "auto", 
-                                        maxWidth: "100%", 
-                                        width: "100%", 
-                                        objectFit: "contain",
-                                        filter: 'contrast(1.1)' 
-                                    }} 
-                                />
-                            ) : (
-                                <div className="alert alert-warning small">
-                                    ⚠️ Sketch data is empty or invalid
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
+            <div className="qr-code">
+                {(visualTarget === "QR" || !sketchId || !sketchData) ? (
+                    <QRCode 
+                        value={`https://en.numista.com/catalogue/pieces${numistaNumber}.html`} 
+                        style={{ width: "100%", height: "100%" }} 
+                        viewBox={`0 0 256 256`}
+                    />
+                ) : (
+                    <>
+                        {console.log(`🖼️ Rendering sketch - sketchId: ${sketchId}, coinDiameter: ${coinDiameter}mm`)}
+                        {typeof sketchData === 'string' && sketchData.length > 0 ? (
+                            <img 
+                                src={sketchData} 
+                                alt="Coin Sketch" 
+                                onError={() => console.error("❌ Image failed to load")}
+                                style={{ 
+                                    width: sketchSize,
+                                    height: sketchSize,
+                                    objectFit: 'contain',
+                                    filter: 'contrast(1.1)',
+                                    display: 'block'
+                                }} 
+                            />
+                        ) : (
+                            <div className="alert alert-warning small">
+                                ⚠️ Sketch data is empty or invalid
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );
