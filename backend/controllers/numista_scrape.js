@@ -146,15 +146,18 @@ async function getNumistaDetailsJSON(numistaNumber) {
         async function fetchImageAsBase64(url) {
             if (!url) return null;
             try {
+                console.log(`📷 Fetching image: ${url}`);
                 const resp = await axios.get(url, {
                     responseType: 'arraybuffer',
                     headers: { 'Numista-API-Key': apiKey, 'User-Agent': 'CoinLabelApp/1.0' }
                 });
                 const contentType = resp.headers['content-type'] || 'image/jpeg';
-                return `data:${contentType};base64,${Buffer.from(resp.data).toString('base64')}`;
+                const base64 = `data:${contentType};base64,${Buffer.from(resp.data).toString('base64')}`;
+                console.log(`✅ Image fetched successfully (${Math.round(base64.length / 1024)}KB)`);
+                return base64;
             } catch (imgErr) {
-                console.warn(`⚠️ Failed to fetch image ${url}: ${imgErr.message}`);
-                return url; // Fall back to URL if fetch fails
+                console.warn(`⚠️ Failed to fetch image ${url}: ${imgErr.response?.status} ${imgErr.message}`);
+                return null; // Return null instead of broken URL
             }
         }
 
