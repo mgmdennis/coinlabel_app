@@ -126,7 +126,7 @@ const Home = () => {
             <Col xs={12} md="auto">
               <Button 
                 variant="outline-secondary" 
-                onClick={() => navigate("/create/manual", { state: { manualMode: true } })}
+                onClick={() => navigate("/create", { state: { manualMode: true } })}
                 className="w-100 px-4"
               >
                 + Manual Entry

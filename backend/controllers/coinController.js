@@ -22,6 +22,11 @@ const getNumistaDetails = async (req, res) => {
 
   console.log("Numista Number: ", numistaNumber);
 
+  if (details.error) {
+    const status = details.status || (details.category === 'banknote' ? 422 : 400);
+    return res.status(status).json({ error: details.error });
+  }
+
   res.json(details);
 }
 

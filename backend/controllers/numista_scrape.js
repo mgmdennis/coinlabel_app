@@ -142,6 +142,17 @@ async function getNumistaDetailsJSON(numistaNumber) {
         const typeData = typeResponse.data;
         const issuesData = issuesResponse.data;
 
+        // Validate category - only coins and exonumia (medals/tokens) are supported
+        const category = typeData.category || 'unknown';
+        if (category === 'banknote') {
+            console.warn(`❌ N# ${typeId} is a banknote — not supported`);
+            return { error: `This item (N# ${typeId}) is a banknote. Only coins, medals, and tokens are supported.`, category };
+        }
+        if (!['coin', 'exonumia'].includes(category)) {
+            console.warn(`❌ N# ${typeId} has unsupported category: ${category}`);
+            return { error: `This item (N# ${typeId}) has an unsupported category: "${category}".`, category };
+        }
+
         const features = {
             // General type information from GET /types/{type_id}
             title: typeData.title || "Unknown",
@@ -187,11 +198,16 @@ async function getNumistaDetailsJSON(numistaNumber) {
 
     } catch (err) {
         if (err.response) {
-            console.error(`Numista API Error: ${err.response.status} at ${err.config.url}`);
+            const status = err.response.status;
+            console.error(`Numista API Error: ${status} at ${err.config.url}`);
+            if (status === 404) {
+                return { error: `Item N# ${typeId} was not found on Numista. Please check the number and try again.`, status: 404 };
+            }
+            return { error: `Numista API returned an error (${status}). Please try again later.`, status };
         } else {
             console.error("General API Connection Error:", err.message);
+            return { error: "Failed to connect to Numista API. Please check your connection and try again." };
         }
-        return { error: "Failed to fetch complete data from Numista API" };
     }
 }
 

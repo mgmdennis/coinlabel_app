@@ -1,6 +1,6 @@
 import { Card, Form, Row, Col } from 'react-bootstrap';
 
-export const LabelSpecificsCard = ({ grade, gradeDetails, onGradeChange, onGradeDetailsChange }) => {
+export const LabelSpecificsCard = ({ grade, onGradeChange }) => {
     return (
         <Card className="shadow-sm mb-4">
             <Card.Header className="bg-light fw-bold">Label Specifics</Card.Header>
@@ -70,16 +70,6 @@ export const LabelSpecificsCard = ({ grade, gradeDetails, onGradeChange, onGrade
                                     <option value="Spec">Specimen</option>
                                 </optgroup>
                             </Form.Select>
-                        </Form.Group>
-                    </Col>
-                    <Col md={12}>
-                        <Form.Group>
-                            <Form.Label className="small fw-bold text-uppercase">Grade Details</Form.Label>
-                            <Form.Control 
-                                placeholder="e.g. Red-Brown, Small Motto, Scratched"
-                                value={gradeDetails}
-                                onChange={onGradeDetailsChange}
-                            />
                         </Form.Group>
                     </Col>
                 </Row>

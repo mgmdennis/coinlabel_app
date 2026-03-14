@@ -14,7 +14,7 @@ export const parseNumistaText = (
     // Extract Numista Number (e.g., "Number	N#277174" or "Number	277174")
     const numistaMatch = text.match(/Number\s+(?:N#)?(\d+)/i);
     if (numistaMatch) {
-        setNumistaNumber(`N# ${numistaMatch[1]}`);
+        setNumistaNumber(numistaMatch[1].trim());
     }
 
     // Extract Issuer (e.g., "Issuer	United Kingdom")

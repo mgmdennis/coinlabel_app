@@ -1,22 +1,30 @@
 const mongoose = require('mongoose');
 
 const SketchSchema = new mongoose.Schema({
+    sourceHash: {
+        type: String,
+        index: true  // Hash of the source image for deduplication
+    },
     numistaNumber: { 
-        type: String,  // Changed to String to support both numeric and custom IDs from manual mode
-        required: true 
+        type: String,  // Optional metadata — which coin type originally generated this
+        default: ''
     },
     year: {
         type: String,
         default: ''
     },
+    description: {
+        type: String,
+        default: ''  // User-friendly label for gallery display
+    },
     side: {
         type: String,
-        enum: ['OBVERSE', 'REVERSE', 'SKETCH'],
+        enum: ['OBVERSE', 'REVERSE', 'SKETCH', 'PASTED'],
         required: true
     },
     method: { 
         type: String, 
-        enum: ['SCRIPT', 'AI'], 
+        enum: ['SCRIPT', 'AI', 'RAW'], 
         required: true 
     },
     imageData: { 
@@ -43,17 +51,22 @@ const SketchSchema = new mongoose.Schema({
 
 // --- THE FIFO GUARD ---
 // Before saving a new sketch, check if we have too many. 
-// If we have 60 or more, delete the oldest one.
+// If we have 60 or more, delete the oldest UNREFERENCED one.
 SketchSchema.pre('save', async function(next) {
     const Sketch = this.constructor;
+    const Coin = mongoose.model('Coin');
     const count = await Sketch.countDocuments();
     
     if (count >= 60) {
-        // Find the oldest document by sorting createdAt in ascending order (1)
-        const oldest = await Sketch.findOne().sort({ createdAt: 1 });
-        if (oldest) {
-            await Sketch.findByIdAndDelete(oldest._id);
-            console.log(`Auto-pruned oldest sketch: ${oldest._id}`);
+        // Find the oldest sketches and delete the first one not referenced by any coin
+        const oldestSketches = await Sketch.find().sort({ createdAt: 1 }).limit(10);
+        for (const sketch of oldestSketches) {
+            const refCount = await Coin.countDocuments({ sketchId: sketch._id.toString() });
+            if (refCount === 0) {
+                await Sketch.findByIdAndDelete(sketch._id);
+                console.log(`Auto-pruned unreferenced sketch: ${sketch._id}`);
+                break;
+            }
         }
     }
     next();

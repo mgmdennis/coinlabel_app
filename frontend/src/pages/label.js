@@ -130,7 +130,7 @@ const BackLabelContainer = ({
     isEditable, 
     composition, setComposition, 
     physicalDetails, setPhysicalDetails, 
-    numistaNumber, setNumistaNumber,
+    numistaNumber,
     dateAdded, setDateAdded,
     visualTarget = "QR", 
     sketchId = ""
@@ -196,16 +196,12 @@ const BackLabelContainer = ({
                 className="label physical-details"
                 onChange={(e) => setPhysicalDetails(e.target.value)}
             />
-            <LabelField
-                isEditable={isEditable}
-                placeholder="N#"
-                value={numistaNumber}
-                className="label numista-number"
-                onChange={(e) => setNumistaNumber && setNumistaNumber(e.target.value)}
-            />
+            <p className="label numista-number static-label">
+                {numistaNumber ? `N# ${numistaNumber}` : ''}
+            </p>
             
             <div className="qr-code">
-                {(visualTarget === "QR" || !sketchId || !sketchData) ? (
+                {(visualTarget === "QR" || (!sketchId && visualTarget !== "GALLERY" && visualTarget !== "NUMISTA" && visualTarget !== "PASTED") || !sketchData) ? (
                     <QRCode 
                         value={`https://en.numista.com/catalogue/pieces${numistaNumber}.html`} 
                         style={{ width: "100%", height: "100%" }} 

@@ -1,7 +1,7 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
-import { Container, Row, Col } from 'react-bootstrap';
+import { Container, Row, Col, Form, InputGroup, Button, Modal } from 'react-bootstrap';
 
 // Utilities
 import { getCoinBase64 } from "../utils/imageProcessing";
@@ -25,12 +25,15 @@ const Create = () => {
     const location = useLocation();
 
     // --- App State ---
-    const [numistaNumber, setNumistaNumber] = useState(paramNumistaNumber || "");
+    const [numistaNumber, setNumistaNumber] = useState(
+        (location?.state?.manualMode) ? "" : (paramNumistaNumber || "")
+    );
     const [numistaDetails, setNumistaDetails] = useState({});
     const [coinId, setCoinId] = useState(null);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
     const [title, setTitle] = useState("");
     const [isManualMode, setIsManualMode] = useState(location?.state?.manualMode || false);
+    const [numistaError, setNumistaError] = useState("");
     const [pastedImage, setPastedImage] = useState(null);
 
     // --- Label Field State ---
@@ -51,6 +54,7 @@ const Create = () => {
     // --- Visual Selection State ---
     const [visualTarget, setVisualTarget] = useState("QR"); 
     const [visualMethod, setVisualMethod] = useState("SCRIPT"); 
+    const [numistaSide, setNumistaSide] = useState("OBVERSE");
     const [sketchId, setSketchId] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [isGeneratingQR, setIsGeneratingQR] = useState(false);
@@ -95,7 +99,7 @@ const Create = () => {
         }
     };
 
-    // --- UNIFIED GENERATION: AI and SCRIPT both use Base64 now ---
+    // --- UNIFIED GENERATION: AI, SCRIPT, and RAW all use Base64 ---
     const handleGenerateVisual = async () => {
         if (visualMethod === "AI" && !showAIConfirm) {
             setShowAIConfirm(true);
@@ -105,46 +109,40 @@ const Create = () => {
         setShowAIConfirm(false);
         setIsGenerating(true);
         
-        let imageSource = null;
         let base64Data = null;
+        let side = null;
 
-        // If QR code is the target, we don't need an image source.
-        if (visualTarget === 'QR') {
-            setIsGeneratingQR(true); // Start QR generation indicator
-            await generateSketch(null); // Pass null for QR code generation
-            setIsGeneratingQR(false); // Stop QR generation indicator
-            return;
-        }
-
-        // For Obverse/Reverse/Pasted, show the main spinner and proceed
-        setIsGenerating(true);
-
-        // For Obverse/Reverse, determine the image source
         if (visualTarget === 'PASTED') {
             if (!pastedImage) {
-                alert(`Please paste an image from your clipboard to generate a visual.`);
+                alert(`Please paste an image from your clipboard first.`);
                 setIsGenerating(false);
                 return;
             }
-            base64Data = pastedImage; // The pastedImage is already a base64 string
-        } else { // OBVERSE or REVERSE
-            imageSource = visualTarget === "OBVERSE" 
+            base64Data = pastedImage;
+            side = 'PASTED';
+        } else if (visualTarget === 'NUMISTA') {
+            side = numistaSide; // OBVERSE or REVERSE
+            const imageSource = numistaSide === "OBVERSE" 
                 ? numistaDetails.obverseImage 
                 : numistaDetails.reverseImage;
             
             if (!imageSource) {
-                alert(`No ${visualTarget.toLowerCase()} image is available from Numista.`);
+                alert(`No ${numistaSide.toLowerCase()} image is available from Numista.`);
                 setIsGenerating(false);
                 return;
             }
             base64Data = await getCoinBase64(imageSource);
+        } else {
+            // QR / GALLERY shouldn't reach here
+            setIsGenerating(false);
+            return;
         }
         
-        await generateSketch(base64Data);
-        setIsGenerating(false); // Stop main spinner
+        await generateSketch(base64Data, side);
+        setIsGenerating(false);
     };
 
-    const generateSketch = async (base64Data) => {
+    const generateSketch = async (base64Data, side) => {
         try {
             // Extract coin diameter in mm (default to 25 if not available)
             const coinDiameter = numistaDetails.diameter 
@@ -152,20 +150,18 @@ const Create = () => {
                 : 25;
 
             // Determine if this coin has multiple date variations
-            // If there are multiple variations, the year matters for distinguishing them
             const hasDates = numistaDetails.variations && numistaDetails.variations.length > 1;
 
-            console.log(`🎯 Generating sketch - Year: "${year}", HasDates: ${hasDates}, Variations: ${numistaDetails.variations?.length || 0}, Side: ${visualTarget}, Method: ${visualMethod}`);
+            console.log(`🎯 Generating sketch - Year: "${year}", HasDates: ${hasDates}, Side: ${side}, Method: ${visualMethod}`);
 
-            // Prepare request body
             const requestBody = {
                 numistaNumber,
                 method: visualMethod,
-                imageData: base64Data, // Can be null for QR
-                coinDiameter,  // Pass the coin diameter for proper scaling
-                year,  // Pass the year so sketches differ by date
-                side: visualTarget,  // Pass which side (OBVERSE/REVERSE/QR)
-                hasDates  // Whether this side has a date on it
+                imageData: base64Data,
+                coinDiameter,
+                year,
+                side,
+                hasDates
             };
 
             console.log(`📤 Sending request body:`, {
@@ -210,7 +206,11 @@ const Create = () => {
 
     // --- API Interactions ---
 
+    const isCreatingCoin = useRef(false);
+
     const createCoin = useCallback(() => {
+        if (isCreatingCoin.current) return;
+        isCreatingCoin.current = true;
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
@@ -220,7 +220,10 @@ const Create = () => {
             setCoinId(res.data._id);
             setInitialLoadComplete(true);
         })
-        .catch((err) => console.error("Error creating coin:", err));
+        .catch((err) => {
+            console.error("Error creating coin:", err);
+            isCreatingCoin.current = false; // Allow retry on error
+        });
     }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode]);
 
     const updateCoinRemote = useCallback(() => {
@@ -238,8 +241,8 @@ const Create = () => {
 
     useEffect(() => {
         const handlePaste = (event) => {
-            // Only act if we are in manual mode
-            if (!isManualMode) return;
+            // Allow pasting images in manual mode OR when PASTED target is selected
+            if (!isManualMode && visualTarget !== 'PASTED') return;
 
             const items = (event.clipboardData || event.originalEvent.clipboardData).items;
             for (let index in items) {
@@ -262,13 +265,11 @@ const Create = () => {
         return () => {
             window.removeEventListener('paste', handlePaste);
         };
-    }, [isManualMode]); // Rerun if isManualMode changes
+    }, [isManualMode, visualTarget]); // Rerun if isManualMode or visualTarget changes
 
-    // When switching to manual mode, if a side is selected, default to QR
+    // When switching to manual mode, reset visual target appropriately
     useEffect(() => {
-        if (isManualMode && (visualTarget === 'OBVERSE' || visualTarget === 'REVERSE')) {
-            setVisualTarget('QR');
-        } else if (!isManualMode && visualTarget === 'PASTED') {
+        if (isManualMode && visualTarget === 'NUMISTA') {
             setVisualTarget('QR');
         }
     }, [isManualMode, visualTarget]);
@@ -280,9 +281,15 @@ const Create = () => {
         
         // Only fetch from Numista if not in manual mode
         if (!isManualMode && paramNumistaNumber) {
+            setNumistaError("");
             axios.get(`${BASE_URL}/numista/${paramNumistaNumber}`)
                 .then((res) => updateNumistaDetails(res.data))
-                .catch((err) => console.error(err));
+                .catch((err) => {
+                    const message = err.response?.data?.error || "Failed to load coin data from Numista.";
+                    console.error("Numista fetch error:", message);
+                    setNumistaError(message);
+                    setTitle("Error");
+                });
         } else if (isManualMode) {
             // In manual mode, set placeholder values
             setTitle("Manual Entry");
@@ -334,11 +341,13 @@ const Create = () => {
     }, [location, coinId, dateAdded, createCoin]);
 
     useEffect(() => {
-        // In manual mode, skip Numista details check
+        // In manual mode, create coin immediately if not editing
         if (isManualMode) {
-            // In manual mode, set placeholder values
             setTitle("Manual Entry");
-            setInitialLoadComplete(true);
+            const editCoinId = location?.state?.coinId;
+            if (!coinId && !editCoinId) {
+                createCoin();
+            }
             return;
         }
 
@@ -396,6 +405,43 @@ const Create = () => {
                 onChange={(e) => setIsManualMode(e.target.checked)}
             />
 
+            <InputGroup className="mb-4" style={{ maxWidth: 300 }}>
+                <InputGroup.Text>N#</InputGroup.Text>
+                <Form.Control
+                    type="number"
+                    placeholder="Numista Number"
+                    value={numistaNumber}
+                    onChange={(e) => setNumistaNumber(e.target.value)}
+                />
+                {!isManualMode && numistaNumber && numistaNumber !== paramNumistaNumber && (
+                    <Button 
+                        variant="outline-primary"
+                        onClick={() => {
+                            if (window.confirm("Changing the Numista number will discard your current work and load a new coin. Continue?")) {
+                                navigate(`/create/${numistaNumber}`);
+                            }
+                        }}
+                    >
+                        Load
+                    </Button>
+                )}
+            </InputGroup>
+
+            <Modal show={!!numistaError} centered backdrop="static">
+                <Modal.Header>
+                    <Modal.Title>Unable to Load Coin</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>{numistaError}</Modal.Body>
+                <Modal.Footer>
+                    <Button variant="outline-danger" onClick={() => navigate("/")}>Go Back</Button>
+                    <Button variant="outline-secondary" onClick={() => {
+                        setNumistaError("");
+                        setIsManualMode(true);
+                        navigate("/create", { replace: true });
+                    }}>Switch to Manual Mode</Button>
+                </Modal.Footer>
+            </Modal>
+
             <Row>
                 <Col lg={7}>
                     {!isManualMode && (
@@ -412,9 +458,7 @@ const Create = () => {
 
                     <LabelSpecificsCard
                         grade={grade}
-                        gradeDetails={gradeDetails}
                         onGradeChange={(e) => setGrade(e.target.value)}
-                        onGradeDetailsChange={(e) => setGradeDetails(e.target.value)}
                     />
 
                     {isManualMode && (
@@ -430,6 +474,7 @@ const Create = () => {
                         pastedImage={pastedImage}
                         visualTarget={visualTarget}
                         visualMethod={visualMethod}
+                        numistaSide={numistaSide}
                         isGenerating={isGenerating}
                         isGeneratingQR={isGeneratingQR}
                         onVisualTargetChange={(e) => {
@@ -437,7 +482,11 @@ const Create = () => {
                             setUserChangedVisualTarget(true);
                         }}
                         onVisualMethodChange={(e) => setVisualMethod(e.target.value)}
+                        onNumistaSideChange={(e) => setNumistaSide(e.target.value)}
                         onGenerateVisual={handleGenerateVisual}
+                        sketchId={sketchId}
+                        onSketchSelect={(id) => setSketchId(id)}
+                        numistaNumber={numistaNumber}
                     />
                 </Col>
 
@@ -455,7 +504,7 @@ const Create = () => {
                         details={details} setDetails={setDetails}
                         composition={composition} setComposition={setComposition}
                         physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
-                        numistaNumber={numistaNumber} setNumistaNumber={setNumistaNumber}
+                        numistaNumber={numistaNumber}
                         dateAdded={dateAdded} setDateAdded={setDateAdded}
                         visualTarget={visualTarget}
                         sketchId={sketchId}

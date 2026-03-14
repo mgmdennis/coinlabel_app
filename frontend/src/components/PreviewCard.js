@@ -14,7 +14,7 @@ export const PreviewCard = ({
     details, setDetails,
     composition, setComposition,
     physicalDetails, setPhysicalDetails,
-    numistaNumber, setNumistaNumber,
+    numistaNumber,
     dateAdded, setDateAdded,
     visualTarget,
     sketchId
@@ -49,7 +49,7 @@ export const PreviewCard = ({
                             isEditable={true}
                             composition={composition} setComposition={setComposition}
                             physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
-                            numistaNumber={numistaNumber} setNumistaNumber={setNumistaNumber}
+                            numistaNumber={numistaNumber}
                             dateAdded={dateAdded} setDateAdded={setDateAdded}
                             visualTarget={visualTarget}
                             sketchId={sketchId}

@@ -4,7 +4,7 @@ const Schema = mongoose.Schema
 const CoinSchema = new Schema({
     numistaNumber: {
         type: String,
-        required: true,
+        default: "",
         trim: true,
     },
     year: {
@@ -62,12 +62,12 @@ const CoinSchema = new Schema({
     },
     visualTarget: {
         type: String,
-        enum: ['QR', 'OBVERSE', 'REVERSE'],
+        enum: ['QR', 'OBVERSE', 'REVERSE', 'PASTED', 'GALLERY'],
         default: 'QR',
     },
     visualMethod: {
         type: String,
-        enum: ['SCRIPT', 'AI'],
+        enum: ['SCRIPT', 'AI', 'RAW'],
         default: 'SCRIPT',
     },
     sketchId: {
