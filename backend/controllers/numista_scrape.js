@@ -142,6 +142,27 @@ async function getNumistaDetailsJSON(numistaNumber) {
         const typeData = typeResponse.data;
         const issuesData = issuesResponse.data;
 
+        // Fetch coin images and convert to base64 so the frontend doesn't need a proxy
+        async function fetchImageAsBase64(url) {
+            if (!url) return null;
+            try {
+                const resp = await axios.get(url, {
+                    responseType: 'arraybuffer',
+                    headers: { 'Numista-API-Key': apiKey, 'User-Agent': 'CoinLabelApp/1.0' }
+                });
+                const contentType = resp.headers['content-type'] || 'image/jpeg';
+                return `data:${contentType};base64,${Buffer.from(resp.data).toString('base64')}`;
+            } catch (imgErr) {
+                console.warn(`⚠️ Failed to fetch image ${url}: ${imgErr.message}`);
+                return url; // Fall back to URL if fetch fails
+            }
+        }
+
+        const [obverseBase64, reverseBase64] = await Promise.all([
+            fetchImageAsBase64(typeData.obverse?.picture),
+            fetchImageAsBase64(typeData.reverse?.picture)
+        ]);
+
         // Validate category - only coins and exonumia (medals/tokens) are supported
         const category = typeData.category || 'unknown';
         if (category === 'banknote') {
@@ -167,8 +188,8 @@ async function getNumistaDetailsJSON(numistaNumber) {
                 : [],
             
             numistaRef: typeData.id,
-            obverseImage: typeData.obverse?.picture, 
-            reverseImage: typeData.reverse?.picture,
+            obverseImage: obverseBase64, 
+            reverseImage: reverseBase64,
             obverseDescription: typeData.obverse?.description || "",
             reverseDescription: typeData.reverse?.description || "",
             

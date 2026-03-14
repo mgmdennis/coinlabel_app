@@ -1,21 +1,23 @@
 // src/utils/imageProcessing.js
-import axios from 'axios';
 
 /**
- * Captures a coin image via the backend proxy and returns a Base64 string.
- * This avoids the "Tainted Canvas" error when generating sketches.
+ * Converts a coin image to a Base64 string for sketch generation.
+ * If the input is already a base64 data URI, returns it directly.
+ * Otherwise loads via an img element (for pasted images, etc.).
  */
-export const getCoinBase64 = async (numistaUrl) => {
-    return new Promise((resolve, reject) => {
-        if (!numistaUrl) return reject("No Numista URL provided");
+export const getCoinBase64 = async (imageSource) => {
+    if (!imageSource) throw new Error("No image source provided");
 
+    // If already a base64 data URI, return directly
+    if (imageSource.startsWith('data:')) {
+        return imageSource;
+    }
+
+    // For any other URL, load via img element
+    return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = "Anonymous"; // Crucial for canvas processing
-        
-        // --- THE CORRECT PROXY URL ---
-        // It must match: app.use('/api/generate-sketch', sketchRoute) 
-        // and the router.get('/image-proxy') inside that file.
-        img.src = `/api/generate-sketch/image-proxy?url=${encodeURIComponent(numistaUrl)}`;
+        img.crossOrigin = "Anonymous";
+        img.src = imageSource;
 
         img.onload = () => {
             const canvas = document.createElement("canvas");
@@ -23,15 +25,12 @@ export const getCoinBase64 = async (numistaUrl) => {
             canvas.height = img.height;
             const ctx = canvas.getContext("2d");
             ctx.drawImage(img, 0, 0);
-            
-            // Convert to Base64 (PNG or JPEG)
-            const base64Data = canvas.toDataURL("image/png");
-            resolve(base64Data);
+            resolve(canvas.toDataURL("image/png"));
         };
 
         img.onerror = (err) => {
-            console.error("Proxy Load Error:", err);
-            reject(new Error("Failed to load image via proxy bridge. Check backend logs."));
+            console.error("Image Load Error:", err);
+            reject(new Error("Failed to load image."));
         };
     });
 };
