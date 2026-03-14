@@ -14,6 +14,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="/create" element={<Create />} />
           <Route path="/create/:numistaNumber" element={<Create />} />
           <Route path="*" element={<NoPage />} />
         </Route>

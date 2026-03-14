@@ -12,13 +12,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cors": "^2.8.5",
+    "axios": "^1.7.9",
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.6",
     "dotenv": "^16.3.1",
     "express": "^4.21.2",
+    "jimp": "^1.6.0",
     "mongodb": "^6.13.1",
-    "mongoose": "^8.10.1",
-    "cheerio": "^1.0.0-rc.12",
-    "axios": "^1.7.9"
+    "mongoose": "^8.10.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

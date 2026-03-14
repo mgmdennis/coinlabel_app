@@ -4,22 +4,19 @@ const Schema = mongoose.Schema
 const CoinSchema = new Schema({
     numistaNumber: {
         type: String,
-        required: true,
+        default: "",
         trim: true,
     },
     year: {
         type: String,
-        required: true,
         trim: true,
     },
     issuer: {
         type: String,
-        required: true,
         trim: true,
     },
     denomination: {
         type: String,
-        required: true,
         trim: true,
     },
     grade: {
@@ -62,6 +59,24 @@ const CoinSchema = new Schema({
     marks: {
         type: Array,
         default: [],
+    },
+    visualTarget: {
+        type: String,
+        enum: ['QR', 'OBVERSE', 'REVERSE', 'PASTED', 'GALLERY'],
+        default: 'QR',
+    },
+    visualMethod: {
+        type: String,
+        enum: ['SCRIPT', 'AI', 'RAW'],
+        default: 'SCRIPT',
+    },
+    sketchId: {
+        type: String,
+        trim: true,
+    },
+    isManual: {
+        type: Boolean,
+        default: false,
     },
 })
 

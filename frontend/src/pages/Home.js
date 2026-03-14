@@ -123,6 +123,15 @@ const Home = () => {
             <Col xs={12} md="auto">
               <Button variant="primary" type="submit" className="w-100 px-4">Go</Button>
             </Col>
+            <Col xs={12} md="auto">
+              <Button 
+                variant="outline-secondary" 
+                onClick={() => navigate("/create", { state: { manualMode: true } })}
+                className="w-100 px-4"
+              >
+                + Manual Entry
+              </Button>
+            </Col>
             
             {selectedIds.length === 0 && coins && coins.length > 0 && (
               <Col xs={12} md="auto">
