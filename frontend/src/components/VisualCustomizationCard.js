@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card, Form, Row, Col, Button, Badge, Spinner } from 'react-bootstrap';
-import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, Download, Clipboard } from 'lucide-react';
+import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, Clipboard } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
 
 export const VisualCustomizationCard = ({
@@ -22,6 +22,39 @@ export const VisualCustomizationCard = ({
     reverseImageUrl
 }) => {
     const [showBeta, setShowBeta] = useState(false);
+    const [copyingImage, setCopyingImage] = useState(null); // 'obverse' | 'reverse' | null
+
+    const BASE_URL = process.env.REACT_APP_API_URL || '';
+
+    // Copy a Numista image to clipboard via backend proxy
+    const copyImageToClipboard = async (url, side) => {
+        setCopyingImage(side);
+        try {
+            const proxyUrl = `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(url)}`;
+            const resp = await fetch(proxyUrl);
+            const blob = await resp.blob();
+            // Convert to PNG (clipboard API requires image/png)
+            const img = new window.Image();
+            img.src = URL.createObjectURL(blob);
+            await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            URL.revokeObjectURL(img.src);
+            const pngBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
+            alert(`${side.charAt(0).toUpperCase() + side.slice(1)} image copied! Now paste it below (Ctrl+V / Cmd+V).`);
+        } catch (err) {
+            console.error('Copy failed:', err);
+            // Fallback: open in new tab
+            window.open(url, '_blank');
+            alert('Could not copy automatically. The image has been opened in a new tab — right-click it and copy.');
+        } finally {
+            setCopyingImage(null);
+        }
+    };
+
     // Determine if the current target requires generation
     const needsGeneration = visualTarget === 'NUMISTA' || visualTarget === 'PASTED';
 
@@ -90,27 +123,37 @@ export const VisualCustomizationCard = ({
                 {/* --- Numista image helpers (for PASTED mode in Numista mode) --- */}
                 {visualTarget === 'PASTED' && !isManualMode && (obverseImageUrl || reverseImageUrl) && (
                     <Form.Group className="mb-3">
-                        <Form.Label className="small fw-bold">Download from Numista</Form.Label>
+                        <Form.Label className="small fw-bold">Copy from Numista</Form.Label>
                         <p className="text-muted small mb-2" style={{ fontSize: '0.8em' }}>
-                            Open an image below, right-click &rarr; Copy Image, then paste here.
+                            Copy an image to your clipboard, then paste below.
                         </p>
                         <div className="d-flex gap-2">
                             {obverseImageUrl && (
                                 <Button 
                                     variant="outline-secondary" 
                                     size="sm"
-                                    onClick={() => window.open(obverseImageUrl, '_blank')}
+                                    disabled={!!copyingImage}
+                                    onClick={() => copyImageToClipboard(obverseImageUrl, 'obverse')}
                                 >
-                                    <Download size={14} className="me-1" /> Obverse
+                                    {copyingImage === 'obverse' 
+                                        ? <Spinner animation="border" size="sm" className="me-1" />
+                                        : <Clipboard size={14} className="me-1" />
+                                    }
+                                    Copy Obverse
                                 </Button>
                             )}
                             {reverseImageUrl && (
                                 <Button 
                                     variant="outline-secondary" 
                                     size="sm"
-                                    onClick={() => window.open(reverseImageUrl, '_blank')}
+                                    disabled={!!copyingImage}
+                                    onClick={() => copyImageToClipboard(reverseImageUrl, 'reverse')}
                                 >
-                                    <Download size={14} className="me-1" /> Reverse
+                                    {copyingImage === 'reverse' 
+                                        ? <Spinner animation="border" size="sm" className="me-1" />
+                                        : <Clipboard size={14} className="me-1" />
+                                    }
+                                    Copy Reverse
                                 </Button>
                             )}
                         </div>
