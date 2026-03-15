@@ -59,9 +59,15 @@ export const VisualCustomizationCard = ({
             </Modal.Header>
             <Modal.Body className="text-center p-3">
                 <img
-                    src={imageModal ? `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(imageModal.url)}` : ''}
+                    src={imageModal?.url || ''}
                     alt="Coin"
-                    style={{ maxWidth: '100%', borderRadius: '8px', touchAction: 'none' }}
+                    onError={e => {
+                        // Fall back to backend proxy if direct load fails (hotlink protection etc.)
+                        if (imageModal && !e.target.src.includes('/api/generate-sketch/image-proxy')) {
+                            e.target.src = `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(imageModal.url)}`;
+                        }
+                    }}
+                    style={{ maxWidth: '100%', borderRadius: '8px' }}
                 />
                 <p className="text-muted small mt-3 mb-0">
                     {isIOS
