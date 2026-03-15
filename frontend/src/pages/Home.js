@@ -124,10 +124,11 @@ const Home = () => {
           {/* Numista lookup — full width on mobile, fixed on desktop */}
           <Form onSubmit={handleFormSubmit} className="mb-0 flex-grow-1 flex-md-grow-0">
             <InputGroup>
+              <InputGroup.Text className="text-muted">N#</InputGroup.Text>
               <Form.Control
                 value={numistaNumber}
                 onChange={(e) => setNumistaNumber(e.target.value.trim().replace(/\D+/g, ''))}
-                placeholder="N# Numista lookup..."
+                placeholder="Numista number..."
                 style={{ minWidth: 0 }}
               />
               <Button variant="primary" type="submit" className="px-3">
