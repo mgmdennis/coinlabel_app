@@ -218,7 +218,7 @@ const BackLabelContainer = ({
                                 style={{ 
                                     width: sketchSize,
                                     height: sketchSize,
-                                    objectFit: 'contain',
+                                    flexShrink: 0,
                                     mixBlendMode: 'multiply',
                                     display: 'block'
                                 }} 

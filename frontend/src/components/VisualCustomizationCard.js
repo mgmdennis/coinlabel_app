@@ -43,13 +43,21 @@ export const VisualCustomizationCard = ({
 
     const BASE_URL = process.env.REACT_APP_API_URL || '';
 
-    // Copy a Numista image to clipboard via backend proxy
+    // Copy a Numista image to clipboard — tries direct fetch first, proxy as fallback
     const copyImageToClipboard = async (url, side) => {
         setCopyingImage(side);
         try {
-            const proxyUrl = `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(url)}`;
-            const resp = await fetch(proxyUrl);
-            const blob = await resp.blob();
+            let blob;
+            try {
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                blob = await resp.blob();
+            } catch {
+                console.log('Direct fetch blocked by CORS, falling back to proxy...');
+                const proxyUrl = `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(url)}`;
+                const resp = await fetch(proxyUrl);
+                blob = await resp.blob();
+            }
             // Convert to PNG (clipboard API requires image/png)
             const img = new window.Image();
             img.src = URL.createObjectURL(blob);
@@ -193,9 +201,9 @@ export const VisualCustomizationCard = ({
                                 e.target.value = '';
                             }}
                         />
-                        {/* Paste zone: visible display layer + transparent contentEditable overlay */}
+                        {/* Paste zone: visible display layer + invisible textarea overlay */}
                         <div className="position-relative mb-2">
-                            {/* Visual display layer (pointer-events: none so taps pass through to overlay) */}
+                            {/* Visual display layer (pointer-events: none so taps pass through to textarea) */}
                             <div
                                 className="p-3 border rounded text-center bg-light"
                                 style={{
@@ -225,26 +233,36 @@ export const VisualCustomizationCard = ({
                                     </>
                                 )}
                             </div>
-                            {/* Transparent contentEditable overlay — captures native iOS paste context menu */}
-                            <div
-                                contentEditable="true"
-                                suppressContentEditableWarning={true}
-                                inputMode="none"
+                            {/* Invisible textarea overlay — textarea is what iOS Safari reliably shows
+                                the "Paste" context menu for. No inputMode="none" so the context menu
+                                is not suppressed. Font size 16px prevents iOS auto-zoom on focus.
+                                onInput clears any typed text since we only want paste. */}
+                            <textarea
                                 onPaste={handleLocalPaste}
-                                onKeyDown={e => e.preventDefault()}
+                                onInput={e => { e.target.value = ''; }}
                                 onFocus={() => setIsPasteAreaFocused(true)}
                                 onBlur={() => setIsPasteAreaFocused(false)}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                autoCapitalize="off"
+                                spellCheck="false"
+                                aria-label="Tap and hold to paste a coin image"
                                 style={{
                                     position: 'absolute',
                                     top: 0, left: 0, right: 0, bottom: 0,
-                                    opacity: 0.001,
+                                    fontSize: '16px', // prevents iOS zoom on focus
+                                    color: 'transparent',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    outline: 'none',
+                                    resize: 'none',
+                                    caretColor: 'transparent',
+                                    WebkitTapHighlightColor: 'transparent',
                                     borderRadius: '0.375rem',
                                     cursor: 'default',
-                                    WebkitTapHighlightColor: 'transparent',
+                                    zIndex: 1,
                                 }}
-                                aria-label="Tap and hold to paste a coin image"
-                            />
-                        </div>
+                            /></div>
                         <Button
                             variant="outline-secondary"
                             size="sm"
