@@ -43,38 +43,43 @@ export const VisualCustomizationCard = ({
 
     const BASE_URL = process.env.REACT_APP_API_URL || '';
 
-    // Copy a Numista image to clipboard — tries direct fetch first, proxy as fallback
+    // Copy a Numista image to clipboard.
+    // iOS Safari requires ClipboardItem to be created synchronously within the user gesture,
+    // but accepts a Promise as the value — so we pass the fetch+convert promise directly
+    // rather than awaiting it first. This keeps the gesture context alive.
     const copyImageToClipboard = async (url, side) => {
         setCopyingImage(side);
         try {
-            let blob;
-            try {
-                const resp = await fetch(url);
-                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                blob = await resp.blob();
-            } catch {
-                console.log('Direct fetch blocked by CORS, falling back to proxy...');
-                const proxyUrl = `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(url)}`;
-                const resp = await fetch(proxyUrl);
-                blob = await resp.blob();
-            }
-            // Convert to PNG (clipboard API requires image/png)
-            const img = new window.Image();
-            img.src = URL.createObjectURL(blob);
-            await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            canvas.getContext('2d').drawImage(img, 0, 0);
-            URL.revokeObjectURL(img.src);
-            const pngBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
-            alert(`${side.charAt(0).toUpperCase() + side.slice(1)} image copied! Now paste it below (Ctrl+V / Cmd+V).`);
+            const fetchAndConvert = async () => {
+                let blob;
+                try {
+                    const resp = await fetch(url);
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    blob = await resp.blob();
+                } catch {
+                    console.log('Direct fetch blocked by CORS, falling back to proxy...');
+                    const proxyUrl = `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(url)}`;
+                    const resp = await fetch(proxyUrl);
+                    blob = await resp.blob();
+                }
+                // Convert to PNG (clipboard API requires image/png)
+                const img = new window.Image();
+                img.src = URL.createObjectURL(blob);
+                await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                URL.revokeObjectURL(img.src);
+                return new Promise(r => canvas.toBlob(r, 'image/png'));
+            };
+
+            // Pass the promise directly — iOS keeps the gesture context alive this way
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': fetchAndConvert() })]);
+            alert(`${side.charAt(0).toUpperCase() + side.slice(1)} image copied! Now paste it below.`);
         } catch (err) {
             console.error('Copy failed:', err);
-            // Fallback: open in new tab
-            window.open(url, '_blank');
-            alert('Could not copy automatically. The image has been opened in a new tab — right-click it and copy.');
+            alert('Could not copy image to clipboard. Try using "Choose Image" to select it directly.');
         } finally {
             setCopyingImage(null);
         }
