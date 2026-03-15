@@ -312,7 +312,7 @@ router.post('/', async (req, res) => {
             canvas.composite(image, xOffset, yOffset);
 
             // 7. Export to Base64
-            const mimeType = "image/jpeg";
+            const mimeType = "image/png";
             const processedBuffer = await canvas.getBuffer(mimeType);
             const finalBase64 = `data:${mimeType};base64,${processedBuffer.toString('base64')}`;
 

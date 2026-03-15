@@ -157,6 +157,23 @@ body{
   background: transparent !important;
 }
 
+/* Ensure ALL form fields and static text within label containers are transparent */
+/* This covers Bootstrap .form-control, .form-control-plaintext, and native textareas/inputs on iOS */
+.parent-label-for-edit .form-control,
+.parent-label-for-edit .form-control-plaintext,
+.parent-label-for-edit textarea,
+.parent-label-for-edit input,
+.parent-label-for-edit p,
+.parent-label-for-print .form-control,
+.parent-label-for-print .form-control-plaintext,
+.parent-label-for-print textarea,
+.parent-label-for-print input,
+.parent-label-for-print p {
+  background: transparent !important;
+  background-color: transparent !important;
+  -webkit-appearance: none; /* removes iOS native input chrome */
+}
+
 .date {
   position: absolute;
   font-weight: bold;
