@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, Form, Row, Col, Button, Badge, Spinner } from 'react-bootstrap';
-import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, Clipboard } from 'lucide-react';
+import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, Clipboard, FolderOpen } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
 
 export const VisualCustomizationCard = ({
@@ -19,8 +19,10 @@ export const VisualCustomizationCard = ({
     onSketchSelect,
     numistaNumber,
     obverseImageUrl,
-    reverseImageUrl
+    reverseImageUrl,
+    onImageFile,
 }) => {
+    const fileInputRef = useRef(null);
     const [showBeta, setShowBeta] = useState(false);
     const [copyingImage, setCopyingImage] = useState(null); // 'obverse' | 'reverse' | null
 
@@ -164,19 +166,37 @@ export const VisualCustomizationCard = ({
                 {visualTarget === 'PASTED' && (
                     <Form.Group className="mb-3">
                         <Form.Label className="small fw-bold">Coin Image</Form.Label>
+                        {/* Hidden file input for iOS / non-clipboard fallback */}
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={e => {
+                                const file = e.target.files?.[0];
+                                if (file && onImageFile) onImageFile(file);
+                                e.target.value = '';
+                            }}
+                        />
                         <div 
                             className="p-3 border rounded text-center bg-light"
-                            style={{ minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                            onClick={() => !pastedImage && alert("Copy an image and then paste it here (Ctrl+V or Cmd+V).")}
+                            style={{ minHeight: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                         >
                             {pastedImage ? (
                                 <div>
                                     <img src={pastedImage} alt="Pasted preview" style={{ maxWidth: '80px', maxHeight: '80px' }} />
-                                    <p className="text-success small mb-0 mt-1">Image pasted! Paste again to replace.</p>
+                                    <p className="text-success small mb-0 mt-1">Image ready. Paste or pick again to replace.</p>
                                 </div>
                             ) : (
-                                <p className="text-muted mb-0 small">Paste coin image here from clipboard</p>
+                                <p className="text-muted mb-0 small">Paste an image (Ctrl/Cmd+V)</p>
                             )}
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <FolderOpen size={13} className="me-1" />Choose Image
+                            </Button>
                         </div>
                     </Form.Group>
                 )}

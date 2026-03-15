@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import deleteIcon from "./assets/delete.svg";
 import { Button, InputGroup, Form, Row, Col, Card, Container, ButtonGroup } from 'react-bootstrap';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
+import { Search, PenLine, Pencil, Copy, Trash2 } from 'lucide-react';
 
 import {
   Link,
@@ -88,6 +88,13 @@ const Home = () => {
 
   const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
 
+  const indeterminateRef = useCallback(el => {
+    if (el) {
+      const input = el.querySelector('input[type="checkbox"]');
+      if (input) input.indeterminate = true;
+    }
+  }, []);
+
   const handlePrintSelected = () => {
     navigate('/print', { state: { selectedIds } });
   };
@@ -106,42 +113,42 @@ const Home = () => {
   return (
     <Container className="mt-4 pb-5">
       
-      {/* Search Input Section */}
-      <div className="coin-input-wrapper mb-4">
-        <Form onSubmit={handleFormSubmit}>
-          <Row className="g-2 justify-content-center align-items-center">
-            <Col xs={12} md="auto">
-              <InputGroup>
-                <InputGroup.Text>N#</InputGroup.Text>
-                <Form.Control
-                  value={numistaNumber}
-                  onChange={(e) => setNumistaNumber(e.target.value.trim().replace(/\D+/g, ''))}
-                  placeholder="Numista ID"
-                />
-              </InputGroup>
-            </Col>
-            <Col xs={12} md="auto">
-              <Button variant="primary" type="submit" className="w-100 px-4">Go</Button>
-            </Col>
-            <Col xs={12} md="auto">
-              <Button 
-                variant="outline-secondary" 
-                onClick={() => navigate("/create", { state: { manualMode: true } })}
-                className="w-100 px-4"
-              >
-                + Manual Entry
+      {/* --- Header Bar --- */}
+      <div 
+        className="mb-4 px-3 px-md-4 py-3 bg-white rounded-3"
+        style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.07)', border: '1px solid #e9ecef' }}
+      >
+        {/* Top row on mobile: full-width search. Single row on desktop. */}
+        <div className="d-flex align-items-center gap-3 flex-wrap">
+
+          {/* Numista lookup — full width on mobile, fixed on desktop */}
+          <Form onSubmit={handleFormSubmit} className="mb-0 flex-grow-1 flex-md-grow-0">
+            <InputGroup>
+              <Form.Control
+                value={numistaNumber}
+                onChange={(e) => setNumistaNumber(e.target.value.trim().replace(/\D+/g, ''))}
+                placeholder="N# Numista lookup..."
+                style={{ minWidth: 0 }}
+              />
+              <Button variant="primary" type="submit" className="px-3">
+                <Search size={14} />
               </Button>
-            </Col>
-            
-            {selectedIds.length === 0 && coins && coins.length > 0 && (
-              <Col xs={12} md="auto">
-                <Button variant="outline-primary" onClick={handleSelectAll} className="w-100">
-                  Select All
-                </Button>
-              </Col>
-            )}
-          </Row>
-        </Form>
+            </InputGroup>
+          </Form>
+
+          {/* Vertical divider — desktop only */}
+          <div style={{ width: '1px', height: '36px', background: '#dee2e6', flexShrink: 0 }} className="d-none d-md-block" />
+
+          {/* Secondary action: manual entry */}
+          <Button 
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => navigate("/create", { state: { manualMode: true } })}
+          >
+            <PenLine size={13} className="me-1" />Manual Entry
+          </Button>
+
+        </div>
       </div>
 
       {/* Action Bar */}
@@ -165,6 +172,42 @@ const Home = () => {
       )}
 
       <div className="coins-list">
+        {coins && coins.length > 0 && selectedIds.length === 0 && (
+          <div className="mb-2 ps-1">
+            <Form.Check
+              type="checkbox"
+              id="select-all-checkbox"
+              label={<span className="text-muted small">Select all</span>}
+              checked={false}
+              onChange={handleSelectAll}
+              style={{ cursor: 'pointer' }}
+            />
+          </div>
+        )}
+        {coins && coins.length > 0 && selectedIds.length > 0 && selectedIds.length < coins.length && (
+          <div className="mb-2 ps-1" ref={indeterminateRef}>
+            <Form.Check
+              type="checkbox"
+              id="select-all-checkbox"
+              label={<span className="text-muted small">{selectedIds.length} selected</span>}
+              checked={false}
+              onChange={handleSelectAll}
+              style={{ cursor: 'pointer' }}
+            />
+          </div>
+        )}
+        {coins && coins.length > 0 && selectedIds.length === coins.length && (
+          <div className="mb-2 ps-1">
+            <Form.Check
+              type="checkbox"
+              id="select-all-checkbox"
+              label={<span className="text-muted small">All selected</span>}
+              checked={true}
+              onChange={() => setSelectedCoins({})}
+              style={{ cursor: 'pointer' }}
+            />
+          </div>
+        )}
         {!coins || !coins.length ? (
           <h3 className="text-center">No Coins Yet !!!</h3>
         ) : (
@@ -201,23 +244,22 @@ const Home = () => {
                     </div>
                   </Col>
 
-                  <Col xs={12} lg="auto">
-                    <div className="d-grid d-lg-flex flex-lg-column gap-2" style={{ minWidth: '120px' }}>
+                  <Col xs={12} lg="auto" className="d-flex justify-content-center justify-content-lg-end">
+                    <ButtonGroup size="sm">
                       <Link 
                         to={`/create/${coin.numistaNumber}`} 
                         state={{ coinId: coin._id }} 
                         className="btn btn-outline-secondary btn-sm"
                       >
-                        Edit
+                        <Pencil size={13} className="me-1" />Edit
                       </Link>
-                      <Button variant="outline-info" size="sm" onClick={() => handleDuplicateCoin(coin)}>
-                        Duplicate
+                      <Button variant="outline-secondary" size="sm" onClick={() => handleDuplicateCoin(coin)}>
+                        <Copy size={13} className="me-1" />Duplicate
                       </Button>
                       <Button variant="outline-danger" size="sm" onClick={() => handleDeleteCoin(coin._id)}>
-                        <img src={deleteIcon} alt="delete" height="14px" className="me-1" />
-                        Delete
+                        <Trash2 size={13} className="me-1" />Delete
                       </Button>
-                    </div>
+                    </ButtonGroup>
                   </Col>
                 </Row>
               </Card.Body>

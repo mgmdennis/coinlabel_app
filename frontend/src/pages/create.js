@@ -269,6 +269,13 @@ const Create = () => {
         };
     }, [isManualMode, visualTarget]); // Rerun if isManualMode or visualTarget changes
 
+    // File picker handler — same pipeline as clipboard paste (iOS fallback)
+    const handleImageFile = (file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => setPastedImage(e.target.result);
+        reader.readAsDataURL(file);
+    };
+
     // When switching to manual mode, reset visual target appropriately
     useEffect(() => {
         if (isManualMode && visualTarget === 'NUMISTA') {
@@ -491,6 +498,7 @@ const Create = () => {
                         numistaNumber={numistaNumber}
                         obverseImageUrl={numistaDetails.obverseImage}
                         reverseImageUrl={numistaDetails.reverseImage}
+                        onImageFile={handleImageFile}
                     />
                 </Col>
 
