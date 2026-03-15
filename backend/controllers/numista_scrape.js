@@ -143,20 +143,15 @@ async function getNumistaDetailsJSON(numistaNumber) {
         const issuesData = issuesResponse.data;
 
         // Fetch coin images and convert to base64 so the frontend doesn't need a proxy
-        // Uses browser-like headers since Numista CDN blocks non-browser requests
+        // Uses allorigins.win as a relay since Numista CDN blocks server-side requests
         async function fetchImageAsBase64(url) {
             if (!url) return null;
             try {
-                console.log(`📷 Fetching image: ${url}`);
-                const resp = await axios.get(url, {
+                console.log(`📷 Fetching image via allorigins relay: ${url}`);
+                const relayUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const resp = await axios.get(relayUrl, {
                     responseType: 'arraybuffer',
-                    timeout: 10000,
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                        'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-                        'Accept-Language': 'en-US,en;q=0.9',
-                        'Referer': 'https://en.numista.com/',
-                    }
+                    timeout: 15000
                 });
                 const contentType = resp.headers['content-type'] || 'image/jpeg';
                 const base64 = `data:${contentType};base64,${Buffer.from(resp.data).toString('base64')}`;

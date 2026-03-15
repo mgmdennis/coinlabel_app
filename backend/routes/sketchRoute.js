@@ -18,33 +18,14 @@ router.get('/image-proxy', async (req, res) => {
         const { url } = req.query;
         if (!url) return res.status(400).send('URL is required');
 
-        console.log(`🔗 Proxying image for frontend capture: ${url}`);
+        console.log(`🔗 Proxying image: ${url}`);
         
-        // Try with Numista API key first (for API-sourced URLs), fall back to browser headers
-        let response;
-        try {
-            response = await axios.get(url, {
-                responseType: 'arraybuffer',
-                maxRedirects: 5,
-                headers: {
-                    'Numista-API-Key': process.env.NUMISTA_API_KEY,
-                    'User-Agent': 'CoinLabelApp/1.0'
-                }
-            });
-        } catch (apiErr) {
-            console.log(`🔄 API key fetch failed (${apiErr.response?.status}), trying browser headers...`);
-            response = await axios.get(url, {
-                responseType: 'arraybuffer',
-                maxRedirects: 5,
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                    'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Referer': 'https://en.numista.com/',
-                    'Origin': 'https://en.numista.com'
-                }
-            });
-        }
+        // Use allorigins.win as a relay (Numista CDN blocks server IPs)
+        const relayUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const response = await axios.get(relayUrl, {
+            responseType: 'arraybuffer',
+            timeout: 15000
+        });
 
         res.set('Content-Type', response.headers['content-type']);
         res.send(response.data);
