@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Card, Form, Row, Col, Button, Badge, Spinner } from 'react-bootstrap';
-import { Sparkles, Code, QrCode, Image, Grid3x3, Camera } from 'lucide-react';
+import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, Download, Clipboard } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
 
 export const VisualCustomizationCard = ({
@@ -16,8 +17,11 @@ export const VisualCustomizationCard = ({
     onGenerateVisual,
     sketchId,
     onSketchSelect,
-    numistaNumber
+    numistaNumber,
+    obverseImageUrl,
+    reverseImageUrl
 }) => {
+    const [showBeta, setShowBeta] = useState(false);
     // Determine if the current target requires generation
     const needsGeneration = visualTarget === 'NUMISTA' || visualTarget === 'PASTED';
 
@@ -46,13 +50,13 @@ export const VisualCustomizationCard = ({
                                 </span>
                             }
                         />
-                        {!isManualMode && (
+                        {!isManualMode && showBeta && (
                             <Form.Check 
                                 inline type="radio" name="visualTarget" id="vtNumista"
                                 value="NUMISTA"
                                 checked={visualTarget === "NUMISTA"}
                                 onChange={onVisualTargetChange}
-                                label={<span className="d-flex align-items-center"><Image size={14} className="me-1" /> From Numista</span>}
+                                label={<span className="d-flex align-items-center"><Image size={14} className="me-1" /> From Numista <Badge bg="warning" text="dark" className="ms-1" style={{fontSize: '0.6em'}}>BETA</Badge></span>}
                             />
                         )}
                         <Form.Check 
@@ -70,7 +74,48 @@ export const VisualCustomizationCard = ({
                             label={<span className="d-flex align-items-center"><Camera size={14} className="me-1" /> From Pasted Image</span>}
                         />
                     </div>
+                    {!isManualMode && !showBeta && (
+                        <div className="mt-1">
+                            <span 
+                                className="text-muted small" 
+                                style={{ cursor: 'pointer', textDecoration: 'underline', fontSize: '0.7em' }}
+                                onClick={() => setShowBeta(true)}
+                            >
+                                <FlaskConical size={10} className="me-1" />Show beta options
+                            </span>
+                        </div>
+                    )}
                 </Form.Group>
+
+                {/* --- Numista image helpers (for PASTED mode in Numista mode) --- */}
+                {visualTarget === 'PASTED' && !isManualMode && (obverseImageUrl || reverseImageUrl) && (
+                    <Form.Group className="mb-3">
+                        <Form.Label className="small fw-bold">Download from Numista</Form.Label>
+                        <p className="text-muted small mb-2" style={{ fontSize: '0.8em' }}>
+                            Open an image below, right-click &rarr; Copy Image, then paste here.
+                        </p>
+                        <div className="d-flex gap-2">
+                            {obverseImageUrl && (
+                                <Button 
+                                    variant="outline-secondary" 
+                                    size="sm"
+                                    onClick={() => window.open(obverseImageUrl, '_blank')}
+                                >
+                                    <Download size={14} className="me-1" /> Obverse
+                                </Button>
+                            )}
+                            {reverseImageUrl && (
+                                <Button 
+                                    variant="outline-secondary" 
+                                    size="sm"
+                                    onClick={() => window.open(reverseImageUrl, '_blank')}
+                                >
+                                    <Download size={14} className="me-1" /> Reverse
+                                </Button>
+                            )}
+                        </div>
+                    </Form.Group>
+                )}
 
                 {/* --- Pasted Image drop zone (for PASTED mode) --- */}
                 {visualTarget === 'PASTED' && (

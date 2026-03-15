@@ -489,6 +489,8 @@ const Create = () => {
                         sketchId={sketchId}
                         onSketchSelect={(id) => setSketchId(id)}
                         numistaNumber={numistaNumber}
+                        obverseImageUrl={numistaDetails.obverseImage}
+                        reverseImageUrl={numistaDetails.reverseImage}
                     />
                 </Col>
 
