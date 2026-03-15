@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { Card, Form, Row, Col, Button, Badge, Spinner } from 'react-bootstrap';
-import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, Clipboard, FolderOpen } from 'lucide-react';
+import { Card, Form, Row, Col, Button, Badge, Spinner, Modal } from 'react-bootstrap';
+import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, FolderOpen, ExternalLink } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
 
 export const VisualCustomizationCard = ({
@@ -24,12 +24,15 @@ export const VisualCustomizationCard = ({
 }) => {
     const fileInputRef = useRef(null);
     const [showBeta, setShowBeta] = useState(false);
-    const [copyingImage, setCopyingImage] = useState(null); // 'obverse' | 'reverse' | null
-    const [isPasteAreaFocused, setIsPasteAreaFocused] = useState(false);
+    const [imageModal, setImageModal] = useState(null); // { url, side } | null
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    const BASE_URL = process.env.REACT_APP_API_URL || '';
 
     const handleLocalPaste = useCallback((e) => {
         e.preventDefault();
-        e.stopPropagation(); // prevent the global window handler from double-firing
+        e.stopPropagation();
         const items = e.clipboardData?.items;
         if (!items) return;
         for (const item of items) {
@@ -41,54 +44,43 @@ export const VisualCustomizationCard = ({
         }
     }, [onImageFile]);
 
-    const BASE_URL = process.env.REACT_APP_API_URL || '';
+    const [isPasteAreaFocused, setIsPasteAreaFocused] = useState(false);
 
-    // Copy a Numista image to clipboard.
-    // iOS Safari requires ClipboardItem to be created synchronously within the user gesture,
-    // but accepts a Promise as the value — so we pass the fetch+convert promise directly
-    // rather than awaiting it first. This keeps the gesture context alive.
-    const copyImageToClipboard = async (url, side) => {
-        setCopyingImage(side);
-        try {
-            const fetchAndConvert = async () => {
-                let blob;
-                try {
-                    const resp = await fetch(url);
-                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-                    blob = await resp.blob();
-                } catch {
-                    console.log('Direct fetch blocked by CORS, falling back to proxy...');
-                    const proxyUrl = `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(url)}`;
-                    const resp = await fetch(proxyUrl);
-                    blob = await resp.blob();
-                }
-                // Convert to PNG (clipboard API requires image/png)
-                const img = new window.Image();
-                img.src = URL.createObjectURL(blob);
-                await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                canvas.getContext('2d').drawImage(img, 0, 0);
-                URL.revokeObjectURL(img.src);
-                return new Promise(r => canvas.toBlob(r, 'image/png'));
-            };
-
-            // Pass the promise directly — iOS keeps the gesture context alive this way
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': fetchAndConvert() })]);
-            alert(`${side.charAt(0).toUpperCase() + side.slice(1)} image copied! Now paste it below.`);
-        } catch (err) {
-            console.error('Copy failed:', err);
-            alert('Could not copy image to clipboard. Try using "Choose Image" to select it directly.');
-        } finally {
-            setCopyingImage(null);
-        }
-    };
-
-    // Determine if the current target requires generation
     const needsGeneration = visualTarget === 'NUMISTA' || visualTarget === 'PASTED';
 
     return (
+        <>
+        {/* Image preview modal — user long-presses (iOS) or right-clicks (desktop) to copy */}
+        <Modal show={!!imageModal} onHide={() => setImageModal(null)} centered>
+            <Modal.Header closeButton>
+                <Modal.Title className="fs-6">
+                    {imageModal?.side === 'obverse' ? 'Obverse' : 'Reverse'} Image
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="text-center p-3">
+                <img
+                    src={imageModal ? `${BASE_URL}/api/generate-sketch/image-proxy?url=${encodeURIComponent(imageModal.url)}` : ''}
+                    alt="Coin"
+                    style={{ maxWidth: '100%', borderRadius: '8px', touchAction: 'none' }}
+                />
+                <p className="text-muted small mt-3 mb-0">
+                    {isIOS
+                        ? '👆 Long-press the image above → tap Copy'
+                        : 'Right-click the image → Copy Image, then paste below'}
+                </p>
+            </Modal.Body>
+            <Modal.Footer className="justify-content-between">
+                <Button variant="outline-secondary" size="sm" onClick={() => setImageModal(null)}>
+                    Close
+                </Button>
+                <Button
+                    variant="primary" size="sm"
+                    onClick={() => { setImageModal(null); fileInputRef.current?.click(); }}
+                >
+                    <FolderOpen size={13} className="me-1" />Choose from files instead
+                </Button>
+            </Modal.Footer>
+        </Modal>
         <Card className="shadow-sm mb-4 border-primary">
             <Card.Header className="d-flex justify-content-between align-items-center bg-primary text-white fw-bold">
                 Visual Customization
@@ -155,35 +147,27 @@ export const VisualCustomizationCard = ({
                     <Form.Group className="mb-3">
                         <Form.Label className="small fw-bold">Copy from Numista</Form.Label>
                         <p className="text-muted small mb-2" style={{ fontSize: '0.8em' }}>
-                            Copy an image to your clipboard, then paste below.
+                            Open an image to copy, then paste below.
                         </p>
                         <div className="d-flex gap-2">
                             {obverseImageUrl && (
                                 <Button 
                                     variant="outline-secondary" 
                                     size="sm"
-                                    disabled={!!copyingImage}
-                                    onClick={() => copyImageToClipboard(obverseImageUrl, 'obverse')}
+                                    onClick={() => setImageModal({ url: obverseImageUrl, side: 'obverse' })}
                                 >
-                                    {copyingImage === 'obverse' 
-                                        ? <Spinner animation="border" size="sm" className="me-1" />
-                                        : <Clipboard size={14} className="me-1" />
-                                    }
-                                    Copy Obverse
+                                    <ExternalLink size={14} className="me-1" />
+                                    Obverse
                                 </Button>
                             )}
                             {reverseImageUrl && (
                                 <Button 
                                     variant="outline-secondary" 
                                     size="sm"
-                                    disabled={!!copyingImage}
-                                    onClick={() => copyImageToClipboard(reverseImageUrl, 'reverse')}
+                                    onClick={() => setImageModal({ url: reverseImageUrl, side: 'reverse' })}
                                 >
-                                    {copyingImage === 'reverse' 
-                                        ? <Spinner animation="border" size="sm" className="me-1" />
-                                        : <Clipboard size={14} className="me-1" />
-                                    }
-                                    Copy Reverse
+                                    <ExternalLink size={14} className="me-1" />
+                                    Reverse
                                 </Button>
                             )}
                         </div>
@@ -357,5 +341,6 @@ export const VisualCustomizationCard = ({
                 )}
             </Card.Body>
         </Card>
+        </>
     );
 };
