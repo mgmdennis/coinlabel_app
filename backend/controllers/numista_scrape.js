@@ -143,17 +143,23 @@ async function getNumistaDetailsJSON(numistaNumber) {
         const issuesData = issuesResponse.data;
 
         // Fetch coin images and convert to base64 so the frontend doesn't need a proxy
-        // Uses wsrv.nl (Cloudflare-based image proxy) because Numista's CDN blocks Heroku IPs
+        // Uses browser-like headers since Numista CDN blocks non-browser requests
         async function fetchImageAsBase64(url) {
             if (!url) return null;
             try {
-                console.log(`📷 Fetching image via wsrv.nl relay: ${url}`);
-                const proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=png`;
-                const resp = await axios.get(proxyUrl, {
+                console.log(`📷 Fetching image: ${url}`);
+                const resp = await axios.get(url, {
                     responseType: 'arraybuffer',
-                    timeout: 10000
+                    timeout: 10000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                        'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Referer': 'https://en.numista.com/',
+                    }
                 });
-                const base64 = `data:image/png;base64,${Buffer.from(resp.data).toString('base64')}`;
+                const contentType = resp.headers['content-type'] || 'image/jpeg';
+                const base64 = `data:${contentType};base64,${Buffer.from(resp.data).toString('base64')}`;
                 console.log(`✅ Image fetched successfully (${Math.round(base64.length / 1024)}KB)`);
                 return base64;
             } catch (imgErr) {
