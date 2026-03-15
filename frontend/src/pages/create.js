@@ -4,7 +4,6 @@ import axios from "axios";
 import { Container, Row, Col, Form, InputGroup, Button, Modal } from 'react-bootstrap';
 
 // Utilities
-import { getCoinBase64 } from "../utils/imageProcessing";
 import { parseNumistaText } from "../utils/parseNumistaText";
 
 // Components
@@ -99,7 +98,7 @@ const Create = () => {
         }
     };
 
-    // --- UNIFIED GENERATION: AI, SCRIPT, and RAW all use Base64 ---
+    // --- UNIFIED GENERATION: AI, SCRIPT, and RAW ---
     const handleGenerateVisual = async () => {
         if (visualMethod === "AI" && !showAIConfirm) {
             setShowAIConfirm(true);
@@ -109,7 +108,8 @@ const Create = () => {
         setShowAIConfirm(false);
         setIsGenerating(true);
         
-        let base64Data = null;
+        let imageData = null;   // base64 for pasted images
+        let imageUrl = null;    // raw URL for Numista images (backend fetches via relay)
         let side = null;
 
         if (visualTarget === 'PASTED') {
@@ -118,31 +118,31 @@ const Create = () => {
                 setIsGenerating(false);
                 return;
             }
-            base64Data = pastedImage;
+            imageData = pastedImage;
             side = 'PASTED';
         } else if (visualTarget === 'NUMISTA') {
             side = numistaSide; // OBVERSE or REVERSE
-            const imageSource = numistaSide === "OBVERSE" 
+            const imgSource = numistaSide === "OBVERSE" 
                 ? numistaDetails.obverseImage 
                 : numistaDetails.reverseImage;
             
-            if (!imageSource) {
+            if (!imgSource) {
                 alert(`No ${numistaSide.toLowerCase()} image is available from Numista.`);
                 setIsGenerating(false);
                 return;
             }
-            base64Data = await getCoinBase64(imageSource);
+            imageUrl = imgSource; // Send URL — backend will fetch it
         } else {
             // QR / GALLERY shouldn't reach here
             setIsGenerating(false);
             return;
         }
         
-        await generateSketch(base64Data, side);
+        await generateSketch({ imageData, imageUrl, side });
         setIsGenerating(false);
     };
 
-    const generateSketch = async (base64Data, side) => {
+    const generateSketch = async ({ imageData, imageUrl, side }) => {
         try {
             // Extract coin diameter in mm (default to 25 if not available)
             const coinDiameter = numistaDetails.diameter 
@@ -157,11 +157,12 @@ const Create = () => {
             const requestBody = {
                 numistaNumber,
                 method: visualMethod,
-                imageData: base64Data,
                 coinDiameter,
                 year,
                 side,
-                hasDates
+                hasDates,
+                ...(imageData && { imageData }),
+                ...(imageUrl && { imageUrl }),
             };
 
             console.log(`📤 Sending request body:`, {
@@ -171,7 +172,8 @@ const Create = () => {
                 side: requestBody.side,
                 hasDates: requestBody.hasDates,
                 coinDiameter: requestBody.coinDiameter,
-                imageDataLength: requestBody.imageData ? requestBody.imageData.length : 0
+                hasImageData: !!requestBody.imageData,
+                hasImageUrl: !!requestBody.imageUrl,
             });
 
             // Send to the unified backend route

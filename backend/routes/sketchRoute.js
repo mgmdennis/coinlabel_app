@@ -20,12 +20,18 @@ router.get('/image-proxy', async (req, res) => {
 
         console.log(`🔗 Proxying image: ${url}`);
         
-        // Use allorigins.win as a relay (Numista CDN blocks server IPs)
-        const relayUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const response = await axios.get(relayUrl, {
-            responseType: 'arraybuffer',
-            timeout: 15000
-        });
+        let response;
+        try {
+            // Try direct fetch first
+            response = await axios.get(url, {
+                responseType: 'arraybuffer',
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+            });
+        } catch (directErr) {
+            console.log(`⚠️ Direct proxy failed (${directErr.response?.status || directErr.message}), trying relay...`);
+            const relayUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            response = await axios.get(relayUrl, { responseType: 'arraybuffer' });
+        }
 
         res.set('Content-Type', response.headers['content-type']);
         res.send(response.data);
@@ -69,10 +75,33 @@ const SKETCH_HEIGHT = 327; // ~27.7mm at 300 DPI (61% of label height)
 
 router.post('/', async (req, res) => {
     try {
-        const { numistaNumber, method, imageData, coinDiameter, year, hasDates, side } = req.body;
+        const { numistaNumber, method, imageData, imageUrl, coinDiameter, year, hasDates, side } = req.body;
 
-        if (!imageData) {
-            console.error("❌ No imageData received in body");
+        // Resolve imageData: accept either inline base64 (PASTED) or a URL to fetch (NUMISTA)
+        let resolvedImageData = imageData;
+        if (!resolvedImageData && imageUrl) {
+            console.log(`📷 Fetching source image: ${imageUrl}`);
+            try {
+                // Try direct fetch first (works locally / most servers)
+                const directResp = await axios.get(imageUrl, {
+                    responseType: 'arraybuffer',
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+                });
+                const ct = directResp.headers['content-type'] || 'image/jpeg';
+                resolvedImageData = `data:${ct};base64,${Buffer.from(directResp.data).toString('base64')}`;
+                console.log(`✅ Direct fetch succeeded (${Math.round(resolvedImageData.length / 1024)}KB)`);
+            } catch (directErr) {
+                console.log(`⚠️ Direct fetch failed (${directErr.response?.status || directErr.message}), trying relay...`);
+                const relayUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+                const relayResp = await axios.get(relayUrl, { responseType: 'arraybuffer' });
+                const ct = relayResp.headers['content-type'] || 'image/jpeg';
+                resolvedImageData = `data:${ct};base64,${Buffer.from(relayResp.data).toString('base64')}`;
+                console.log(`✅ Relay fetch succeeded (${Math.round(resolvedImageData.length / 1024)}KB)`);
+            }
+        }
+
+        if (!resolvedImageData) {
+            console.error("❌ No imageData or imageUrl received in body");
             return res.status(400).json({ error: "No image data provided" });
         }
 
@@ -93,7 +122,7 @@ router.post('/', async (req, res) => {
         console.log(`📐 Coin: #${numistaNumber}, Method: ${method}, Side: ${side}, Year: "${year}", CleanYear: "${cleanYear}", HasDates: ${hasDates}, Diameter: ${coinDiameter}mm, Scale: ${scale.toFixed(2)}, Scaled dimensions: ${scaledSize}x${scaledSize}px`);
 
         // Generate a hash of the source image for deduplication
-        const sourceHash = crypto.createHash('md5').update(imageData).digest('hex');
+        const sourceHash = crypto.createHash('md5').update(resolvedImageData).digest('hex');
 
         // Check cache by source image hash + method + side
         // Skip cache for PASTED images since the source image can change each time
@@ -111,7 +140,7 @@ router.post('/', async (req, res) => {
 
         if (method === 'AI') {
             console.log(`🎨 Requesting AI Engraving for #${numistaNumber} (Year: "${year}", CleanYear: "${cleanYear}")...`);
-            console.log(`📤 Image data received: ${imageData.substring(0, 100)}...`);
+            console.log(`📤 Image data received: ${resolvedImageData.substring(0, 100)}...`);
 
             // Build prompt with year emphasis based on whether there are multiple date variations
             // Calculate recommended line thickness as percentage of diameter
@@ -139,7 +168,7 @@ router.post('/', async (req, res) => {
                 {
                     input: {
                         prompt: prompt,
-                        image_input: [imageData],
+                        image_input: [resolvedImageData],
                         creativity: 0.2,  // Balance between accuracy and quality
                         output_format: "png",
                         output_quality: 100
@@ -233,7 +262,7 @@ router.post('/', async (req, res) => {
         } else if (method === 'SCRIPT') {
             console.log(`💻 Processing Script Sketch for #${numistaNumber}...`);
             
-            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, "");
+            const base64Data = resolvedImageData.replace(/^data:image\/\w+;base64,/, "");
             const imageBuffer = Buffer.from(base64Data, 'base64');
 
             // 1. Read the image
@@ -305,7 +334,7 @@ router.post('/', async (req, res) => {
         } else if (method === 'RAW') {
             console.log(`📷 Processing RAW (grayscale + trim) for #${numistaNumber}...`);
             
-            const base64Data = imageData.replace(/^data:image\/\w+;base64,/, "");
+            const base64Data = resolvedImageData.replace(/^data:image\/\w+;base64,/, "");
             const imageBuffer = Buffer.from(base64Data, 'base64');
 
             // 1. Read the image
