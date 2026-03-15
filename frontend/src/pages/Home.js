@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Button, InputGroup, Form, Row, Col, Card, Container, ButtonGroup } from 'react-bootstrap';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
-import { Search, PenLine, Pencil, Copy, Trash2 } from 'lucide-react';
+import { Search, PenLine, Pencil, Copy, Trash2, ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 
 import {
   Link,
@@ -87,6 +87,26 @@ const Home = () => {
   };
 
   const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
+
+  // --- Collapse state ---
+  const [collapsedCards, setCollapsedCards] = useState({});
+
+  const toggleCollapse = (id) => {
+    setCollapsedCards(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const allCollapsed = coins && coins.length > 0 && coins.every(c => collapsedCards[c._id]);
+
+  const toggleCollapseAll = () => {
+    if (!coins) return;
+    if (allCollapsed) {
+      setCollapsedCards({});
+    } else {
+      const all = {};
+      coins.forEach(c => { all[c._id] = true; });
+      setCollapsedCards(all);
+    }
+  };
 
   const indeterminateRef = useCallback(el => {
     if (el) {
@@ -174,7 +194,7 @@ const Home = () => {
 
       <div className="coins-list">
         {coins && coins.length > 0 && selectedIds.length === 0 && (
-          <div className="mb-2 ps-3">
+          <div className="mb-2 ps-3 d-flex align-items-center justify-content-between">
             <Form.Check
               type="checkbox"
               id="select-all-checkbox"
@@ -183,10 +203,14 @@ const Home = () => {
               onChange={handleSelectAll}
               style={{ cursor: 'pointer' }}
             />
+            <Button variant="link" size="sm" className="text-muted p-0 text-decoration-none" onClick={toggleCollapseAll}>
+              <ChevronsUpDown size={14} className="me-1" />
+              <span className="small">{allCollapsed ? 'Expand all' : 'Collapse all'}</span>
+            </Button>
           </div>
         )}
         {coins && coins.length > 0 && selectedIds.length > 0 && selectedIds.length < coins.length && (
-          <div className="mb-2 ps-3" ref={indeterminateRef}>
+          <div className="mb-2 ps-3 d-flex align-items-center justify-content-between" ref={indeterminateRef}>
             <Form.Check
               type="checkbox"
               id="select-all-checkbox"
@@ -195,10 +219,14 @@ const Home = () => {
               onChange={handleSelectAll}
               style={{ cursor: 'pointer' }}
             />
+            <Button variant="link" size="sm" className="text-muted p-0 text-decoration-none" onClick={toggleCollapseAll}>
+              <ChevronsUpDown size={14} className="me-1" />
+              <span className="small">{allCollapsed ? 'Expand all' : 'Collapse all'}</span>
+            </Button>
           </div>
         )}
         {coins && coins.length > 0 && selectedIds.length === coins.length && (
-          <div className="mb-2 ps-3">
+          <div className="mb-2 ps-3 d-flex align-items-center justify-content-between">
             <Form.Check
               type="checkbox"
               id="select-all-checkbox"
@@ -207,6 +235,10 @@ const Home = () => {
               onChange={() => setSelectedCoins({})}
               style={{ cursor: 'pointer' }}
             />
+            <Button variant="link" size="sm" className="text-muted p-0 text-decoration-none" onClick={toggleCollapseAll}>
+              <ChevronsUpDown size={14} className="me-1" />
+              <span className="small">{allCollapsed ? 'Expand all' : 'Collapse all'}</span>
+            </Button>
           </div>
         )}
         {!coins || !coins.length ? (
@@ -214,9 +246,13 @@ const Home = () => {
         ) : (
           coins.map((coin) => (
             <Card key={coin._id} className={`mb-4 shadow-sm ${selectedCoins[coin._id] ? 'border-primary' : ''}`}>
-              <Card.Header className={selectedCoins[coin._id] ? 'bg-primary text-white' : 'bg-light'}>
+              <Card.Header
+                className={selectedCoins[coin._id] ? 'bg-primary text-white' : 'bg-light'}
+                style={{ cursor: 'pointer' }}
+                onClick={() => toggleCollapse(coin._id)}
+              >
                 <Row className="align-items-center">
-                  <Col xs="auto">
+                  <Col xs="auto" onClick={e => e.stopPropagation()}>
                     <Form.Check 
                       type="checkbox"
                       id={`check-${coin._id}`}
@@ -229,10 +265,17 @@ const Home = () => {
                       {coin.issuer} — {coin.denomination}, {coin.year}
                     </strong>
                   </Col>
+                  <Col xs="auto">
+                    {collapsedCards[coin._id]
+                      ? <ChevronDown size={16} className={selectedCoins[coin._id] ? 'text-white' : 'text-muted'} />
+                      : <ChevronUp size={16} className={selectedCoins[coin._id] ? 'text-white' : 'text-muted'} />
+                    }
+                  </Col>
                 </Row>
               </Card.Header>
 
-              <Card.Body>
+              {!collapsedCards[coin._id] && (
+                <Card.Body>
                 <Row className="align-items-center g-3">
                   <Col xs={12} lg className="border-lg-end">
                     <div className="d-flex flex-column flex-md-row gap-3 justify-content-center align-items-center">
@@ -264,6 +307,7 @@ const Home = () => {
                   </Col>
                 </Row>
               </Card.Body>
+              )}
             </Card>
           ))
         )}
