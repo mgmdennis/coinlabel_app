@@ -142,31 +142,8 @@ async function getNumistaDetailsJSON(numistaNumber) {
         const typeData = typeResponse.data;
         const issuesData = issuesResponse.data;
 
-        // Fetch coin images and convert to base64 so the frontend doesn't need a proxy
-        // Uses allorigins.win as a relay since Numista CDN blocks server-side requests
-        async function fetchImageAsBase64(url) {
-            if (!url) return null;
-            try {
-                console.log(`📷 Fetching image via allorigins relay: ${url}`);
-                const relayUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                const resp = await axios.get(relayUrl, {
-                    responseType: 'arraybuffer',
-                    timeout: 15000
-                });
-                const contentType = resp.headers['content-type'] || 'image/jpeg';
-                const base64 = `data:${contentType};base64,${Buffer.from(resp.data).toString('base64')}`;
-                console.log(`✅ Image fetched successfully (${Math.round(base64.length / 1024)}KB)`);
-                return base64;
-            } catch (imgErr) {
-                console.warn(`⚠️ Failed to fetch image ${url}: ${imgErr.response?.status || ''} ${imgErr.message}`);
-                return null;
-            }
-        }
-
-        const [obverseBase64, reverseBase64] = await Promise.all([
-            fetchImageAsBase64(typeData.obverse?.picture),
-            fetchImageAsBase64(typeData.reverse?.picture)
-        ]);
+        // Return raw image URLs — actual fetching is deferred to sketch generation time
+        // (Numista CDN blocks server IPs, so images are relayed via allorigins.win only when needed)
 
         // Validate category - only coins and exonumia (medals/tokens) are supported
         const category = typeData.category || 'unknown';
@@ -193,8 +170,8 @@ async function getNumistaDetailsJSON(numistaNumber) {
                 : [],
             
             numistaRef: typeData.id,
-            obverseImage: obverseBase64, 
-            reverseImage: reverseBase64,
+            obverseImage: typeData.obverse?.picture || null, 
+            reverseImage: typeData.reverse?.picture || null,
             obverseDescription: typeData.obverse?.description || "",
             reverseDescription: typeData.reverse?.description || "",
             
