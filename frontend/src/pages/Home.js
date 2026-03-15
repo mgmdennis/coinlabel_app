@@ -173,7 +173,7 @@ const Home = () => {
 
       <div className="coins-list">
         {coins && coins.length > 0 && selectedIds.length === 0 && (
-          <div className="mb-2 ps-1">
+          <div className="mb-2 ps-3">
             <Form.Check
               type="checkbox"
               id="select-all-checkbox"
@@ -185,7 +185,7 @@ const Home = () => {
           </div>
         )}
         {coins && coins.length > 0 && selectedIds.length > 0 && selectedIds.length < coins.length && (
-          <div className="mb-2 ps-1" ref={indeterminateRef}>
+          <div className="mb-2 ps-3" ref={indeterminateRef}>
             <Form.Check
               type="checkbox"
               id="select-all-checkbox"
@@ -197,7 +197,7 @@ const Home = () => {
           </div>
         )}
         {coins && coins.length > 0 && selectedIds.length === coins.length && (
-          <div className="mb-2 ps-1">
+          <div className="mb-2 ps-3">
             <Form.Check
               type="checkbox"
               id="select-all-checkbox"
