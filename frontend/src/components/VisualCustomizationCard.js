@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Card, Form, Row, Col, Button, Badge, Spinner } from 'react-bootstrap';
 import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, Clipboard, FolderOpen } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
@@ -25,6 +25,21 @@ export const VisualCustomizationCard = ({
     const fileInputRef = useRef(null);
     const [showBeta, setShowBeta] = useState(false);
     const [copyingImage, setCopyingImage] = useState(null); // 'obverse' | 'reverse' | null
+    const [isPasteAreaFocused, setIsPasteAreaFocused] = useState(false);
+
+    const handleLocalPaste = useCallback((e) => {
+        e.preventDefault();
+        e.stopPropagation(); // prevent the global window handler from double-firing
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file && onImageFile) onImageFile(file);
+                break;
+            }
+        }
+    }, [onImageFile]);
 
     const BASE_URL = process.env.REACT_APP_API_URL || '';
 
@@ -166,7 +181,7 @@ export const VisualCustomizationCard = ({
                 {visualTarget === 'PASTED' && (
                     <Form.Group className="mb-3">
                         <Form.Label className="small fw-bold">Coin Image</Form.Label>
-                        {/* Hidden file input for iOS / non-clipboard fallback */}
+                        {/* Hidden file input for file picker fallback */}
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -178,26 +193,66 @@ export const VisualCustomizationCard = ({
                                 e.target.value = '';
                             }}
                         />
-                        <div 
-                            className="p-3 border rounded text-center bg-light"
-                            style={{ minHeight: '100px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                        >
-                            {pastedImage ? (
-                                <div>
-                                    <img src={pastedImage} alt="Pasted preview" style={{ maxWidth: '80px', maxHeight: '80px' }} />
-                                    <p className="text-success small mb-0 mt-1">Image ready. Paste or pick again to replace.</p>
-                                </div>
-                            ) : (
-                                <p className="text-muted mb-0 small">Paste an image (Ctrl/Cmd+V)</p>
-                            )}
-                            <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={() => fileInputRef.current?.click()}
+                        {/* Paste zone: visible display layer + transparent contentEditable overlay */}
+                        <div className="position-relative mb-2">
+                            {/* Visual display layer (pointer-events: none so taps pass through to overlay) */}
+                            <div
+                                className="p-3 border rounded text-center bg-light"
+                                style={{
+                                    minHeight: '100px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                    pointerEvents: 'none',
+                                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                                    ...(isPasteAreaFocused ? {
+                                        borderColor: '#0d6efd',
+                                        boxShadow: '0 0 0 0.2rem rgba(13,110,253,.25)',
+                                    } : {}),
+                                }}
                             >
-                                <FolderOpen size={13} className="me-1" />Choose Image
-                            </Button>
+                                {pastedImage ? (
+                                    <>
+                                        <img src={pastedImage} alt="Pasted preview" style={{ maxWidth: '80px', maxHeight: '80px' }} />
+                                        <p className="text-success small mb-0">Image ready — tap &amp; hold to replace</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-muted mb-0 small fw-semibold">Tap &amp; hold → <strong>Paste</strong></p>
+                                        <p className="text-muted mb-0" style={{ fontSize: '0.75em' }}>or Ctrl/Cmd+V on desktop</p>
+                                    </>
+                                )}
+                            </div>
+                            {/* Transparent contentEditable overlay — captures native iOS paste context menu */}
+                            <div
+                                contentEditable="true"
+                                suppressContentEditableWarning={true}
+                                inputMode="none"
+                                onPaste={handleLocalPaste}
+                                onKeyDown={e => e.preventDefault()}
+                                onFocus={() => setIsPasteAreaFocused(true)}
+                                onBlur={() => setIsPasteAreaFocused(false)}
+                                style={{
+                                    position: 'absolute',
+                                    top: 0, left: 0, right: 0, bottom: 0,
+                                    opacity: 0.001,
+                                    borderRadius: '0.375rem',
+                                    cursor: 'default',
+                                    WebkitTapHighlightColor: 'transparent',
+                                }}
+                                aria-label="Tap and hold to paste a coin image"
+                            />
                         </div>
+                        <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            className="w-100"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <FolderOpen size={13} className="me-1" />Choose Image
+                        </Button>
                     </Form.Group>
                 )}
 
