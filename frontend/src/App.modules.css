@@ -154,6 +154,7 @@ body{
 	font-family: 'Fira Sans', sans-serif;
   white-space: pre-wrap; /* This preserves new lines and spaces */
     word-wrap: break-word; /* Ensures long words don't break the layout */
+  background: transparent !important;
 }
 
 .date {
