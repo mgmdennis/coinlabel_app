@@ -275,7 +275,7 @@ router.post('/', async (req, res) => {
             prompt += `\n\nTHIS IS A STRICT TRACING TASK. Trace ONLY what exists. Do NOT add any text, numbers, or symbols that are not clearly visible in the source image.`;
 
             const output = await replicate.run('google/nano-banana', {
-                input: { prompt, image_input: [aiInputData], creativity: 0.2, output_format: 'png', output_quality: 100 }
+                input: { prompt, image_input: [aiInputData], creativity: 0.1, output_format: 'png', output_quality: 100 }
             });
             const aiUrl = output.url ? output.url() : (Array.isArray(output) ? output[0] : output);
             console.log(`📥 Generated image URL: ${aiUrl}`);
@@ -285,7 +285,7 @@ router.post('/', async (req, res) => {
             console.log(`📐 AI output dimensions: ${aiImage.width}x${aiImage.height}`);
 
             // Trim whitespace border from AI output and resize to target
-            trimAndSquareCrop(aiImage, 240, 0.02, 'AI-output');
+            trimBackground(aiImage, detectBgThreshold(aiImage), 0.02, 'AI-output');
             aiImage.resize({ w: scaledSize, h: scaledSize });
 
             return saveSketch(res, {
