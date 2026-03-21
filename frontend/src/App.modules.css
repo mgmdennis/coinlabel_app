@@ -297,6 +297,13 @@ body{
   flex-direction: column;
   gap: 1cqw; /* Optional: adds a small space between image and text */
 
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.details-stack-container > * {
+  pointer-events: auto;
 }
 
 .bottom-right-stack, .physical-details-stack {
