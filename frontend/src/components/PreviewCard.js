@@ -28,32 +28,36 @@ export const PreviewCard = ({
                 <Card.Body className="bg-light d-flex flex-column align-items-center gap-4 py-4">
                     <div className="preview-section text-center w-100">
                         <span className="badge bg-secondary mb-2">Front Side</span>
-                        <FrontLabelContainer 
-                            isEditable={true}
-                            year={year} setYear={setYear}
-                            issuer={issuer} setIssuer={setIssuer}
-                            denomination={denomination} setDenomination={setDenomination}
-                            grade={grade} setGrade={setGrade}
-                            gradeDetails={gradeDetails} setGradeDetails={setGradeDetails}
-                            mintage={mintage} setMintage={setMintage}
-                            reference={reference} setReference={setReference}
-                            marksPicture={marksPicture}
-                            marks={marks}
-                            details={details} setDetails={setDetails}
-                        />
+                        <div className="label-edit-scale-wrapper">
+                            <FrontLabelContainer 
+                                isEditable={true}
+                                year={year} setYear={setYear}
+                                issuer={issuer} setIssuer={setIssuer}
+                                denomination={denomination} setDenomination={setDenomination}
+                                grade={grade} setGrade={setGrade}
+                                gradeDetails={gradeDetails} setGradeDetails={setGradeDetails}
+                                mintage={mintage} setMintage={setMintage}
+                                reference={reference} setReference={setReference}
+                                marksPicture={marksPicture}
+                                marks={marks}
+                                details={details} setDetails={setDetails}
+                            />
+                        </div>
                     </div>
 
                     <div className="preview-section text-center w-100 border-top pt-4">
                         <span className="badge bg-secondary mb-2">Back Side</span>
-                        <BackLabelContainer 
-                            isEditable={true}
-                            composition={composition} setComposition={setComposition}
-                            physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
-                            numistaNumber={numistaNumber}
-                            dateAdded={dateAdded} setDateAdded={setDateAdded}
-                            visualTarget={visualTarget}
-                            sketchId={sketchId}
-                        />
+                        <div className="label-edit-scale-wrapper">
+                            <BackLabelContainer 
+                                isEditable={true}
+                                composition={composition} setComposition={setComposition}
+                                physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
+                                numistaNumber={numistaNumber}
+                                dateAdded={dateAdded} setDateAdded={setDateAdded}
+                                visualTarget={visualTarget}
+                                sketchId={sketchId}
+                            />
+                        </div>
                     </div>
                 </Card.Body>
                 <Card.Footer className="text-center small">

@@ -153,8 +153,15 @@ body{
   padding: .5cqw 2.5cqw 0.1cqw 2.5cqw;
 	font-family: 'Fira Sans', sans-serif;
   white-space: pre-wrap; /* This preserves new lines and spaces */
-    word-wrap: break-word; /* Ensures long words don't break the layout */
+  word-wrap: break-word; /* Ensures long words don't break the layout */
   background: transparent !important;
+}
+
+.static-label {
+  margin: 0 !important;
+  border: solid transparent;
+  border-width: 1px 0;
+  line-height: 1.5;
 }
 
 /* Ensure ALL form fields and static text within label containers are transparent */
@@ -429,29 +436,61 @@ body{
 }
 
 .parent-label-for-edit {
-  /* Scaling Logic */
-  width: 100%;
-  aspect-ratio: 44 / 45.5;
+  /* Render at the exact same size as print so text wrapping is identical */
+  width: 44mm;
+  height: 45.5mm;
   container-type: size;
   
   /* Background & Depth */
   background: white;
   position: relative;
-  margin: 0 auto;
   
   /* The "Small Shadow" and subtle border */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 2px; /* Tiny rounding looks more professional for paper */
+  border-radius: 2px;
 
   /* Layout */
   display: flex;
   flex-direction: column;
-  padding: 0; /* Padding removed as requested */
+  padding: 0;
   overflow: hidden;
   
-  /* Ensure content doesn't jitter during scaling */
   transition: box-shadow 0.3s ease;
+  transform-origin: top center;
+}
+
+/* Wrapper that scales the fixed-size label up for visibility in the preview */
+.label-edit-scale-wrapper {
+  --label-scale: 2.5;
+  display: flex;
+  justify-content: center;
+  /* Reserve space for the scaled label */
+  height: calc(45.5mm * var(--label-scale));
+  align-items: flex-start;
+}
+.label-edit-scale-wrapper > .parent-label-for-edit {
+  transform: scale(var(--label-scale));
+  transform-origin: top center;
+  margin: 0;
+}
+
+@media (max-width: 750px) {
+  .label-edit-scale-wrapper {
+    --label-scale: 2;
+  }
+}
+
+@media (max-width: 500px) {
+  .label-edit-scale-wrapper {
+    --label-scale: 1.7;
+  }
+}
+
+@media (max-width: 400px) {
+  .label-edit-scale-wrapper {
+    --label-scale: 1.4;
+  }
 }
 
 /* Optional: Hover effect to make it feel interactive */

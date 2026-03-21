@@ -50,7 +50,7 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
                 isEditable={isEditable}
                 placeholder="Issuer"
                 value={issuer}
-                className={"label issuer" + (issuer.length > 20 ? " narrow" : "")}
+                className={"label issuer" + (issuer.length > 18 ? " narrow" : "")}
                 onChange={(e) => setIssuer(e.target.value)}
             />
 
