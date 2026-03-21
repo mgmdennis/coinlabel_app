@@ -40,6 +40,15 @@ app.use(cors({
 connectdb();
 
 // --- 3. ROUTE MOUNTING ---
+// Simple session password check
+app.post('/api/auth', (req, res) => {
+  const { password } = req.body;
+  if (password === process.env.APP_PASSWORD) {
+    return res.json({ success: true });
+  }
+  return res.status(401).json({ success: false, message: 'Incorrect password' });
+});
+
 // Mounting at /api/generate-sketch makes the sub-routes like /image-proxy 
 // resolve to /api/generate-sketch/image-proxy
 app.use("/api", coinRoute);

@@ -52,6 +52,21 @@ const Layout = () => {
                   PRINT 2x2 LABELS
                 </Button>
               </Nav.Link>
+
+              <Nav.Link
+                onClick={() => { sessionStorage.removeItem('authenticated'); window.location.reload(); }}
+                className="ms-2"
+                role="button"
+              >
+                <Button 
+                  variant="outline-secondary" 
+                  size="sm" 
+                  className="fw-bold px-3 border-2"
+                  style={{ borderRadius: '20px' }}
+                >
+                  LOGOUT
+                </Button>
+              </Nav.Link>
             </Nav>
           </Navbar.Collapse>
         </Container>
