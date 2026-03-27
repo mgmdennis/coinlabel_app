@@ -1,6 +1,6 @@
 import { QRCode } from "react-qr-code";
 import Form from 'react-bootstrap/Form';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 // Define API Base URL for fetching images
@@ -10,7 +10,14 @@ const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 
  * LabelField Component
  * Renders either a static text or an editable Form.Control based on isEditable prop.
  */
-const LabelField = ({ isEditable, value, placeholder, className, as, rows, onChange }) => {
+const LabelField = ({ isEditable, value, placeholder, className, as, rows, onChange, autoGrow }) => {
+    const autoResize = useCallback((node) => {
+        if (node && autoGrow) {
+            node.style.height = 'auto';
+            node.style.height = node.scrollHeight + 'px';
+        }
+    }, [value, autoGrow]);
+
     if (!isEditable) {
         return (
             <p className={`${className} static-label`}>
@@ -21,11 +28,12 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
 
     return (
         <Form.Control
+            ref={autoGrow ? autoResize : undefined}
             placeholder={placeholder}
             value={value}
             plaintext
             as={as}
-            rows={rows}
+            rows={autoGrow ? 1 : rows}
             className={className}
             onChange={onChange}
         />
@@ -114,7 +122,7 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
                     value={details}
                     className="label details"
                     as="textarea"
-                    rows={5}
+                    rows={7}
                     onChange={(e) => setDetails(e.target.value)}
                 />
             </div>
@@ -177,6 +185,7 @@ const BackLabelContainer = ({
                 value={composition}
                 as="textarea"
                 rows={3}
+                autoGrow
                 className="label composition"
                 onChange={(e) => setComposition(e.target.value)}
             />

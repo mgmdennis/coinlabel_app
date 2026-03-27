@@ -179,6 +179,8 @@ body{
   background: transparent !important;
   background-color: transparent !important;
   -webkit-appearance: none; /* removes iOS native input chrome */
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .date {
@@ -258,6 +260,7 @@ body{
   top: 10.5cqw;
   right: 2cqw; 
   width: 30%;
+  resize: none;
 }
 
 .issuer {
@@ -342,7 +345,7 @@ body{
 .details {
   text-align: left;
   resize: none;
-  width: 40%;
+  width: 45%;
 }
 
 .composition {
@@ -352,6 +355,8 @@ body{
   bottom: 1cqw;
   right: 1cqw;
   line-height: 1.1;
+  resize: none;
+  overflow: hidden;
 
   z-index: 11; /* Sit on top of QR background if they touch */
 }

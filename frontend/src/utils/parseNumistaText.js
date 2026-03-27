@@ -32,9 +32,17 @@ export const parseNumistaText = (
     // Extract Diameter (e.g., "Diameter\t27.3 mm")
     const diameterMatch = text.match(/Diameter\s+(\d+(?:\.\d+)?)\s*mm/i);
     if (diameterMatch) {
+        // Limit to 4 significant digits (e.g. 25.75, 28.5, 28)
+        let diam = diameterMatch[1];
+        if (diam.replace('.', '').length > 4) {
+            const num = parseFloat(diam);
+            const intPart = Math.floor(num).toString();
+            const decimals = Math.max(0, 4 - intPart.length);
+            diam = parseFloat(num.toFixed(decimals)).toString();
+        }
         setPhysicalDetails(prev => {
             const lines = prev.split('\n').filter(line => line.trim() && !line.match(/\d+(?:\.\d+)?\s*mm/));
-            lines.push(`⌀ ${diameterMatch[1]} mm`);
+            lines.push(`⌀ ${diam} mm`);
             return lines.join('\n');
         });
     }
