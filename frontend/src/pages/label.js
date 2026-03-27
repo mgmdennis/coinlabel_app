@@ -202,6 +202,7 @@ const BackLabelContainer = ({
                 value={physicalDetails}
                 as="textarea"
                 rows={3}
+                autoGrow
                 className="label physical-details"
                 onChange={(e) => setPhysicalDetails(e.target.value)}
             />

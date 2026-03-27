@@ -357,6 +357,7 @@ body{
   line-height: 1.1;
   resize: none;
   overflow: hidden;
+  padding-bottom: 3px;
 
   z-index: 11; /* Sit on top of QR background if they touch */
 }
@@ -377,15 +378,15 @@ body{
 }
             
 .physical-details {
-  position:absolute;
+  position: absolute;
   left: 1cqw;
   bottom: 1cqw;
   text-align: left;
   width: 32%;
   line-height: 1.1;
   z-index: 11;
-
   overflow: hidden;
+  padding-bottom: 3px;
   resize: none;
 }
 
@@ -466,7 +467,7 @@ body{
   display: flex;
   flex-direction: column;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   
   transition: box-shadow 0.3s ease;
   transform-origin: top center;
