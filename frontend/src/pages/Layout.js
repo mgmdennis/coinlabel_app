@@ -1,5 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
 import { Navbar, Nav, Container, Button } from "react-bootstrap";
+import version from '../version';
 
 const Layout = () => {
   return (
@@ -81,6 +82,7 @@ const Layout = () => {
       <footer className="text-center py-4 mt-auto border-top bg-light">
         <p className="mb-0 text-muted" style={{ fontSize: '0.9rem' }}>
           &copy; {new Date().getFullYear()} NumisTag | Premium Coin Labeling powered by <a href="https://en.numista.com" target="_blank" rel="noopener noreferrer">Numista</a>
+          <span className="ms-2 text-muted" style={{ fontSize: '0.75rem' }}>v{version}</span>
         </p>
       </footer>
     </>
