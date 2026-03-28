@@ -78,6 +78,10 @@ const CoinSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    cached: {
+        type: Boolean,
+        default: false,
+    },
 })
 
 const Coin = mongoose.model("Coin", CoinSchema)

@@ -17,7 +17,8 @@ export const PreviewCard = ({
     numistaNumber,
     dateAdded, setDateAdded,
     visualTarget,
-    sketchId
+    sketchId,
+    isGenerating
 }) => {
     return (
         <div className="sticky-top" style={{ top: '1rem' }}>
@@ -56,6 +57,7 @@ export const PreviewCard = ({
                                 dateAdded={dateAdded} setDateAdded={setDateAdded}
                                 visualTarget={visualTarget}
                                 sketchId={sketchId}
+                                isGenerating={isGenerating}
                             />
                         </div>
                     </div>

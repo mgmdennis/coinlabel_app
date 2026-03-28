@@ -429,6 +429,7 @@ body{
 .qr-code {
   position: absolute;
   padding: 1cqw;
+  /* overflow: hidden; */
   
   /* Use fixed percentages so it stays a perfect square */
 
@@ -446,6 +447,35 @@ body{
   align-items: center;
   justify-content: center;
   z-index: 10;
+}
+
+@keyframes sketch-spin {
+  to { transform: rotate(360deg); }
+}
+
+
+.sketch-spinner {
+  width: 8cqw;
+  height: 8cqw;
+  border-radius: 50%;
+  background: #555;
+  opacity: 0.15;
+  animation: sketch-grow 1s cubic-bezier(0.4,0,0.2,1) infinite alternate;
+}
+
+@keyframes sketch-grow {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.15;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(0.7);
+    opacity: 0.15;
+  }
 }
 
 .parent-label-for-edit {

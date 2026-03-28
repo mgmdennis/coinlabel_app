@@ -33,7 +33,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // --- 2. THE CORS "HALL PASS" ---
 app.use(cors({
   origin: 'http://localhost:3000', // Allow your React dev server
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }));
 

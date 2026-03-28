@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Button, InputGroup, Form, Row, Col, Card, Container, ButtonGroup } from 'react-bootstrap';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
-import { Search, PenLine, Pencil, Copy, Trash2, ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
+import { Search, PenLine, Pencil, Copy, ChevronDown, ChevronUp, ChevronsUpDown, Archive, ArchiveRestore, Printer, Trash2, X } from 'lucide-react';
 
 import {
   Link,
@@ -14,6 +14,7 @@ const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 
 const Home = () => {
   const [coins, setCoins] = useState(null);
   const [numistaNumber, setNumistaNumber] = useState("");
+  const [view, setView] = useState('collection'); // 'collection' | 'cache'
   const navigate = useNavigate();
 
   // --- Persistence Logic ---
@@ -39,12 +40,6 @@ const Home = () => {
       .catch((err) => console.error(err));
   };
 
-  const handleDeleteCoin = (id) => {
-    if (window.confirm("Are you sure you want to delete this coin?")) {
-      executeDelete(id);
-    }
-  };
-
   const executeDelete = (id) => {
     return axios
       .delete(`${BASE_URL}/coin/delete/${id}`)
@@ -66,17 +61,31 @@ const Home = () => {
       try {
         await Promise.all(selectedIds.map(id => axios.delete(`${BASE_URL}/coin/delete/${id}`)));
         setCoins(prev => prev.filter(coin => !selectedIds.includes(coin._id)));
-        setSelectedCoins({}); // This will automatically clear localStorage via useEffect
+        setSelectedCoins({});
       } catch (err) {
         console.error("Error deleting coins:", err);
       }
     }
   };
 
+  const handleBulkCache = async (cached) => {
+    const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
+    try {
+      await axios.patch(`${BASE_URL}/coins/cache`, { ids: selectedIds, cached });
+      setCoins(prev => prev.map(coin =>
+        selectedIds.includes(coin._id) ? { ...coin, cached } : coin
+      ));
+      setSelectedCoins({});
+    } catch (err) {
+      console.error('Error updating cache status:', err);
+    }
+  };
+
+
   const handleSelectAll = () => {
-    if (!coins) return;
+    if (!visibleCoins) return;
     const allSelected = {};
-    coins.forEach(coin => {
+    visibleCoins.forEach(coin => {
       allSelected[coin._id] = true;
     });
     setSelectedCoins(allSelected);
@@ -85,6 +94,10 @@ const Home = () => {
   const toggleSelect = (id) => {
     setSelectedCoins(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const activeCoins = coins ? coins.filter(c => !c.cached) : null;
+  const cachedCoins = coins ? coins.filter(c => c.cached) : null;
+  const visibleCoins = view === 'collection' ? activeCoins : cachedCoins;
 
   const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
 
@@ -95,15 +108,15 @@ const Home = () => {
     setCollapsedCards(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const allCollapsed = coins && coins.length > 0 && coins.every(c => collapsedCards[c._id]);
+  const allCollapsed = visibleCoins && visibleCoins.length > 0 && visibleCoins.every(c => collapsedCards[c._id]);
 
   const toggleCollapseAll = () => {
-    if (!coins) return;
+    if (!visibleCoins) return;
     if (allCollapsed) {
       setCollapsedCards({});
     } else {
       const all = {};
-      coins.forEach(c => { all[c._id] = true; });
+      visibleCoins.forEach(c => { all[c._id] = true; });
       setCollapsedCards(all);
     }
   };
@@ -132,8 +145,27 @@ const Home = () => {
 
   return (
     <Container className="mt-4 pb-5">
-      
-      {/* --- Header Bar --- */}
+
+      {/* View toggle */}
+        {/* View toggle */}
+      <div className="d-flex mb-3 gap-2">
+        <Button
+          variant={view === 'collection' ? 'primary' : 'outline-secondary'}
+          size="sm"
+          onClick={() => { setView('collection'); setSelectedCoins({}); }}
+        >
+          My Collection {activeCoins ? `(${activeCoins.length})` : ''}
+        </Button>
+        <Button
+          variant={view === 'cache' ? 'warning' : 'outline-secondary'}
+          size="sm"
+          onClick={() => { setView('cache'); setSelectedCoins({}); }}
+        >
+          <Archive size={13} className="me-1" />
+          Cached {cachedCoins && cachedCoins.length > 0 ? `(${cachedCoins.length})` : ''}
+        </Button>
+      </div>
+
       <div 
         className="mb-4 px-3 px-md-4 py-3 bg-white rounded-3"
         style={{ boxShadow: '0 2px 10px rgba(0,0,0,0.07)', border: '1px solid #e9ecef' }}
@@ -180,20 +212,29 @@ const Home = () => {
         >
           <ButtonGroup className="shadow-lg">
             <Button variant="success" onClick={handlePrintSelected} className="border-end px-4">
-              Print Selected ({selectedIds.length})
+              <Printer size={13} className="me-1" />Print Selected ({selectedIds.length})
             </Button>
+            {view === 'collection' ? (
+              <Button variant="warning" onClick={() => handleBulkCache(true)} className="px-4">
+                <Archive size={13} className="me-1" />Cache Selected
+              </Button>
+            ) : (
+              <Button variant="info" onClick={() => handleBulkCache(false)} className="px-4">
+                <ArchiveRestore size={13} className="me-1" />Restore Selected
+              </Button>
+            )}
             <Button variant="danger" onClick={handleDeleteSelected} className="px-4">
-              Delete Selected
+              <Trash2 size={13} className="me-1" />Delete Selected
             </Button>
             <Button variant="secondary" onClick={() => setSelectedCoins({})} className="border-start">
-              Cancel
+              <X size={13} className="me-1" />Cancel
             </Button>
           </ButtonGroup>
         </div>
       )}
 
       <div className="coins-list">
-        {coins && coins.length > 0 && selectedIds.length === 0 && (
+        {visibleCoins && visibleCoins.length > 0 && selectedIds.length === 0 && (
           <div className="mb-2 ps-3 d-flex align-items-center justify-content-between">
             <Form.Check
               type="checkbox"
@@ -209,7 +250,7 @@ const Home = () => {
             </Button>
           </div>
         )}
-        {coins && coins.length > 0 && selectedIds.length > 0 && selectedIds.length < coins.length && (
+        {visibleCoins && visibleCoins.length > 0 && selectedIds.length > 0 && selectedIds.length < visibleCoins.length && (
           <div className="mb-2 ps-3 d-flex align-items-center justify-content-between" ref={indeterminateRef}>
             <Form.Check
               type="checkbox"
@@ -225,7 +266,7 @@ const Home = () => {
             </Button>
           </div>
         )}
-        {coins && coins.length > 0 && selectedIds.length === coins.length && (
+        {visibleCoins && visibleCoins.length > 0 && selectedIds.length === visibleCoins.length && (
           <div className="mb-2 ps-3 d-flex align-items-center justify-content-between">
             <Form.Check
               type="checkbox"
@@ -241,10 +282,10 @@ const Home = () => {
             </Button>
           </div>
         )}
-        {!coins || !coins.length ? (
-          <h3 className="text-center">No Coins Yet !!!</h3>
+        {!visibleCoins || !visibleCoins.length ? (
+          <h3 className="text-center">{view === 'cache' ? 'Cache is empty' : 'No Coins Yet !!!'}</h3>
         ) : (
-          coins.map((coin) => (
+          visibleCoins.map((coin) => (
             <Card key={coin._id} className={`mb-4 shadow-sm ${selectedCoins[coin._id] ? 'border-primary' : ''}`}>
               <Card.Header
                 className={selectedCoins[coin._id] ? 'bg-primary text-white' : 'bg-light'}
@@ -299,9 +340,6 @@ const Home = () => {
                       </Link>
                       <Button variant="outline-secondary" size="sm" onClick={() => handleDuplicateCoin(coin)}>
                         <Copy size={13} className="me-1" />Duplicate
-                      </Button>
-                      <Button variant="outline-danger" size="sm" onClick={() => handleDeleteCoin(coin._id)}>
-                        <Trash2 size={13} className="me-1" />Delete
                       </Button>
                     </ButtonGroup>
                   </Col>

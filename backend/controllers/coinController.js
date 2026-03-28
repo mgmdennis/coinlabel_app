@@ -66,9 +66,19 @@ const deleteCoin = async (req, res) => {
   res.json(deletedCoin)
 }
 
+const bulkSetCached = async (req, res) => {
+  const { ids, cached } = req.body;
+  if (!Array.isArray(ids) || typeof cached !== 'boolean') {
+    return res.status(400).json({ error: 'ids (array) and cached (boolean) are required' });
+  }
+  await Coin.updateMany({ _id: { $in: ids } }, { $set: { cached } });
+  res.json({ updated: ids.length });
+};
+
 exports.getCoins = getCoins;
 exports.getCoin = getCoin;
 exports.createCoin = createCoin;
 exports.updateCoin = updateCoin;
 exports.deleteCoin = deleteCoin;
+exports.bulkSetCached = bulkSetCached;
 exports.getNumistaDetails = getNumistaDetails;

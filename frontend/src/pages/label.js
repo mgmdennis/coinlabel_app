@@ -1,6 +1,8 @@
 import { QRCode } from "react-qr-code";
 import Form from 'react-bootstrap/Form';
 import { useState, useEffect, useCallback } from 'react';
+import { Modal, Button } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // Define API Base URL for fetching images
@@ -134,6 +136,7 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
  * BackLabelContainer Component
  * Handles the logic for displaying either a QR code or a fetched Sketch image.
  */
+
 const BackLabelContainer = ({ 
     isEditable, 
     composition, setComposition, 
@@ -141,14 +144,24 @@ const BackLabelContainer = ({
     numistaNumber,
     dateAdded, setDateAdded,
     visualTarget = "QR", 
-    sketchId = ""
+    sketchId = "",
+    isGenerating = false
 }) => {
     const [sketchData, setSketchData] = useState(null);
+    const [showDiameterError, setShowDiameterError] = useState(false);
+    const navigate = useNavigate();
 
     // Extract coin diameter from physicalDetails (e.g. "⌀ 25.75 mm")
     const coinDiameter = physicalDetails 
         ? parseFloat(physicalDetails.match(/⌀\s*([\d.]+)/)?.[1] || '0')
         : 0;
+
+    // Cap diameter at 39.5mm
+    useEffect(() => {
+        if (coinDiameter > 39.5) {
+            setShowDiameterError(true);
+        }
+    }, [coinDiameter]);
 
     // Calculate size: mm for print, cqw for edit (label is 44mm = 100cqw)
     const LABEL_WIDTH_MM = 44;
@@ -159,23 +172,23 @@ const BackLabelContainer = ({
     // Fetch the actual image string from the database whenever the sketchId changes
     useEffect(() => {
         if (sketchId && visualTarget !== "QR") {
-            console.log(`📸 Fetching sketch for sketchId: ${sketchId}, coinDiameter: ${coinDiameter}mm`);
             axios.get(`${BASE_URL}/generate-sketch/${sketchId}`)
                 .then(res => {
-                    console.log(`✅ Sketch fetched successfully`);
-                    if (!res.data.imageData) {
-                        console.warn("⚠️ Warning: imageData is empty or undefined");
-                    }
                     setSketchData(res.data.imageData);
                 })
                 .catch(err => {
-                    console.error("❌ Error fetching sketch image:", err.response?.status, err.message);
                     setSketchData(null);
                 });
         } else {
             setSketchData(null);
         }
     }, [sketchId, visualTarget, coinDiameter]);
+
+    // Handle redirect after closing error modal
+    const handleDiameterErrorClose = () => {
+        setShowDiameterError(false);
+        navigate("/");
+    };
 
     return (
         <div className={isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
@@ -209,8 +222,26 @@ const BackLabelContainer = ({
             <p className="label numista-number static-label">
                 {numistaNumber ? `N# ${numistaNumber}` : ''}
             </p>
-            
-            <div className="qr-code">
+            <div
+                className="qr-code"
+                style={{
+                    position: 'relative',
+                    width: '100%',
+                    overflow: coinDiameter > 39.5 ? 'hidden' : 'visible'
+                }}
+            >
+                {isGenerating && visualTarget !== "QR" && visualTarget !== "GALLERY" && (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(255,255,255,0.6)',
+                        zIndex: 30,
+                        pointerEvents: 'all',
+                    }}>
+                        <div className="sketch-spinner" />
+                    </div>
+                )}
                 {(visualTarget === "QR" || (!sketchId && visualTarget !== "GALLERY" && visualTarget !== "NUMISTA" && visualTarget !== "PASTED") || !sketchData) ? (
                     <QRCode 
                         value={`https://en.numista.com/catalogue/pieces${numistaNumber}.html`} 
@@ -219,18 +250,18 @@ const BackLabelContainer = ({
                     />
                 ) : (
                     <>
-                        {console.log(`🖼️ Rendering sketch - sketchId: ${sketchId}, coinDiameter: ${coinDiameter}mm`)}
                         {typeof sketchData === 'string' && sketchData.length > 0 ? (
                             <img 
                                 src={sketchData} 
                                 alt="Coin Sketch" 
-                                onError={() => console.error("❌ Image failed to load")}
                                 style={{ 
                                     width: sketchSize,
                                     height: sketchSize,
                                     flexShrink: 0,
                                     mixBlendMode: 'multiply',
-                                    display: 'block'
+                                    display: 'block',
+                                    zIndex: 10,
+                                    position: 'relative'
                                 }} 
                             />
                         ) : (
@@ -241,6 +272,19 @@ const BackLabelContainer = ({
                     </>
                 )}
             </div>
+            <Modal show={showDiameterError} onHide={handleDiameterErrorClose} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Diameter Too Large</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>The maximum supported coin diameter is <strong>39.5mm</strong>.<br/>Please enter a smaller value to continue.</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="primary" onClick={handleDiameterErrorClose}>
+                        OK
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 }

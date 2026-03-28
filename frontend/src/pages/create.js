@@ -520,6 +520,7 @@ const Create = () => {
                         dateAdded={dateAdded} setDateAdded={setDateAdded}
                         visualTarget={visualTarget}
                         sketchId={sketchId}
+                        isGenerating={isGenerating}
                     />
                 </Col>
             </Row>
