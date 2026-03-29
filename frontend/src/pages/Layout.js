@@ -2,7 +2,12 @@ import { Outlet, Link } from "react-router-dom";
 import { Navbar, Nav, Container, Button } from "react-bootstrap";
 import version from '../version';
 
-const Layout = () => {
+const Layout = ({ user, setUser }) => {
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout');
+    setUser(null);
+    window.location.reload();
+  };
   return (
     <>
       <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm">
@@ -32,17 +37,6 @@ const Layout = () => {
               <Nav.Link as={Link} to="/" className="me-3 text-uppercase small fw-bold">
                 Home
               </Nav.Link>
-              
-              {/* External Link to Numista */}
-              <Nav.Link 
-                href="https://en.numista.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="me-3 text-uppercase small fw-bold"
-              >
-                Numista.com
-              </Nav.Link>
-              
               <Nav.Link as={Link} to="/print">
                 <Button 
                   variant="outline-info" 
@@ -53,21 +47,20 @@ const Layout = () => {
                   PRINT 2x2 LABELS
                 </Button>
               </Nav.Link>
-
-              <Nav.Link
-                onClick={() => { sessionStorage.removeItem('authenticated'); window.location.reload(); }}
-                className="ms-2"
-                role="button"
-              >
-                <Button 
-                  variant="outline-secondary" 
-                  size="sm" 
-                  className="fw-bold px-3 border-2"
-                  style={{ borderRadius: '20px' }}
-                >
-                  LOGOUT
-                </Button>
-              </Nav.Link>
+              {user && (
+                <div className="d-flex align-items-center ms-3">
+                  <span className="text-info small fw-bold me-2">{user.username}</span>
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm" 
+                    className="fw-bold px-3 border-2"
+                    style={{ borderRadius: '20px' }}
+                    onClick={handleLogout}
+                  >
+                    LOGOUT
+                  </Button>
+                </div>
+              )}
             </Nav>
           </Navbar.Collapse>
         </Container>

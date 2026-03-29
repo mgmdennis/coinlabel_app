@@ -82,6 +82,11 @@ const CoinSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    }
 })
 
 const Coin = mongoose.model("Coin", CoinSchema)

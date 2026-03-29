@@ -1,30 +1,11 @@
-import { useState } from 'react';
-import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
-import axios from 'axios';
+import { Container, Card, Button } from 'react-bootstrap';
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
-const LoginGate = ({ onSuccess }) => {
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-
-        axios.post(`${BASE_URL}/auth`, { password })
-            .then(() => {
-                sessionStorage.setItem('authenticated', 'true');
-                onSuccess();
-            })
-            .catch(() => {
-                setError('Incorrect password');
-            })
-            .finally(() => setLoading(false));
+const LoginGate = () => {
+    const handleLogin = () => {
+        window.location.href = `${BASE_URL}/auth/login`;
     };
-
     return (
         <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh' }}>
             <Card style={{ width: '100%', maxWidth: '360px' }} className="shadow">
@@ -39,21 +20,9 @@ const LoginGate = ({ onSuccess }) => {
                             <span style={{ fontWeight: '300', color: '#6c757d', marginLeft: '2px', fontSize: '1.4rem' }}>TAG</span>
                         </div>
                     </div>
-                    <Form onSubmit={handleSubmit}>
-                        <Form.Group className="mb-3">
-                            <Form.Control
-                                type="password"
-                                placeholder="Enter password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                autoFocus
-                            />
-                        </Form.Group>
-                        {error && <Alert variant="danger" className="py-2 small">{error}</Alert>}
-                        <Button type="submit" variant="primary" className="w-100" disabled={loading || !password}>
-                            {loading ? 'Checking…' : 'Enter'}
-                        </Button>
-                    </Form>
+                    <Button onClick={handleLogin} variant="primary" className="w-100">
+                        Login with Numista
+                    </Button>
                 </Card.Body>
             </Card>
         </Container>

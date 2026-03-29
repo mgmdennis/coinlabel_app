@@ -17,11 +17,13 @@ const express = require("express");
 const cors = require("cors");
 const fs = require('fs');
 const connectdb = require("./mongodb");
+const session = require('express-session');
 
 // Routes
 const coinRoute = require("./routes/coinRoute");
 const sketchRoute = require('./routes/sketchRoute');
 const proxyRoute = require('./routes/proxyRoute');
+const authRoute = require('./routes/authRoute');
 
 const app = express();
 
@@ -37,6 +39,14 @@ app.use(cors({
   credentials: true
 }));
 
+// --- 2.5. SESSION SETUP ---
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'keyboard cat',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // Set to true if using HTTPS
+}));
+
 connectdb();
 
 // --- 3. ROUTE MOUNTING ---
@@ -48,6 +58,8 @@ app.post('/api/auth', (req, res) => {
   }
   return res.status(401).json({ success: false, message: 'Incorrect password' });
 });
+
+app.use('/api/auth', authRoute);
 
 // Mounting at /api/generate-sketch makes the sub-routes like /image-proxy 
 // resolve to /api/generate-sketch/image-proxy

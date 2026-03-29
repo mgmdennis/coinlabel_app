@@ -3,17 +3,14 @@ const Coin = require("../models/coinModel");
 const numista = require("./numista_scrape");
 
 const getCoins = async (req, res) => {
-  const coins = await Coin.find();
-
-  console.log("get Coins called");
+  const coins = await Coin.find({ userId: req.session.userId });
   res.json(coins);
 };
 
 const getCoin = async (req, res) => {
-  const coin = await Coin.findById(req.params.id)
-  console.log("getCoin called for id:", req.params.id);
-  console.log("Coin data returned:", coin);
-  res.json(coin)
+  const coin = await Coin.findOne({ _id: req.params.id, userId: req.session.userId });
+  if (!coin) return res.status(404).json({ error: 'Not found' });
+  res.json(coin);
 };
 
 const getNumistaDetails = async (req, res) => {
@@ -30,40 +27,28 @@ const getNumistaDetails = async (req, res) => {
   res.json(details);
 }
 
-const createCoin = (req, res) => {
+const createCoin = async (req, res) => {
   const coin = new Coin({
-    numistaNumber: req.body.numistaNumber,
-    year: req.body.year,
-    issuer: req.body.issuer,
-    denomination: req.body.denomination,
-    grade: req.body.grade,
-    gradeDetails: req.body.gradeDetails,
-    details: req.body.details,
-    reference: req.body.reference,
-    composition: req.body.composition,
-    physicalDetails: req.body.physicalDetails,
-    mintage: req.body.mintage,
-    dateAdded: req.body.dateAdded,
-    marksPicture: req.body.marksPicture,
-    marks: req.body.marks,
-    visualTarget: req.body.visualTarget,
-    visualMethod: req.body.visualMethod,
-    sketchId: req.body.sketchId,
-    isManual: req.body.isManual || false,
+    ...req.body,
+    userId: req.session.userId
   });
-
-  coin.save();
+  await coin.save();
   res.json(coin);
 };
 
 const updateCoin = async (req, res) => {
-  const coin = await Coin.findByIdAndUpdate(req.params.id, req.body, { new: true })
-  res.json(coin)
+  const coin = await Coin.findOneAndUpdate(
+    { _id: req.params.id, userId: req.session.userId },
+    req.body,
+    { new: true }
+  );
+  if (!coin) return res.status(404).json({ error: 'Not found' });
+  res.json(coin);
 }
 
 const deleteCoin = async (req, res) => {
-  const deletedCoin = await Coin.findByIdAndDelete(req.params.id)
-  res.json(deletedCoin)
+  const deletedCoin = await Coin.findOneAndDelete({ _id: req.params.id, userId: req.session.userId });
+  res.json(deletedCoin);
 }
 
 const bulkSetCached = async (req, res) => {
@@ -71,7 +56,7 @@ const bulkSetCached = async (req, res) => {
   if (!Array.isArray(ids) || typeof cached !== 'boolean') {
     return res.status(400).json({ error: 'ids (array) and cached (boolean) are required' });
   }
-  await Coin.updateMany({ _id: { $in: ids } }, { $set: { cached } });
+  await Coin.updateMany({ _id: { $in: ids }, userId: req.session.userId }, { $set: { cached } });
   res.json({ updated: ids.length });
 };
 
