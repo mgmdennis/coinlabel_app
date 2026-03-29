@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Button, InputGroup, Form, Row, Col, Card, Container, ButtonGroup } from 'react-bootstrap';
-import { FrontLabelContainer, BackLabelContainer } from "./label";
+import { ThemedFrontLabelContainer, BackLabelContainer } from "./label";
 import { Search, PenLine, Pencil, Copy, ChevronDown, ChevronUp, ChevronsUpDown, Archive, ArchiveRestore, Printer, Trash2, X } from 'lucide-react';
 
 import {
@@ -356,7 +356,7 @@ const Home = () => {
                   <Col xs={12} lg className="border-lg-end">
                     <div className="d-flex flex-column flex-md-row gap-3 justify-content-center align-items-center">
                       <div className="label-wrapper shadow-sm border rounded p-1 bg-white">
-                        <FrontLabelContainer isEditable={false} {...coin} />
+                        <ThemedFrontLabelContainer isEditable={false} {...coin} labelTheme={coin.labelTheme} />
                       </div>
                       <div className="label-wrapper shadow-sm border rounded p-1 bg-white">
                         <BackLabelContainer isEditable={false} {...coin} />

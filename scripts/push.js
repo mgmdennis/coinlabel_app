@@ -6,8 +6,18 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// 1. Bump version in package.json (creates a git commit + tag)
-execSync('npm version patch --no-git-tag-version', { stdio: 'inherit' });
+
+// 1. Prompt for version bump type (major, minor, patch)
+const readline = require('readline-sync');
+const bumpType = readline.question('Version bump type? (major/minor/patch) [patch]: ', {
+	defaultInput: 'patch'
+}).trim().toLowerCase() || 'patch';
+if (!['major', 'minor', 'patch'].includes(bumpType)) {
+	console.error('Invalid version bump type. Use major, minor, or patch.');
+	process.exit(1);
+}
+// Bump version in package.json (creates a git commit + tag)
+execSync(`npm version ${bumpType} --no-git-tag-version`, { stdio: 'inherit' });
 
 // 2. Write updated version into frontend/src/version.js
 const version = require('../package.json').version;

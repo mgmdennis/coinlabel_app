@@ -1,3 +1,24 @@
+// Update only the labelTheme for a coin
+const updateCoinTheme = async (req, res) => {
+  const { labelTheme } = req.body;
+  if (typeof labelTheme !== 'string' || !labelTheme.trim()) {
+    return res.status(400).json({ error: 'labelTheme (string) is required' });
+  }
+  const coin = await Coin.findOneAndUpdate(
+    { _id: req.params.id, userId: req.session.userId },
+    { $set: { labelTheme } },
+    { new: true }
+  );
+  if (!coin) return res.status(404).json({ error: 'Not found' });
+  res.json({ labelTheme: coin.labelTheme });
+};
+
+// Get only the labelTheme for a coin
+const getCoinTheme = async (req, res) => {
+  const coin = await Coin.findOne({ _id: req.params.id, userId: req.session.userId }).select('labelTheme');
+  if (!coin) return res.status(404).json({ error: 'Not found' });
+  res.json({ labelTheme: coin.labelTheme });
+};
 const Coin = require("../models/coinModel");
 
 const numista = require("./numista_scrape");
@@ -67,3 +88,5 @@ exports.updateCoin = updateCoin;
 exports.deleteCoin = deleteCoin;
 exports.bulkSetCached = bulkSetCached;
 exports.getNumistaDetails = getNumistaDetails;
+exports.updateCoinTheme = updateCoinTheme;
+exports.getCoinTheme = getCoinTheme;

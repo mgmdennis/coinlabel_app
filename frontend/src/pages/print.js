@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
-import { FrontLabelContainer, BackLabelContainer } from "./label";
+import { ThemedFrontLabelContainer, BackLabelContainer } from "./label";
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
@@ -51,11 +51,11 @@ const Print = () => {
           <tbody>
             {coinPairs.map((pair, rowIndex) => (
               <tr key={rowIndex} style={rowStyle}>
-                <td style={cellStyle}><div className="label-wrapper"><FrontLabelContainer {...pair[0]} isEditable={false} /></div></td>
+                <td style={cellStyle}><div className="label-wrapper"><ThemedFrontLabelContainer {...pair[0]} isEditable={false} labelTheme={pair[0]?.labelTheme} /></div></td>
                 <td style={cellStyle}><div className="label-wrapper"><BackLabelContainer {...pair[0]} isEditable={false} /></div></td>
                 {pair[1] ? (
                   <>
-                    <td style={cellStyle}><div className="label-wrapper"><FrontLabelContainer {...pair[1]} isEditable={false} /></div></td>
+                    <td style={cellStyle}><div className="label-wrapper"><ThemedFrontLabelContainer {...pair[1]} isEditable={false} labelTheme={pair[1]?.labelTheme} /></div></td>
                     <td style={cellStyle}><div className="label-wrapper"><BackLabelContainer {...pair[1]} isEditable={false} /></div></td>
                   </>
                 ) : (

@@ -1,8 +1,7 @@
-
 import { Card, Button } from 'react-bootstrap';
 import axios from 'axios';
 import { useState } from 'react';
-import { FrontLabelContainer, BackLabelContainer } from "../pages/label";
+import { ThemedFrontLabelContainer, BackLabelContainer } from "../pages/label";
 
 export const PreviewCard = ({
     year, setYear,
@@ -50,7 +49,7 @@ export const PreviewCard = ({
                     <div className="preview-section text-center w-100">
                         <span className="badge bg-secondary mb-2">Front Side</span>
                         <div className="label-edit-scale-wrapper">
-                            <FrontLabelContainer 
+                            <ThemedFrontLabelContainer 
                                 isEditable={true}
                                 year={year} setYear={setYear}
                                 issuer={issuer} setIssuer={setIssuer}
@@ -62,6 +61,7 @@ export const PreviewCard = ({
                                 marksPicture={marksPicture}
                                 marks={marks}
                                 details={details} setDetails={setDetails}
+                                labelTheme={typeof labelTheme !== 'undefined' ? labelTheme : "The Shelton"}
                             />
                         </div>
                     </div>

@@ -4,7 +4,10 @@ const router = express.Router();
 
 
 const requireAuth = require('../middleware/requireAuth');
-const { getCoins, getCoin, getNumistaDetails, createCoin, updateCoin, deleteCoin, bulkSetCached } = require("../controllers/coinController");
+const { getCoins, getCoin, getNumistaDetails, createCoin, updateCoin, deleteCoin, bulkSetCached, updateCoinTheme, getCoinTheme } = require("../controllers/coinController");
+// Get or update just the labelTheme for a coin
+router.get("/coin/:id/theme", requireAuth, getCoinTheme);
+router.patch("/coin/:id/theme", requireAuth, updateCoinTheme);
 
 router.get("/coins", requireAuth, getCoins);
 

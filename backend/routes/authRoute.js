@@ -1,8 +1,27 @@
-
 const express = require('express');
 const axios = require('axios');
 const User = require('../models/userModel');
 const router = express.Router();
+
+// Get or update user settings
+router.get('/me/settings', async (req, res) => {
+  if (!req.session || !req.session.userId) return res.status(401).json({ error: 'Not logged in' });
+  const user = await User.findById(req.session.userId).select('settings');
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user.settings || {});
+});
+
+router.post('/me/settings', async (req, res) => {
+  if (!req.session || !req.session.userId) return res.status(401).json({ error: 'Not logged in' });
+  const updates = req.body;
+  const user = await User.findByIdAndUpdate(
+    req.session.userId,
+    { $set: { 'settings': updates } },
+    { new: true, fields: { settings: 1 } }
+  );
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user.settings);
+});
 
 // Get current user info
 router.get('/me', async (req, res) => {

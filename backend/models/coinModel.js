@@ -82,6 +82,13 @@ const CoinSchema = new Schema({
         type: Boolean,
         default: false,
     },
+
+    // Per-label theme/layout (optional, overrides user default)
+    labelTheme: {
+        type: String,
+        trim: true,
+        default: undefined // If not set, use user's default
+    },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
