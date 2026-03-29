@@ -282,8 +282,43 @@ const Home = () => {
             </Button>
           </div>
         )}
-        {!visibleCoins || !visibleCoins.length ? (
-          <h3 className="text-center">{view === 'cache' ? 'Cache is empty' : 'No Coins Yet !!!'}</h3>
+        {coins === null ? (
+          // Show Bootstrap Placeholders while loading
+          <div className="my-5">
+            {[1,2,3].map(i => (
+              <Card key={i} className="mb-4 shadow-sm">
+                <Card.Body>
+                  <div className="d-flex align-items-center">
+                    <div className="placeholder-glow w-100">
+                      <span className="placeholder col-7"></span>
+                      <span className="placeholder col-4"></span>
+                      <span className="placeholder col-4"></span>
+                      <span className="placeholder col-6"></span>
+                      <span className="placeholder col-8"></span>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+            ))}
+          </div>
+        ) : !visibleCoins || !visibleCoins.length ? (
+          <div className="text-center my-5">
+            <div style={{fontSize: 48, color: '#adb5bd'}}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" className="bi bi-coin" viewBox="0 0 16 16">
+                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                <path d="M8 13A5 5 0 1 1 8 3a5 5 0 0 1 0 10zm0 1A6 6 0 1 0 8 2a6 6 0 0 0 0 12z"/>
+                <path d="M8 11a3 3 0 1 1 0-6a3 3 0 0 1 0 6z"/>
+              </svg>
+            </div>
+            {view === 'cache' ? (
+              <h4 className="text-muted mt-3">There are no items cached.</h4>
+            ) : (
+              <>
+                <h4 className="mt-3 mb-2 text-muted">No coins in your collection yet</h4>
+                <p className="mb-3 text-muted">Start by adding your first coin to see it here.</p>
+              </>
+            )}
+          </div>
         ) : (
           visibleCoins.map((coin) => (
             <Card key={coin._id} className={`mb-4 shadow-sm ${selectedCoins[coin._id] ? 'border-primary' : ''}`}>

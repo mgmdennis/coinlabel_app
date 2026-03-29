@@ -86,18 +86,23 @@ router.get('/callback', async (req, res) => {
     );
     // Set session/cookie (or return token)
     req.session.userId = user._id;
-    // Dynamically determine frontend URL for redirect
+    // Environment-aware frontend redirect
     let redirectUrl = '/';
-    if (req.headers.referer) {
-      try {
-        const url = new URL(req.headers.referer);
-        redirectUrl = url.origin + '/';
-      } catch {}
-    } else if (req.headers.host) {
-      const protocol = req.protocol || 'https';
-      redirectUrl = `${protocol}://${req.headers.host}/`;
+    if (process.env.NODE_ENV === 'production') {
+      if (req.headers.referer) {
+        try {
+          const url = new URL(req.headers.referer);
+          redirectUrl = url.origin + '/';
+        } catch {}
+      } else if (req.headers.host) {
+        const protocol = req.protocol || 'https';
+        redirectUrl = `${protocol}://${req.headers.host}/`;
+      }
+    } else {
+      // Development: always redirect to React dev server
+      redirectUrl = 'http://localhost:3000/';
     }
-    res.redirect(redirectUrl); // Dynamic frontend redirect
+    res.redirect(redirectUrl);
   } catch (err) {
     // Log full error details for debugging
     if (err.response) {

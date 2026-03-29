@@ -88,7 +88,10 @@ const Create = () => {
             setIssuer(jsonData.issuer);
             setComposition(jsonData.composition);
             setPhysicalDetails(`${jsonData.orientation || ''}\n⌀ ${jsonData.diameter || ''}\n${jsonData.mass || ''}`);
-            
+            // Reset dateAdded to today
+            const currentDate = new Date();
+            const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;
+            setDateAdded(formattedDate);
             if (jsonData.variations?.length > 0) {
                 updateFillOutDateAndDetails(jsonData.variations[0], jsonData.description);
             }
@@ -454,6 +457,7 @@ const Create = () => {
             <Row>
                 <Col lg={7}>
                     {!isManualMode && (
+                        <>
                         <NumistaDataCard
                             numistaDetails={numistaDetails}
                             reference={reference}
@@ -463,6 +467,7 @@ const Create = () => {
                             )}
                             onReferenceChange={setReference}
                         />
+                        </>
                     )}
 
                     <LabelSpecificsCard
@@ -522,6 +527,25 @@ const Create = () => {
                         sketchId={sketchId}
                         isGenerating={isGenerating}
                     />
+                    {!isManualMode && (
+                        <div className="d-flex justify-content-end mt-2">
+                            <Button
+                                variant="link"
+                                size="sm"
+                                className="px-1 py-0 text-muted"
+                                style={{fontWeight: 500, textDecoration: 'none'}}
+                                onClick={() => updateNumistaDetails(numistaDetails)}
+                                title="Reset all fields to Numista data"
+                                disabled={!numistaDetails || Object.keys(numistaDetails).length === 0}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" style={{marginRight: 2, marginBottom: 2}}>
+                                  <path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 1 0-.908-.418A6 6 0 1 0 8 2v1z"/>
+                                  <path d="M8 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 0-1H8.5V1.5A.5.5 0 0 0 8 1z"/>
+                                </svg>
+                                Reset fields from Numista
+                            </Button>
+                        </div>
+                    )}
                 </Col>
             </Row>
         </Container>
