@@ -54,6 +54,7 @@ const Create = () => {
 
     // --- Visual Selection State ---
     const [visualTarget, setVisualTarget] = useState("QR"); 
+        const [labelTheme, setLabelTheme] = useState("The Shelton");
     const [visualMethod, setVisualMethod] = useState("SCRIPT"); 
     const [numistaSide, setNumistaSide] = useState("OBVERSE");
     const [sketchId, setSketchId] = useState("");
@@ -97,6 +98,7 @@ const Create = () => {
             const currentDate = new Date();
             const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;
             setDateAdded(formattedDate);
+            setLabelTheme(jsonData.labelTheme || "The Shelton");
             if (jsonData.variations?.length > 0) {
                 updateFillOutDateAndDetails(jsonData.variations[0], jsonData.description);
             }
@@ -559,6 +561,16 @@ const Create = () => {
                 </Col>
 
                 <Col lg={5}>
+                    <Form.Group className="mb-3" controlId="labelThemeSelect">
+                        <Form.Label><strong>Label Theme</strong></Form.Label>
+                        <Form.Select
+                            value={labelTheme}
+                            onChange={e => setLabelTheme(e.target.value)}
+                        >
+                            <option value="The Shelton">The Shelton</option>
+                            <option value="The Heritage">The Heritage</option>
+                        </Form.Select>
+                    </Form.Group>
                     <PreviewCard
                         year={year} setYear={setYear}
                         issuer={issuer} setIssuer={setIssuer}

@@ -1,0 +1,32 @@
+.heritage-label {
+  background: #FDF6E3;
+  color: #4B2E05;
+  font-family: 'EB Garamond', 'Times New Roman', Times, serif;
+  padding: 24px 16px;
+  border-radius: 6px;
+  width: 320px;
+  margin: 0 auto;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.heritage-label .cert-number {
+  font-family: 'Fira Sans', Arial, sans-serif;
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 8px 0;
+}
+.heritage-label hr {
+  border: none;
+  border-top: 1.5px solid #4B2E05;
+  margin: 12px 0;
+}
+.heritage-label .heading {
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.heritage-label .comments {
+  font-style: italic;
+  margin: 8px 0;
+}

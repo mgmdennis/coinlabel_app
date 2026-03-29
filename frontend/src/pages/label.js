@@ -42,95 +42,119 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
     );
 };
 
-/**
- * FrontLabelContainer Component
- */
-const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks }) => {
-    return (
-        <div className={isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
-            <LabelField
-                isEditable={isEditable}
-                placeholder="Year"
-                value={year}
-                className={"label date" + (year.length > 4 ? " narrow" : "")}
-                onChange={(e) => setYear(e.target.value)}
-            />
 
-            <LabelField
-                isEditable={isEditable}
-                placeholder="Issuer"
-                value={issuer}
-                className={"label issuer" + (issuer.length > 18 ? " narrow" : "")}
-                onChange={(e) => setIssuer(e.target.value)}
-            />
-
-            <LabelField
-                isEditable={isEditable}
-                placeholder="Denomination"
-                value={denomination}
-                as="textarea"
-                rows={2}
-                className={"label denomination" + (denomination.length > 10 ? " narrow" : "")}
-                onChange={(e) => setDenomination(e.target.value)}
-            />
-
-            <LabelField
-                isEditable={isEditable}
-                placeholder="Grade"
-                value={grade}
-                className="label grade"
-                onChange={(e) => setGrade(e.target.value)}
-            />
-
-            <LabelField
-                isEditable={isEditable}
-                placeholder="Grade Details"
-                value={gradeDetails}
-                as="textarea"
-                rows={6}
-                className="label grade-details"
-                onChange={(e) => setGradeDetails(e.target.value)}
-            />
-
-            <LabelField
-                isEditable={isEditable}
-                placeholder="Mintage"
-                value={mintage}
-                className="label mintage"
-                onChange={(e) => setMintage(e.target.value)}
-            />
-
-            <LabelField
-                isEditable={isEditable}
-                placeholder="Ref"
-                value={reference}
-                className="label reference"
-                onChange={(e) => setReference(e.target.value)}
-            />
-
-            <div className="details-stack-container">
-                {marks && (
-                    <div className="marks-picture-row">
-                        {marks.map((mark, index) => (
-                            <div key={index} className="marks-picture-wrapper">
-                                <img src={mark.picture} className="marks-picture" alt="mark" />
-                            </div>
-                        ))}
-                    </div>
-                )}
+// THEME REGISTRY
+const labelThemes = {
+    "The Shelton": function SheltonFrontLabel(props) {
+        // ...existing FrontLabelContainer code...
+        return (
+            <div className={props.isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
                 <LabelField
-                    isEditable={isEditable}
-                    placeholder="Details"
-                    value={details}
-                    className="label details"
+                    isEditable={props.isEditable}
+                    placeholder="Year"
+                    value={props.year}
+                    className={"label date" + (props.year.length > 4 ? " narrow" : "")}
+                    onChange={(e) => props.setYear && props.setYear(e.target.value)}
+                />
+                <LabelField
+                    isEditable={props.isEditable}
+                    placeholder="Issuer"
+                    value={props.issuer}
+                    className={"label issuer" + (props.issuer.length > 18 ? " narrow" : "")}
+                    onChange={(e) => props.setIssuer && props.setIssuer(e.target.value)}
+                />
+                <LabelField
+                    isEditable={props.isEditable}
+                    placeholder="Denomination"
+                    value={props.denomination}
                     as="textarea"
-                    rows={7}
-                    onChange={(e) => setDetails(e.target.value)}
+                    rows={2}
+                    className={"label denomination" + (props.denomination.length > 10 ? " narrow" : "")}
+                    onChange={(e) => props.setDenomination && props.setDenomination(e.target.value)}
+                />
+                <LabelField
+                    isEditable={props.isEditable}
+                    placeholder="Grade"
+                    value={props.grade}
+                    className="label grade"
+                    onChange={(e) => props.setGrade && props.setGrade(e.target.value)}
+                />
+                <LabelField
+                    isEditable={props.isEditable}
+                    placeholder="Grade Details"
+                    value={props.gradeDetails}
+                    as="textarea"
+                    rows={6}
+                    className="label grade-details"
+                    onChange={(e) => props.setGradeDetails && props.setGradeDetails(e.target.value)}
+                />
+                <LabelField
+                    isEditable={props.isEditable}
+                    placeholder="Mintage"
+                    value={props.mintage}
+                    className="label mintage"
+                    onChange={(e) => props.setMintage && props.setMintage(e.target.value)}
+                />
+                <LabelField
+                    isEditable={props.isEditable}
+                    placeholder="Ref"
+                    value={props.reference}
+                    className="label reference"
+                    onChange={(e) => props.setReference && props.setReference(e.target.value)}
+                />
+                <div className="details-stack-container">
+                    {props.marks && (
+                        <div className="marks-picture-row">
+                            {props.marks.map((mark, index) => (
+                                <div key={index} className="marks-picture-wrapper">
+                                    <img src={mark.picture} className="marks-picture" alt="mark" />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <LabelField
+                        isEditable={props.isEditable}
+                        placeholder="Details"
+                        value={props.details}
+                        className="label details"
+                        as="textarea"
+                        rows={7}
+                        onChange={(e) => props.setDetails && props.setDetails(e.target.value)}
+                    />
+                </div>
+            </div>
+        );
+    },
+    "The Heritage": function HeritageFrontLabel(props) {
+        // Use the new HeritageLabel component for ICCS-style layout
+        // Map props to the expected HeritageLabel props
+        const opinion = "IN OUR OPINION THIS IS A\nGENUINE ORIGINAL ITEM.";
+        const warning = "Tampering with this sealed holder invalidates above opinion.\nHave holder replaced if inner package/seal not intact.";
+        // Compose the cert number from available props (fallback to blank)
+        const certNumber = props.certNumber || props.reference || "";
+        return (
+            <div className={props.isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
+                <HeritageLabel
+                    country={props.issuer || "CAN"}
+                    year={props.year || ""}
+                    denomination={props.denomination || ""}
+                    grade={props.grade || ""}
+                    comments={props.details || ""}
+                    certNumber={certNumber}
+                    opinion={opinion}
+                    warning={warning}
                 />
             </div>
-        </div>
-    );
+        );
+    }
 };
+
+// THEME SWITCHER
+export function ThemedFrontLabelContainer(props) {
+    const theme = props.labelTheme || "The Shelton";
+    const ThemeComponent = labelThemes[theme] || labelThemes["The Shelton"];
+    return <ThemeComponent {...props} />;
+}
 
 /**
  * BackLabelContainer Component
@@ -289,4 +313,4 @@ const BackLabelContainer = ({
     );
 }
 
-export { FrontLabelContainer, BackLabelContainer };
+export { BackLabelContainer };
