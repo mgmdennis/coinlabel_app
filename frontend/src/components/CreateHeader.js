@@ -1,5 +1,5 @@
-import { Button } from 'react-bootstrap';
-import { Copy, Trash2, Check } from 'lucide-react';
+import { Button, Spinner } from 'react-bootstrap';
+import { Copy, Trash2, Check, AlertCircle } from 'lucide-react';
 
 export const CreateHeader = ({ 
     title, 
@@ -7,7 +7,8 @@ export const CreateHeader = ({
     numistaNumber, 
     onDuplicate, 
     onDiscard, 
-    onDone 
+    onDone, 
+    saveStatus
 }) => {
     return (
         <div className="mb-4">
@@ -27,8 +28,17 @@ export const CreateHeader = ({
                     <Button variant="outline-danger" size="sm" onClick={onDiscard}>
                         <Trash2 size={14} className="me-1" />Discard
                     </Button>
-                    <Button variant="primary" size="sm" onClick={onDone} className="px-3">
-                        <Check size={14} className="me-1" />Done
+                    <Button 
+                        variant="primary" 
+                        size="sm" 
+                        onClick={onDone} 
+                        className="px-3"
+                        disabled={saveStatus === "saving"}
+                    >
+                        {saveStatus === "saving" && <Spinner animation="border" size="sm" className="me-1" style={{width: 16, height: 16}} />}
+                        {saveStatus === "saved" && <Check size={16} className="me-1" />}
+                        {saveStatus === "error" && <AlertCircle size={16} className="me-1 text-danger" />}
+                        Done
                     </Button>
                 </div>
             </div>

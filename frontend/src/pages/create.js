@@ -28,8 +28,10 @@ const Create = () => {
         (location?.state?.manualMode) ? "" : (paramNumistaNumber || "")
     );
     const [numistaDetails, setNumistaDetails] = useState({});
+    const [numistaTitle, setNumistaTitle] = useState("");
     const [coinId, setCoinId] = useState(null);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+    const lastLoadedCoinId = useRef(null);
     const [title, setTitle] = useState("");
     const [isManualMode, setIsManualMode] = useState(location?.state?.manualMode || false);
     const [numistaError, setNumistaError] = useState("");
@@ -61,6 +63,9 @@ const Create = () => {
     const [pasteText, setPasteText] = useState("");
     const [userChangedVisualTarget, setUserChangedVisualTarget] = useState(false);
 
+    // --- Save Status State ---
+    const [saveStatus, setSaveStatus] = useState("saved"); // 'saving', 'saved', 'error'
+
     // --- Logic Functions ---
 
     const updateFillOutDateAndDetails = (variation, description) => {
@@ -78,12 +83,12 @@ const Create = () => {
         setDetails(comments.length > 0 ? `${comments}\n${description}` : description);
     };
 
-    const updateNumistaDetails = (jsonData) => {
-        setNumistaDetails(jsonData);
-        setTitle(jsonData.title);
-        const editCoinId = location?.state?.coinId;
-
-        if (!editCoinId) {
+    // Only overwrite label fields if forceOverwrite is true (reset or new coin)
+    const updateNumistaDetails = (jsonData, forceOverwrite = false) => {
+        setNumistaDetails(jsonData); // Always update for dropdowns, etc.
+        setNumistaTitle(jsonData.title || ""); // Always update for UI population
+        if (forceOverwrite) {
+            setTitle(jsonData.title);
             setDenomination(jsonData.denomination);
             setIssuer(jsonData.issuer);
             setComposition(jsonData.composition);
@@ -233,13 +238,20 @@ const Create = () => {
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
+        setSaveStatus("saving");
         axios.put(`${BASE_URL}/coin/update/${coinId}`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId, isManual: isManualMode
         })
-        .then(() => console.log("Auto-saved changes"))
-        .catch((err) => console.error("Error updating coin:", err));
+        .then(() => {
+            setSaveStatus("saved");
+            console.log("Auto-saved changes");
+        })
+        .catch((err) => {
+            setSaveStatus("error");
+            console.error("Error updating coin:", err);
+        });
     }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode]);
 
     // --- Effects ---
@@ -290,12 +302,15 @@ const Create = () => {
         const currentDate = new Date();
         const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;
         setDateAdded(formattedDate);
-        
         // Only fetch from Numista if not in manual mode
         if (!isManualMode && paramNumistaNumber) {
             setNumistaError("");
             axios.get(`${BASE_URL}/numista/${paramNumistaNumber}`)
-                .then((res) => updateNumistaDetails(res.data))
+                .then((res) => {
+                    // Only overwrite fields if this is a new coin (not editing)
+                    const editCoinId = location?.state?.coinId;
+                    updateNumistaDetails(res.data, !editCoinId);
+                })
                 .catch((err) => {
                     const message = err.response?.data?.error || "Failed to load coin data from Numista.";
                     console.error("Numista fetch error:", message);
@@ -307,23 +322,27 @@ const Create = () => {
             setTitle("Manual Entry");
             setInitialLoadComplete(true);
         }
-    }, [paramNumistaNumber, isManualMode]);
+    }, [paramNumistaNumber, isManualMode, location]);
 
     // Load coin data when editing (works for both manual and API coins)
     useEffect(() => {
         const editCoinId = location?.state?.coinId;
-        if (editCoinId && !coinId) {
+        // If coinId changes, reset initialLoadComplete
+        if (editCoinId && lastLoadedCoinId.current !== editCoinId) {
+            setInitialLoadComplete(false);
+        }
+        // Only load backend data if coinId changes or on first mount for this coin
+        if (editCoinId && !initialLoadComplete && lastLoadedCoinId.current !== editCoinId) {
             axios.get(`${BASE_URL}/coin/${editCoinId}`)
                 .then((res) => {
                     const c = res.data;
                     console.log("✅ Loaded coin data for editing:", c);
-                    
                     // Detect if this is a manually-created coin and switch mode if needed
                     if (c.isManual && !isManualMode) {
                         setIsManualMode(true);
                     }
-                    
                     setCoinId(c._id);
+                    setTitle(c.title || "");
                     setNumistaNumber(c.numistaNumber || "");
                     setYear(c.year || "");
                     setIssuer(c.issuer || "");
@@ -341,16 +360,20 @@ const Create = () => {
                     setVisualTarget(c.visualTarget || "QR");
                     setVisualMethod(c.visualMethod || "SCRIPT");
                     setSketchId(c.sketchId || "");
-
+                    // Always update Numista details for dropdowns, but don't overwrite fields
+                    if (c.numistaDetails) {
+                        setNumistaDetails(c.numistaDetails);
+                    }
                     console.log("Visual fields loaded - visualTarget:", c.visualTarget, "visualMethod:", c.visualMethod, "sketchId:", c.sketchId);
                     setInitialLoadComplete(true);
+                    lastLoadedCoinId.current = editCoinId;
                 })
                 .catch((err) => {
                     console.error("❌ Error loading coin for edit:", err);
                     if (!coinId) createCoin();
                 });
         }
-    }, [location, coinId, dateAdded, createCoin]);
+    }, [location, coinId, dateAdded, createCoin, initialLoadComplete, isManualMode]);
 
     useEffect(() => {
         // In manual mode, create coin immediately if not editing
@@ -374,6 +397,7 @@ const Create = () => {
 
     useEffect(() => {
         if (coinId && initialLoadComplete) {
+            setSaveStatus("saving"); // Immediately show saving on any change
             const delayDebounceFn = setTimeout(() => {
                 updateCoinRemote();
             }, 1000); 
@@ -404,12 +428,13 @@ const Create = () => {
             />
 
             <CreateHeader
-                title={title}
+                title={title || numistaTitle}
                 isManualMode={isManualMode}
                 numistaNumber={numistaNumber}
                 onDuplicate={handleDuplicate}
                 onDiscard={handleDiscard}
                 onDone={() => navigate("/")}
+                saveStatus={saveStatus}
             />
 
             <ManualModeToggle
@@ -467,6 +492,32 @@ const Create = () => {
                             )}
                             onReferenceChange={setReference}
                         />
+                        {/* Mobile-only Reset button */}
+                        <div className="d-lg-none d-flex justify-content-end mt-2">
+                            <Button
+                                variant="link"
+                                size="sm"
+                                className="px-1 py-0 text-muted"
+                                style={{fontWeight: 500, textDecoration: 'none'}}
+                                onClick={async () => {
+                                    if (!numistaNumber) return;
+                                    try {
+                                        const res = await axios.get(`${BASE_URL}/numista/${numistaNumber}`);
+                                        updateNumistaDetails(res.data);
+                                    } catch (err) {
+                                        alert('Failed to fetch Numista data.');
+                                    }
+                                }}
+                                title="Reset all fields to Numista data"
+                                disabled={!numistaNumber}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" style={{marginRight: 2, marginBottom: 2}}>
+                                  <path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 1 0-.908-.418A6 6 0 1 0 8 2v1z"/>
+                                  <path d="M8 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 0-1H8.5V1.5A.5.5 0 0 0 8 1z"/>
+                                </svg>
+                                Reset fields from Numista
+                            </Button>
+                        </div>
                         </>
                     )}
 
@@ -526,26 +577,11 @@ const Create = () => {
                         visualTarget={visualTarget}
                         sketchId={sketchId}
                         isGenerating={isGenerating}
+                        isManualMode={isManualMode}
+                        updateNumistaDetails={updateNumistaDetails}
+                        BASE_URL={BASE_URL}
+                        saveStatus={saveStatus}
                     />
-                    {!isManualMode && (
-                        <div className="d-flex justify-content-end mt-2">
-                            <Button
-                                variant="link"
-                                size="sm"
-                                className="px-1 py-0 text-muted"
-                                style={{fontWeight: 500, textDecoration: 'none'}}
-                                onClick={() => updateNumistaDetails(numistaDetails)}
-                                title="Reset all fields to Numista data"
-                                disabled={!numistaDetails || Object.keys(numistaDetails).length === 0}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" style={{marginRight: 2, marginBottom: 2}}>
-                                  <path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 1 0-.908-.418A6 6 0 1 0 8 2v1z"/>
-                                  <path d="M8 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 0-1H8.5V1.5A.5.5 0 0 0 8 1z"/>
-                                </svg>
-                                Reset fields from Numista
-                            </Button>
-                        </div>
-                    )}
                 </Col>
             </Row>
         </Container>
