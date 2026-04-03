@@ -1,0 +1,133 @@
+/* ============================================================
+   The Shelton — Front Label Positional CSS
+   All layout / positioning specific to the Shelton front label.
+   Shared base styles (.label, typography, containers) remain in
+   App.modules.css.
+   ============================================================ */
+
+.date {
+  position: absolute;
+  font-weight: bold;
+  font-size: 7cqw;
+  text-align: left;
+  
+  top:0;
+  left:0;
+  width: 30%;
+}
+
+.denomination {
+  position: absolute;
+  font-weight: bold;
+  font-size: 7cqw;
+  text-align: center;
+
+  resize: none;
+
+  font-family: 'Fira Sans', sans-serif;
+
+  top:0;
+  left:25%;
+  width: 50%;
+}
+
+.grade {
+  position: absolute;
+  text-align: right;
+  top: 0;
+  right: 1cqw;
+  width: 26%;
+}
+
+.grade-details {
+  position: absolute;
+  font-style: italic;
+  font-family: "Fira Sans Extra Condensed", sans-serif;
+  font-weight: lighter;
+  font-size: 6cqw;
+  text-align: right;
+  padding-right: 1cqw;
+  top: 10.5cqw;
+  right: 2cqw; 
+  width: 30%;
+  resize: none;
+}
+
+.issuer {
+  position: absolute;
+  text-align: left;
+  
+  bottom:0;
+  left:0;
+  width: 70%;
+}
+
+.catalogNumber {
+  position: absolute;
+  text-align: right;
+  
+  bottom:0;
+  right:0;
+  width: 20%;
+}
+
+.mintage {
+  position: absolute;
+  text-align: left;
+  
+  bottom:14cqw;
+  left: 0;
+  width: 70%;
+}
+
+.details-stack-container {
+  padding-top: 10.5cqw;
+  padding-left: 1cqw;
+  
+  display: flex;
+  flex-direction: column;
+  gap: 1cqw;
+
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.details-stack-container > * {
+  pointer-events: auto;
+}
+
+.bottom-right-stack {
+  display: flex;
+  flex-direction: column;
+  gap: -0.5cqw;
+}
+
+.marks-picture-row {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5cqw;
+}
+
+.marks-picture-wrapper {
+  width: 8.5cqw;
+  height: 8.5cqw;
+  flex-shrink: 0;
+}
+
+.marks-picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+
+  margin: 1.1cqw;
+  padding: .1rem 0;
+  
+  object-fit: contain; 
+}
+
+.details {
+  text-align: left;
+  resize: none;
+  width: 45%;
+}

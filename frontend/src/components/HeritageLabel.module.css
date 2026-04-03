@@ -1,32 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+
 .heritage-label {
   background: #FDF6E3;
   color: #4B2E05;
   font-family: 'EB Garamond', 'Times New Roman', Times, serif;
-  padding: 24px 16px;
-  border-radius: 6px;
-  width: 320px;
-  margin: 0 auto;
+  font-size: 5.5cqw;
+  padding: 5cqw 4cqw;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  overflow: hidden;
 }
 .heritage-label .cert-number {
-  font-family: 'Fira Sans', Arial, sans-serif;
-  font-size: 1.5em;
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 7cqw;
   font-weight: bold;
-  margin: 8px 0;
+  margin: 1.5cqw 0;
 }
 .heritage-label hr {
   border: none;
-  border-top: 1.5px solid #4B2E05;
-  margin: 12px 0;
+  border-top: 0.3cqw solid #4B2E05;
+  margin: 2cqw 0;
 }
-.heritage-label .heading {
+.heritage-label .coin-data {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 6cqw;
   text-transform: uppercase;
   font-weight: bold;
   letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  margin-bottom: 1cqw;
+  text-align: center;
 }
-.heritage-label .comments {
+.heritage-label .field-inline {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-weight: bold;
+  font-size: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-bottom: 0.3cqw dashed transparent;
+  outline: none;
+  padding: 0;
+  text-align: center;
+}
+.heritage-label .field-inline:focus {
+  border-bottom-color: #4B2E05;
+}
+.heritage-label .field-textarea {
+  font-family: 'EB Garamond', 'Times New Roman', Times, serif;
   font-style: italic;
-  margin: 8px 0;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  border-bottom: 0.3cqw dashed transparent;
+  outline: none;
+  resize: none;
+  width: 100%;
+  text-align: center;
+  padding: 0;
+  line-height: 1.3;
+}
+.heritage-label .field-textarea:focus {
+  border-bottom-color: #4B2E05;
+}
+.heritage-label .heading {
+  font-size: 4cqw;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5cqw;
+}
+.heritage-label .opinion {
+  font-size: 4.5cqw;
+  margin: 1cqw 0 0 0;
+}
+.heritage-label .warning {
+  font-size: 3cqw;
+  margin-top: 1.5cqw;
 }

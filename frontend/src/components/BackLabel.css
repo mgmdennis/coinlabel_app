@@ -1,0 +1,123 @@
+/* ============================================================
+   BackLabel — Shared Back Label CSS
+   Used by the default BackLabel component, shared across all
+   themes unless a theme provides its own BackLabel.
+   ============================================================ */
+
+.composition {
+  position: absolute;
+  text-align: right;
+  width: 80%;
+  bottom: 1cqw;
+  right: 1cqw;
+  line-height: 1.1;
+  resize: none;
+  overflow: hidden;
+  padding-bottom: 3px;
+
+  z-index: 11;
+}
+
+.numista-number {
+  position: absolute;
+  text-align: left;
+  left: 0;
+  top: 0;
+  width: 40%;
+  z-index: 11;
+}
+
+.physical-details-stack {
+  position: absolute;
+  bottom: 1cqw;
+}
+
+.physical-details {
+  position: absolute;
+  left: 1cqw;
+  bottom: 1cqw;
+  text-align: left;
+  width: 32%;
+  line-height: 1.1;
+  z-index: 11;
+  overflow: hidden;
+  padding-bottom: 3px;
+  resize: none;
+}
+
+.mass {
+  text-align: left;
+  width: 30%;
+}
+
+.diameter {
+  text-align: left;
+  width: 30%;
+}
+
+.orientation {
+  text-align: left;
+  width: 30%;
+}
+
+.date-added {
+  position: absolute;
+  text-align: right;
+  
+  top:0;
+  right:1cqw;
+  width: 40%;
+  z-index: 11;
+}
+
+.reference {
+  position: absolute;
+  text-align: right;
+  z-index: 11;
+  bottom:0;
+  right:1cqw;
+  width: 28%;
+}
+
+.qr-code {
+  position: absolute;
+  padding: 1cqw;
+  
+  top: 14.0cqw; 
+  
+  width:100%;
+  height:61%;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+@keyframes sketch-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sketch-spinner {
+  width: 8cqw;
+  height: 8cqw;
+  border-radius: 50%;
+  background: #555;
+  opacity: 0.15;
+  animation: sketch-grow 1s cubic-bezier(0.4,0,0.2,1) infinite alternate;
+}
+
+@keyframes sketch-grow {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.15;
+  }
+  60% {
+    transform: scale(1.1);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(0.7);
+    opacity: 0.15;
+  }
+}

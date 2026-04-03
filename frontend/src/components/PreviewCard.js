@@ -1,7 +1,7 @@
 import { Card, Button } from 'react-bootstrap';
 import axios from 'axios';
 import { useState } from 'react';
-import { ThemedFrontLabelContainer, BackLabelContainer } from "../pages/label";
+import { FrontLabel, BackLabel } from "../pages/label";
 
 export const PreviewCard = ({
     year, setYear,
@@ -24,7 +24,8 @@ export const PreviewCard = ({
     isManualMode,
     updateNumistaDetails,
     BASE_URL,
-    saveStatus
+    saveStatus,
+    labelTheme
 }) => {
     const [resetting, setResetting] = useState(false);
     const handleReset = async () => {
@@ -49,7 +50,7 @@ export const PreviewCard = ({
                     <div className="preview-section text-center w-100">
                         <span className="badge bg-secondary mb-2">Front Side</span>
                         <div className="label-edit-scale-wrapper">
-                            <ThemedFrontLabelContainer 
+                            <FrontLabel 
                                 isEditable={true}
                                 year={year} setYear={setYear}
                                 issuer={issuer} setIssuer={setIssuer}
@@ -61,7 +62,7 @@ export const PreviewCard = ({
                                 marksPicture={marksPicture}
                                 marks={marks}
                                 details={details} setDetails={setDetails}
-                                labelTheme={typeof labelTheme !== 'undefined' ? labelTheme : "The Shelton"}
+                                labelTheme={labelTheme}
                             />
                         </div>
                     </div>
@@ -69,7 +70,7 @@ export const PreviewCard = ({
                     <div className="preview-section text-center w-100 border-top pt-4">
                         <span className="badge bg-secondary mb-2">Back Side</span>
                         <div className="label-edit-scale-wrapper">
-                            <BackLabelContainer 
+                            <BackLabel
                                 isEditable={true}
                                 composition={composition} setComposition={setComposition}
                                 physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
@@ -78,6 +79,7 @@ export const PreviewCard = ({
                                 visualTarget={visualTarget}
                                 sketchId={sketchId}
                                 isGenerating={isGenerating}
+                                labelTheme={labelTheme}
                             />
                         </div>
                     </div>

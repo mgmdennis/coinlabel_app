@@ -226,7 +226,7 @@ const Create = () => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId, isManual: isManualMode
+            visualTarget, visualMethod, sketchId, isManual: isManualMode, labelTheme
         })
         .then((res) => {
             setCoinId(res.data._id);
@@ -236,7 +236,7 @@ const Create = () => {
             console.error("Error creating coin:", err);
             isCreatingCoin.current = false; // Allow retry on error
         });
-    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode]);
+    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, labelTheme]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
@@ -244,7 +244,7 @@ const Create = () => {
         axios.put(`${BASE_URL}/coin/update/${coinId}`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId, isManual: isManualMode
+            visualTarget, visualMethod, sketchId, isManual: isManualMode, labelTheme
         })
         .then(() => {
             setSaveStatus("saved");
@@ -254,7 +254,7 @@ const Create = () => {
             setSaveStatus("error");
             console.error("Error updating coin:", err);
         });
-    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode]);
+    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, labelTheme]);
 
     // --- Effects ---
 
@@ -362,6 +362,7 @@ const Create = () => {
                     setVisualTarget(c.visualTarget || "QR");
                     setVisualMethod(c.visualMethod || "SCRIPT");
                     setSketchId(c.sketchId || "");
+                    setLabelTheme(c.labelTheme || "The Shelton");
                     // Always update Numista details for dropdowns, but don't overwrite fields
                     if (c.numistaDetails) {
                         setNumistaDetails(c.numistaDetails);
@@ -405,7 +406,7 @@ const Create = () => {
             }, 1000); 
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, updateCoinRemote, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, labelTheme, updateCoinRemote, coinId, initialLoadComplete]);
 
     const handleDiscard = () => {
         if (window.confirm("Are you sure you want to discard this entry?")) {
@@ -417,7 +418,7 @@ const Create = () => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId
+            visualTarget, visualMethod, sketchId, labelTheme
         }).then(() => navigate("/"));
     };
 
@@ -593,6 +594,7 @@ const Create = () => {
                         updateNumistaDetails={updateNumistaDetails}
                         BASE_URL={BASE_URL}
                         saveStatus={saveStatus}
+                        labelTheme={labelTheme}
                     />
                 </Col>
             </Row>
