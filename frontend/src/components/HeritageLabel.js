@@ -1,14 +1,16 @@
 import React from "react";
 import styles from "./HeritageLabel.module.css";
 
-function Field({ isEditable, value, onChange, placeholder }) {
+function Field({ isEditable, value, onChange, placeholder, maxSize }) {
+  const placeholderLen = maxSize ? Math.min((placeholder || "").length, maxSize) : (placeholder || "").length;
+  const size = Math.max((value || "").length, placeholderLen, 3);
   return isEditable
     ? <input
         className={styles["field-inline"]}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        size={Math.max((value || "").length, (placeholder || "").length, 3)}
+        size={size}
       />
     : <span>{value}</span>;
 }
@@ -33,12 +35,16 @@ export default function HeritageLabel({
   return (
     <div className={styles["heritage-label"]}>
       <div className={styles["coin-data"]}>
-        <Field isEditable={isEditable} value={country} onChange={e => setCountry?.(e.target.value)} placeholder="Issuer" />
-        <span>&nbsp;</span>
-        <Field isEditable={isEditable} value={year} onChange={e => setYear?.(e.target.value)} placeholder="Year" />
-        <Field isEditable={isEditable} value={denomination} onChange={e => setDenomination?.(e.target.value)} placeholder="Denom" />
-        <span>&nbsp;</span>
-        <Field isEditable={isEditable} value={grade} onChange={e => setGrade?.(e.target.value)} placeholder="Grade" />
+        <div className={styles["coin-data-left"]}>
+          <Field isEditable={isEditable} value={country} onChange={e => setCountry?.(e.target.value)} placeholder="Issuer" maxSize={3} />
+          <span>&nbsp;</span>
+          <Field isEditable={isEditable} value={year} onChange={e => setYear?.(e.target.value)} placeholder="Year" />
+        </div>
+        <div className={styles["coin-data-right"]}>
+          <Field isEditable={isEditable} value={denomination} onChange={e => setDenomination?.(e.target.value)} placeholder="Denom" />
+          <span>&nbsp;</span>
+          <Field isEditable={isEditable} value={grade} onChange={e => setGrade?.(e.target.value)} placeholder="Grade" maxSize={4} />
+        </div>
       </div>
       <hr />
       <div className={styles.heading}>Comments</div>

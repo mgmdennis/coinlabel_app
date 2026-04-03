@@ -32,6 +32,7 @@ const Create = () => {
     const [coinId, setCoinId] = useState(null);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
     const lastLoadedCoinId = useRef(null);
+    const prevLabelTheme = useRef("The Shelton");
     const [title, setTitle] = useState("");
     const [isManualMode, setIsManualMode] = useState(location?.state?.manualMode || false);
     const [numistaError, setNumistaError] = useState("");
@@ -257,6 +258,17 @@ const Create = () => {
     }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, labelTheme]);
 
     // --- Effects ---
+
+    // When switching away from Heritage, restore full issuer/denomination from Numista data
+    useEffect(() => {
+        if (prevLabelTheme.current === "The Heritage" && labelTheme !== "The Heritage") {
+            if (!isManualMode && numistaDetails?.issuer) {
+                setIssuer(numistaDetails.issuer);
+                if (numistaDetails.denomination) setDenomination(numistaDetails.denomination);
+            }
+        }
+        prevLabelTheme.current = labelTheme;
+    }, [labelTheme, isManualMode, numistaDetails]);
 
     useEffect(() => {
         const handlePaste = (event) => {

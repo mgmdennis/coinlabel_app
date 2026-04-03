@@ -1,4 +1,5 @@
 import HeritageLabel from '../components/HeritageLabel';
+import { shortenIssuer, shortenDenomination } from './heritageLabelUtils';
 export { default as BackLabel } from '../components/BackLabel';
 
 /**
@@ -14,11 +15,11 @@ export function FrontLabel(props) {
         <div className={props.isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
             <HeritageLabel
                 isEditable={props.isEditable}
-                country={props.issuer || "CAN"}
+                country={shortenIssuer(props.issuer || "")}
                 setCountry={props.setIssuer}
                 year={props.year || ""}
                 setYear={props.setYear}
-                denomination={props.denomination || ""}
+                denomination={shortenDenomination(props.denomination || "")}
                 setDenomination={props.setDenomination}
                 grade={props.grade || ""}
                 setGrade={props.setGrade}

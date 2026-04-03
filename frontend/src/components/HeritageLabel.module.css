@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 .heritage-label {
   background: #FDF6E3;
@@ -13,7 +13,7 @@
   overflow: hidden;
 }
 .heritage-label .cert-number {
-  font-family: 'Fira Code', 'Courier New', monospace;
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
   font-size: 7cqw;
   font-weight: bold;
   margin: 1.5cqw 0;
@@ -24,17 +24,25 @@
   margin: 2cqw 0;
 }
 .heritage-label .coin-data {
-  font-family: 'Fira Code', 'Courier New', monospace;
-  font-size: 6cqw;
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+  font-size: 6.5cqw;
   text-transform: uppercase;
-  font-weight: bold;
+  font-weight: normal;
   letter-spacing: 0.05em;
   margin-bottom: 1cqw;
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.heritage-label .coin-data-left {
+  text-align: left;
+}
+.heritage-label .coin-data-right {
+  text-align: right;
 }
 .heritage-label .field-inline {
-  font-family: 'Fira Code', 'Courier New', monospace;
-  font-weight: bold;
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+  font-weight: normal;
   font-size: inherit;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -44,7 +52,7 @@
   border-bottom: 0.3cqw dashed transparent;
   outline: none;
   padding: 0;
-  text-align: center;
+  text-align: inherit;
 }
 .heritage-label .field-inline:focus {
   border-bottom-color: #4B2E05;
