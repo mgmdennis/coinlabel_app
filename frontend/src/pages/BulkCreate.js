@@ -38,7 +38,7 @@ const SKETCH_MODE_MAP = {
   GALLERY: { visualTarget: "GALLERY", visualMethod: "SCRIPT" },
 };
 
-let rowCounter = 0;
+let rowCounter = Date.now();
 const makeRow = () => {
   rowCounter += 1;
   return {
@@ -370,7 +370,12 @@ const BulkCreate = () => {
       }
 
       if (!row.numistaDetails.obverseImage) {
-        alert("No obverse image available from Numista for this coin.");
+        const hasNumistaData = Object.keys(row.numistaDetails).length > 0;
+        alert(
+          hasNumistaData
+            ? "No obverse image available from Numista for this coin."
+            : "Please load Numista data first (click the Load button)."
+        );
         return;
       }
 
