@@ -1,5 +1,5 @@
-import * as SheltonTheme from './SheltonTheme';
-import * as HeritageTheme from './HeritageTheme';
+import * as SheltonTheme from './shelton/SheltonTheme';
+import * as HeritageTheme from './heritage/HeritageTheme';
 
 /**
  * Theme registry — add new themes here.

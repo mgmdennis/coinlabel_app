@@ -355,10 +355,10 @@ const Home = () => {
                 <Row className="align-items-center g-3">
                   <Col xs={12} lg className="border-lg-end">
                     <div className="d-flex flex-column flex-md-row gap-3 justify-content-center align-items-center">
-                      <div className="label-wrapper shadow-sm border rounded p-1 bg-white">
+                      <div className="label-wrapper shadow-sm border rounded">
                         <FrontLabel isEditable={false} {...coin} labelTheme={coin.labelTheme} />
                       </div>
-                      <div className="label-wrapper shadow-sm border rounded p-1 bg-white">
+                      <div className="label-wrapper shadow-sm border rounded">
                         <BackLabel isEditable={false} {...coin} />
                       </div>
                     </div>

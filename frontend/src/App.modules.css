@@ -283,9 +283,44 @@ body{
   container-type: size;
   background: white;
   position: relative;
-
   width: 44mm;
   height: 45.5mm;
+}
+
+/* ── Heritage label: 54mm × 50mm ── */
+.heritage-parent-for-edit {
+  width: 54mm;
+  height: 50mm;
+  container-type: size;
+  background: white;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: visible;
+  transition: box-shadow 0.3s ease;
+  transform-origin: top center;
+}
+.heritage-parent-for-edit:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+.label-edit-scale-wrapper > .heritage-parent-for-edit {
+  transform: scale(var(--label-scale));
+  transform-origin: top center;
+  margin: 0;
+}
+.label-edit-scale-wrapper:has(.heritage-parent-for-edit) {
+  height: calc(50mm * var(--label-scale));
+}
+.heritage-parent-for-print {
+  container-type: size;
+  background: white;
+  position: relative;
+  width: 54mm;
+  height: 50mm;
 }
 
 .input-group>:not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {

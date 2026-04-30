@@ -27,6 +27,7 @@ const ISSUER_MAP = {
   'bahamas': 'BAH',
   'bahamas, the': 'BAH',
   'bermuda': 'BER',
+  'isle of man': 'IOM',
   'cayman islands': 'CAY',
   'cayman islands, the': 'CAY',
   'belize': 'BLZ',
@@ -52,6 +53,7 @@ const ISSUER_MAP = {
   'scotland': 'SCO',
   'wales': 'WAL',
   'ireland': 'IRL',
+  'republic of ireland': 'IRL',
   'northern ireland': 'N.IRL',
   'france': 'FR',
   'germany': 'GER',
@@ -190,7 +192,7 @@ export function shortenIssuer(issuer) {
     .trim()
     .replace(/\s*\([^)]*\)/g, '') // strip "(1858-date)" etc.
     .trim();
-  return ISSUER_MAP[key] || issuer;
+  return ISSUER_MAP[key] || key.slice(0, 3).toUpperCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -202,7 +204,7 @@ export function shortenIssuer(issuer) {
 const DENOM_REPLACEMENTS = [
   // --- Multi-word / compound — must come first ---
   [/\beuro[\s-]?cents?\b/gi,           '¢'],
-  [/\bnew\s+penn(?:ies|y|ce|ces|s)\b/gi, 'p'], // decimalized UK penny
+  // NOTE: pence/penny handled year-aware in shortenDenomination(), not here
   [/\bdeutsche?\s*marks?\b/gi,          'DM'],
 
   // --- Major modern currencies ---
@@ -228,8 +230,7 @@ const DENOM_REPLACEMENTS = [
   [/\bgroszy\b/gi,                      'gr'],
   [/\bgrosz\b/gi,                       'gr'],
 
-  // --- Pre-decimal British ---
-  [/\bpenn(?:ies|y|ce|ces|s)\b/gi,     'd'], // pre-decimal penny/pence
+  // --- Pre-decimal British (pence/penny handled year-aware in shortenDenomination) ---
   [/\bshillings?\b/gi,                  's'],
   [/\bflorins?\b/gi,                    'fl'],
   [/\bcrowns?\b/gi,                     'Cr'],
@@ -322,12 +323,41 @@ const DENOM_REPLACEMENTS = [
 
 /**
  * Returns a compact denomination string for Heritage label display.
- * Applies regex substitutions in order, then repositions pre-fix symbols.
+ * Uses currencyName (from Numista API value.currency.full_name, e.g. "Pound sterling (1971-date)")
+ * to determine pre/post-decimal pence — far more reliable than guessing from the coin year.
+ * Falls back to year-based detection if currencyName is unavailable.
  */
-export function shortenDenomination(denom) {
+export function shortenDenomination(denom, year, currencyName) {
   if (!denom) return denom;
 
-  let result = denom;
+  // Determine pre/post-decimal for pence/penny.
+  // Priority order:
+  // 1. Currency name contains "pre" (e.g. "pre-decimal", "predecimal") → always 'd'
+  //    This handles IOM, Gibraltar, Ireland etc. correctly regardless of start year,
+  //    since Numista uses separate currency entries for pre/post-decimal periods.
+  // 2. Currency name start year >= 1971 → 'p' (decimal-era currency)
+  // 3. Fall back to coin year
+  let pSym = 'p'; // default: assume modern/post-decimal
+  if (currencyName) {
+    if (/\bpre\b/i.test(currencyName)) {
+      pSym = 'd';
+    } else {
+      const startMatch = currencyName.match(/(\d{4})(?:-date|-\d{4})?\)/);
+      if (startMatch) {
+        pSym = parseInt(startMatch[1], 10) >= 1971 ? 'p' : 'd';
+      }
+    }
+  } else if (year) {
+    const parsedYear = parseInt(year, 10);
+    if (!isNaN(parsedYear)) pSym = parsedYear >= 1971 ? 'p' : 'd';
+  }
+
+  let result = denom
+    .replace(/\bnew\s+pence\b/gi, 'p')          // "new pence" → always p
+    .replace(/\bnew\s+penn(?:y|ies)\b/gi, 'p')  // "new penny/pennies" → always p
+    .replace(/\bpence\b/gi, pSym)                // "pence" (1 n) → year-aware
+    .replace(/\bpenn(?:y|ies)\b/gi, pSym);      // "penny/pennies" (2 n's) → year-aware
+
   for (const [pattern, replacement] of DENOM_REPLACEMENTS) {
     result = result.replace(pattern, replacement);
   }
@@ -336,8 +366,16 @@ export function shortenDenomination(denom) {
   // e.g. "1 $" → "$1",  "5 €" → "€5",  "50 £" → "£50"
   result = result.replace(/([\d\/½¼¾]+)\s*([$€£¥₩₹₺])/g, '$2$1');
 
-  // Tighten post-fix symbols: "50 ¢" → "50¢"
-  result = result.replace(/([$€£¥₩₹₺\d])\s+([¢pds])\b/g, '$1$2');
+  // Tighten post-fix symbols: "50 ¢" → "50¢", "½ d" → "½d", "1 ¢" → "1¢"
+  result = result.replace(/([$€£¥₩₹₺\d½¼¾])\s+([¢pds])(?!\w)/g, '$1$2');
 
-  return result.replace(/\s+/g, ' ').trim();
+  const finalResult = result.replace(/\s+/g, ' ').trim();
+
+  // If nothing was substituted, fall back to first 2 characters of the original
+  const normalized = denom.replace(/\s+/g, ' ').trim();
+  if (finalResult === normalized) {
+    return normalized.slice(0, 2).toUpperCase();
+  }
+
+  return finalResult;
 }

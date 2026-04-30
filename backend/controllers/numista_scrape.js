@@ -160,6 +160,7 @@ async function getNumistaDetailsJSON(numistaNumber) {
             // General type information from GET /types/{type_id}
             title: typeData.title || "Unknown",
             denomination: typeData.value?.text || "Unknown",
+            currencyName: typeData.value?.currency?.full_name || "",
             issuer: typeData.issuer?.name || "Unknown",
             composition: typeData.composition?.text || "Unknown",
             mass: typeData.weight ? `${typeData.weight} g` : "Unknown",

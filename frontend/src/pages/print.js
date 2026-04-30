@@ -29,14 +29,93 @@ const Print = () => {
     return chunks;
   };
 
+  const isHeritage = (coin) => coin?.labelTheme === 'The Heritage';
+
   let displayedCoins = [];
   if (coins) {
-    displayedCoins = selectedIds && Array.isArray(selectedIds) 
-      ? coins.filter(coin => selectedIds.includes(coin._id)) 
+    displayedCoins = selectedIds && Array.isArray(selectedIds)
+      ? coins.filter(coin => selectedIds.includes(coin._id))
       : coins;
   }
 
-  const coinPairs = chunkArray(displayedCoins, 2);
+  const standardCoins = displayedCoins.filter(c => !isHeritage(c));
+  const heritageCoins = displayedCoins.filter(c => isHeritage(c));
+
+  const standardPairs = chunkArray(standardCoins, 2);
+  const heritageChunks = chunkArray(heritageCoins, 3);
+
+  const LabelTable = ({ pairs, cellDimensions, label, coinsPerRow = 2 }) => (
+    pairs.length > 0 && (
+      <div>
+        <div className="no-print" style={{ fontSize: '0.75rem', color: '#999', marginBottom: '4px' }}>{label}</div>
+        <table style={tableStyle}>
+          <tbody>
+            {pairs.map((pair, rowIndex) => (
+              <tr key={rowIndex} style={rowStyle}>
+                <td style={{...cellStyle, ...cellDimensions}}><div className="label-wrapper"><FrontLabel {...pair[0]} isEditable={false} labelTheme={pair[0]?.labelTheme} /></div></td>
+                <td style={{...cellStyle, ...cellDimensions}}><div className="label-wrapper"><BackLabel {...pair[0]} isEditable={false} physicalDetails={pair[0]?.physicalDetails} /></div></td>
+                {coinsPerRow > 1 && (pair[1] ? (
+                  <>
+                    <td style={{...cellStyle, ...cellDimensions}}><div className="label-wrapper"><FrontLabel {...pair[1]} isEditable={false} labelTheme={pair[1]?.labelTheme} /></div></td>
+                    <td style={{...cellStyle, ...cellDimensions}}><div className="label-wrapper"><BackLabel {...pair[1]} isEditable={false} physicalDetails={pair[1]?.physicalDetails} /></div></td>
+                  </>
+                ) : (
+                  <><td style={{...cellStyle, ...cellDimensions}}></td><td style={{...cellStyle, ...cellDimensions}}></td></>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  );
+
+  // Heritage labels rotate 90° so each is 50mm wide × 54mm tall.
+  // 3 coins across = 150mm, well within Letter width.
+  // Fronts and backs occupy separate rows so each pair can be cut together.
+  const HeritageRotatedTable = ({ chunks, label }) => (
+    chunks.length > 0 && (
+      <div>
+        <div className="no-print" style={{ fontSize: '0.75rem', color: '#999', marginBottom: '4px' }}>{label}</div>
+        <table style={tableStyle}>
+          <tbody>
+            {chunks.map((group, rowIndex) => (
+              <React.Fragment key={rowIndex}>
+                <tr style={rowStyle}>
+                  {group.map((coin, i) => (
+                    <td key={i} style={{...cellStyle, ...HERITAGE_ROTATED_CELL}}>
+                      <div style={rotatedOuterStyle}>
+                        <div className="label-wrapper" style={rotatedInnerStyle}>
+                          <FrontLabel {...coin} isEditable={false} labelTheme={coin?.labelTheme} />
+                        </div>
+                      </div>
+                    </td>
+                  ))}
+                  {Array.from({ length: 3 - group.length }).map((_, i) => (
+                    <td key={`ef-${i}`} style={{...cellStyle, ...HERITAGE_ROTATED_CELL}}></td>
+                  ))}
+                </tr>
+                <tr style={rowStyle}>
+                  {group.map((coin, i) => (
+                    <td key={i} style={{...cellStyle, ...HERITAGE_ROTATED_CELL}}>
+                      <div style={rotatedOuterStyle}>
+                        <div className="label-wrapper" style={rotatedInnerStyle}>
+                          <BackLabel {...coin} isEditable={false} physicalDetails={coin?.physicalDetails} />
+                        </div>
+                      </div>
+                    </td>
+                  ))}
+                  {Array.from({ length: 3 - group.length }).map((_, i) => (
+                    <td key={`eb-${i}`} style={{...cellStyle, ...HERITAGE_ROTATED_CELL}}></td>
+                  ))}
+                </tr>
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  );
 
   return (
     <div className="page-container">
@@ -47,24 +126,8 @@ const Print = () => {
       </div>
 
       <div className="print-wrapper">
-        <table style={tableStyle}>
-          <tbody>
-            {coinPairs.map((pair, rowIndex) => (
-              <tr key={rowIndex} style={rowStyle}>
-                <td style={cellStyle}><div className="label-wrapper"><FrontLabel {...pair[0]} isEditable={false} labelTheme={pair[0]?.labelTheme} /></div></td>
-                <td style={cellStyle}><div className="label-wrapper"><BackLabel {...pair[0]} isEditable={false} /></div></td>
-                {pair[1] ? (
-                  <>
-                    <td style={cellStyle}><div className="label-wrapper"><FrontLabel {...pair[1]} isEditable={false} labelTheme={pair[1]?.labelTheme} /></div></td>
-                    <td style={cellStyle}><div className="label-wrapper"><BackLabel {...pair[1]} isEditable={false} /></div></td>
-                  </>
-                ) : (
-                  <><td style={cellStyle}></td><td style={cellStyle}></td></>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <LabelTable pairs={standardPairs} cellDimensions={DEFAULT_CELL} label="Standard (44 × 45.5 mm)" coinsPerRow={2} />
+        <HeritageRotatedTable chunks={heritageChunks} label="Heritage (54 × 50 mm) — rotated 90°, 3 across" />
       </div>
 
       <style>{`
@@ -112,14 +175,19 @@ const Print = () => {
   );
 };
 
+const DEFAULT_CELL = { width: '44mm', height: '45.5mm' };
+const HERITAGE_CELL = { width: '54mm', height: '50mm' };
+const HERITAGE_ROTATED_CELL = { width: '50mm', height: '54mm' };
+// Label is 54×50mm; rotated 90°, it occupies a 50×54mm cell.
+const rotatedOuterStyle = { position: 'relative', width: '50mm', height: '54mm', overflow: 'hidden' };
+const rotatedInnerStyle = { position: 'absolute', width: '54mm', height: '50mm', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(90deg)', transformOrigin: 'center center' };
+
 const tableStyle = { borderCollapse: "collapse", borderTop: "1px dashed #bbb", borderLeft: "1px dashed #bbb" };
 const rowStyle = { margin: 0, padding: 0 };
 const cellStyle = {
   borderRight: "1px dashed #bbb",
   borderBottom: "1px dashed #bbb",
   padding: "0",
-  width: "44mm",
-  height: "45.5mm",
   verticalAlign: "top",
   overflow: "hidden",
 };

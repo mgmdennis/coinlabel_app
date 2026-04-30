@@ -25,7 +25,8 @@ export const PreviewCard = ({
     updateNumistaDetails,
     BASE_URL,
     saveStatus,
-    labelTheme
+    labelTheme,
+    currencyName
 }) => {
     const [resetting, setResetting] = useState(false);
     const handleReset = async () => {
@@ -63,6 +64,7 @@ export const PreviewCard = ({
                                 marks={marks}
                                 details={details} setDetails={setDetails}
                                 labelTheme={labelTheme}
+                                currencyName={currencyName}
                             />
                         </div>
                     </div>

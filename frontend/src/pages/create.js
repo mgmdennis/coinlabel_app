@@ -607,6 +607,7 @@ const Create = () => {
                         BASE_URL={BASE_URL}
                         saveStatus={saveStatus}
                         labelTheme={labelTheme}
+                        currencyName={numistaDetails?.currencyName || ""}
                     />
                 </Col>
             </Row>

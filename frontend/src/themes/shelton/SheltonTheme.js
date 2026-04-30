@@ -1,6 +1,6 @@
 import './SheltonTheme.css';
-import LabelField from '../components/LabelField';
-export { default as BackLabel } from '../components/BackLabel';
+import LabelField from '../../components/LabelField';
+export { default as BackLabel } from '../../components/BackLabel';
 
 /**
  * "The Shelton" front label theme.
