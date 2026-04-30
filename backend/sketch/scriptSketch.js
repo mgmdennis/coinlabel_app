@@ -255,13 +255,14 @@ async function applyScriptSketch(image, scaledSize) {
     // Step 8 – Double-threshold hysteresis
     const edges = doubleThresholdHysteresis(nms, w, h);
 
-    // Step 10 – Selective dilation for small coins
+    // Step 10 – Selective dilation for small coins (applied to edges array before rendering)
     if (scaledSize < 200) {
         console.log(`🔵 Small coin (${scaledSize}px) — applying dilation`);
         dilateEdges(edges, w, h);
     }
 
     // Step 9 – Write black-on-white output back into the Jimp bitmap
+    // (applied last so dilation can expand edge pixels before the final render)
     for (let i = 0; i < w * h; i++) {
         const v = edges[i] === 255 ? 0 : 255;
         data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = v;
