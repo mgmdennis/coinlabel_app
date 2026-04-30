@@ -146,13 +146,23 @@ const StatusIcon = ({ status }) => {
 const BulkCreate = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([makeRow()]);
+  const rowsRef = useRef(rows);
   const debounceTimers = useRef({});
 
+  // Keep rowsRef in sync with rows state for use inside callbacks
+  const setRowsSync = useCallback((updater) => {
+    setRows((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      rowsRef.current = next;
+      return next;
+    });
+  }, []);
+
   const updateRow = useCallback((id, patch) => {
-    setRows((prev) =>
+    setRowsSync((prev) =>
       prev.map((r) => (r.id === id ? { ...r, ...patch } : r))
     );
-  }, []);
+  }, [setRowsSync]);
 
   const triggerSave = useCallback(
     (id) => {
@@ -160,7 +170,7 @@ const BulkCreate = () => {
         clearTimeout(debounceTimers.current[id]);
       }
       debounceTimers.current[id] = setTimeout(async () => {
-        setRows((prev) => {
+        setRowsSync((prev) => {
           const row = prev.find((r) => r.id === id);
           if (!row) return prev;
 
@@ -190,7 +200,7 @@ const BulkCreate = () => {
             try {
               if (!row.coinId) {
                 const res = await axios.post(`${BASE_URL}/coin/new`, payload);
-                setRows((p) =>
+                setRowsSync((p) =>
                   p.map((r) =>
                     r.id === id
                       ? { ...r, coinId: res.data._id, status: "saved" }
@@ -202,13 +212,13 @@ const BulkCreate = () => {
                   `${BASE_URL}/coin/update/${row.coinId}`,
                   payload
                 );
-                setRows((p) =>
+                setRowsSync((p) =>
                   p.map((r) => (r.id === id ? { ...r, status: "saved" } : r))
                 );
               }
             } catch (err) {
               console.error("Save error:", err);
-              setRows((p) =>
+              setRowsSync((p) =>
                 p.map((r) => (r.id === id ? { ...r, status: "error" } : r))
               );
             }
@@ -221,23 +231,23 @@ const BulkCreate = () => {
         });
       }, 1200);
     },
-    []
+    [setRowsSync]
   );
 
   const handleFieldChange = useCallback(
     (id, field, value) => {
-      setRows((prev) =>
+      setRowsSync((prev) =>
         prev.map((r) => (r.id === id ? { ...r, [field]: value } : r))
       );
       triggerSave(id);
     },
-    [triggerSave]
+    [setRowsSync, triggerSave]
   );
 
   const handleSketchModeChange = useCallback(
     (id, mode) => {
       const mapping = SKETCH_MODE_MAP[mode] || SKETCH_MODE_MAP["QR"];
-      setRows((prev) =>
+      setRowsSync((prev) =>
         prev.map((r) =>
           r.id === id
             ? {
@@ -251,11 +261,11 @@ const BulkCreate = () => {
       );
       triggerSave(id);
     },
-    [triggerSave]
+    [setRowsSync, triggerSave]
   );
 
   const handleLoadNumista = useCallback(async (id) => {
-    setRows((prev) =>
+    setRowsSync((prev) =>
       prev.map((r) =>
         r.id === id
           ? { ...r, numistaLoading: true, numistaError: "" }
@@ -263,7 +273,7 @@ const BulkCreate = () => {
       )
     );
 
-    const row = rows.find((r) => r.id === id);
+    const row = rowsRef.current.find((r) => r.id === id);
     if (!row || !row.numistaNumber) return;
 
     try {
@@ -305,7 +315,7 @@ const BulkCreate = () => {
             : data.description || "";
       }
 
-      setRows((prev) =>
+      setRowsSync((prev) =>
         prev.map((r) =>
           r.id === id
             ? {
@@ -337,7 +347,7 @@ const BulkCreate = () => {
     } catch (err) {
       const message =
         err.response?.data?.error || "Failed to load coin data from Numista.";
-      setRows((prev) =>
+      setRowsSync((prev) =>
         prev.map((r) =>
           r.id === id
             ? { ...r, numistaLoading: false, numistaError: message }
@@ -345,11 +355,11 @@ const BulkCreate = () => {
         )
       );
     }
-  }, [rows, triggerSave]);
+  }, [setRowsSync, triggerSave]);
 
   const handleGenerateSketch = useCallback(
     async (id) => {
-      const row = rows.find((r) => r.id === id);
+      const row = rowsRef.current.find((r) => r.id === id);
       if (!row) return;
 
       if (row.visualMethod === "AI") {
@@ -386,7 +396,7 @@ const BulkCreate = () => {
           imageUrl: row.numistaDetails.obverseImage,
         });
 
-        setRows((prev) =>
+        setRowsSync((prev) =>
           prev.map((r) =>
             r.id === id
               ? { ...r, sketchId: res.data.sketchId, generating: false }
@@ -400,12 +410,12 @@ const BulkCreate = () => {
         updateRow(id, { generating: false });
       }
     },
-    [rows, updateRow, triggerSave]
+    [setRowsSync, updateRow, triggerSave]
   );
 
   const handleDeleteRow = useCallback(
     async (id) => {
-      const row = rows.find((r) => r.id === id);
+      const row = rowsRef.current.find((r) => r.id === id);
       if (!row) return;
 
       if (row.coinId) {
@@ -421,9 +431,9 @@ const BulkCreate = () => {
         delete debounceTimers.current[id];
       }
 
-      setRows((prev) => prev.filter((r) => r.id !== id));
+      setRowsSync((prev) => prev.filter((r) => r.id !== id));
     },
-    [rows]
+    [setRowsSync]
   );
 
   const handleOpenEditor = useCallback(
@@ -441,7 +451,7 @@ const BulkCreate = () => {
 
   const handleToggleManual = useCallback(
     (id) => {
-      setRows((prev) =>
+      setRowsSync((prev) =>
         prev.map((r) => {
           if (r.id !== id) return r;
           const newIsManual = !r.isManual;
@@ -461,7 +471,7 @@ const BulkCreate = () => {
       );
       triggerSave(id);
     },
-    [triggerSave]
+    [setRowsSync, triggerSave]
   );
 
   const inputStyle = { fontSize: "0.75rem" };
@@ -864,7 +874,7 @@ const BulkCreate = () => {
         <Button
           variant="outline-primary"
           size="sm"
-          onClick={() => setRows((prev) => [...prev, makeRow()])}
+          onClick={() => setRowsSync((prev) => [...prev, makeRow()])}
         >
           + Add Row
         </Button>
