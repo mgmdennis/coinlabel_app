@@ -143,14 +143,16 @@ function nonMaxSuppression(mag, dir, w, h) {
  * Returns a Uint8Array: 255 = strong edge, 0 = nothing.
  */
 function doubleThresholdHysteresis(nms, w, h) {
-    // Collect non-zero magnitudes to compute adaptive thresholds
+    // Collect non-zero magnitudes to compute adaptive thresholds.
+    // Using 75th / 50th percentiles (instead of 90th / 70th) keeps more edges
+    // and produces clearly visible, bold lines rather than faint 1-px traces.
     const nonZero = [];
     for (let i = 0; i < nms.length; i++) {
         if (nms[i] > 0) nonZero.push(nms[i]);
     }
     nonZero.sort((a, b) => a - b);
-    const highT = nonZero.length > 0 ? percentile(nonZero, 90) : 128;
-    const lowT  = nonZero.length > 0 ? percentile(nonZero, 70) : 64;
+    const highT = nonZero.length > 0 ? percentile(nonZero, 75) : 128;
+    const lowT  = nonZero.length > 0 ? percentile(nonZero, 50) : 64;
     console.log(`🔍 Hysteresis thresholds: low=${lowT.toFixed(1)}, high=${highT.toFixed(1)}`);
 
     const STRONG = 255, WEAK = 128;
@@ -255,11 +257,15 @@ async function applyScriptSketch(image, scaledSize) {
     // Step 8 – Double-threshold hysteresis
     const edges = doubleThresholdHysteresis(nms, w, h);
 
-    // Step 10 – Selective dilation for small coins (applied to edges array before rendering)
-    if (scaledSize < 200) {
-        console.log(`🔵 Small coin (${scaledSize}px) — applying dilation`);
+    // Step 10 – Dilation: always apply 2 rounds so edges print at a visible width.
+    // A single NMS pass produces 1-px-wide ridges that are too thin to read on
+    // a coin label; two rounds of dilation widen them to ~3 px which reads clearly
+    // at any coin size. Small coins get a third round for extra legibility.
+    const dilationRounds = scaledSize < 200 ? 3 : 2;
+    for (let r = 0; r < dilationRounds; r++) {
         dilateEdges(edges, w, h);
     }
+    console.log(`🔵 Applied ${dilationRounds} dilation round(s) for scaledSize=${scaledSize}px`);
 
     // Step 9 – Write black-on-white output back into the Jimp bitmap
     // (applied last so dilation can expand edge pixels before the final render)
