@@ -153,15 +153,15 @@ function nonMaxSuppression(mag, dir, w, h) {
  */
 function doubleThresholdHysteresis(nms, w, h) {
     // Collect non-zero magnitudes to compute adaptive thresholds.
-    // Using 65th / 35th percentiles keeps more real edges while relying on
+    // Using 55th / 25th percentiles keeps more real edges while relying on
     // the subsequent component-size filter to remove isolated noise specks.
     const nonZero = [];
     for (let i = 0; i < nms.length; i++) {
         if (nms[i] > 0) nonZero.push(nms[i]);
     }
     nonZero.sort((a, b) => a - b);
-    const highT = nonZero.length > 0 ? percentile(nonZero, 65) : 128;
-    const lowT  = nonZero.length > 0 ? percentile(nonZero, 35) : 64;
+    const highT = nonZero.length > 0 ? percentile(nonZero, 55) : 128;
+    const lowT  = nonZero.length > 0 ? percentile(nonZero, 25) : 64;
     console.log(`🔍 Hysteresis thresholds: low=${lowT.toFixed(1)}, high=${highT.toFixed(1)}`);
 
     const STRONG = 255, WEAK = 128;
@@ -306,10 +306,10 @@ async function applyScriptSketch(image, scaledSize) {
     // Step 8b – Remove isolated noise specks (components < 6 px)
     removeSmallComponents(edges, w, h, 6);
 
-    // Step 10 – Dilation: always apply 3 rounds so lines print at a clearly
-    // visible width. NMS produces 1-px ridges; 3 rounds widens them to ~5 px.
-    // Small coins get a fourth round for extra legibility.
-    const dilationRounds = scaledSize < 200 ? 4 : 3;
+    // Step 10 – Dilation: apply 4 rounds to produce bold, dark lines.
+    // NMS produces 1-px ridges; 4 rounds widens them to ~7 px.
+    // Small coins get a fifth round for extra legibility.
+    const dilationRounds = scaledSize < 200 ? 5 : 4;
     for (let r = 0; r < dilationRounds; r++) {
         dilateEdges(edges, w, h);
     }
