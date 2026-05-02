@@ -64,20 +64,29 @@ function invertGreyscale(data, w, h) {
 }
 
 /**
- * Step 5 – 3×3 Gaussian blur (kernel sum = 16).
+ * Step 5 – 5×5 Gaussian blur (kernel sum = 256).
+ * The wider kernel suppresses high-frequency noise more thoroughly before the
+ * Sobel gradient step, reducing the number of speck-sized gradient responses.
  * Returns a new Float32Array of greyscale values.
  */
 function gaussianBlur(data, w, h) {
-    const K = [1, 2, 1, 2, 4, 2, 1, 2, 1];
+    // prettier-ignore
+    const K = [
+         1,  4,  6,  4,  1,
+         4, 16, 24, 16,  4,
+         6, 24, 36, 24,  6,
+         4, 16, 24, 16,  4,
+         1,  4,  6,  4,  1,
+    ];
     const out = new Float32Array(w * h);
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
             let sum = 0, weight = 0;
-            for (let ky = -1; ky <= 1; ky++) {
-                for (let kx = -1; kx <= 1; kx++) {
+            for (let ky = -2; ky <= 2; ky++) {
+                for (let kx = -2; kx <= 2; kx++) {
                     const nx = x + kx, ny = y + ky;
                     if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
-                        const k = K[(ky + 1) * 3 + (kx + 1)];
+                        const k = K[(ky + 2) * 5 + (kx + 2)];
                         sum += data[(ny * w + nx) * 4] * k;
                         weight += k;
                     }
@@ -87,6 +96,42 @@ function gaussianBlur(data, w, h) {
         }
     }
     return out;
+}
+
+/**
+ * Post-hysteresis speck filter.
+ * Removes isolated edge clusters smaller than `minSize` pixels.
+ * Mutates `edges` in-place.
+ */
+function removeSpeckles(edges, w, h, minSize = 8) {
+    const visited = new Uint8Array(w * h);
+    for (let start = 0; start < edges.length; start++) {
+        if (edges[start] !== 255 || visited[start]) continue;
+        // BFS to collect the full connected component
+        const component = [start];
+        visited[start] = 1;
+        let qi = 0;
+        while (qi < component.length) {
+            const i = component[qi++];
+            const cx = i % w, cy = Math.floor(i / w);
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = cx + dx, ny = cy + dy;
+                    if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+                    const ni = ny * w + nx;
+                    if (edges[ni] === 255 && !visited[ni]) {
+                        visited[ni] = 1;
+                        component.push(ni);
+                    }
+                }
+            }
+        }
+        // Erase the component if it is too small to be a real edge
+        if (component.length < minSize) {
+            for (const idx of component) edges[idx] = 0;
+        }
+    }
 }
 
 /**
@@ -254,6 +299,9 @@ async function applyScriptSketch(image, scaledSize) {
 
     // Step 8 – Double-threshold hysteresis
     const edges = doubleThresholdHysteresis(nms, w, h);
+
+    // Step 8b – Remove isolated speck-sized edge clusters (< 8 px)
+    removeSpeckles(edges, w, h, 8);
 
     // Step 10 – Dilation: always apply 2 rounds to widen 1-px NMS ridges to ~3 px.
     // Small coins get a third round for extra legibility.
