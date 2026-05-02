@@ -64,29 +64,20 @@ function invertGreyscale(data, w, h) {
 }
 
 /**
- * Step 5 – 5×5 Gaussian blur (kernel sum = 256, σ ≈ 1.4).
- * A wider kernel suppresses more noise before gradient computation,
- * reducing isolated speckles in the final edge map.
+ * Step 5 – 3×3 Gaussian blur (kernel sum = 16).
  * Returns a new Float32Array of greyscale values.
  */
 function gaussianBlur(data, w, h) {
-    // Row-major 5×5 Gaussian kernel
-    const K = [
-         1,  4,  6,  4,  1,
-         4, 16, 24, 16,  4,
-         6, 24, 36, 24,  6,
-         4, 16, 24, 16,  4,
-         1,  4,  6,  4,  1,
-    ];
+    const K = [1, 2, 1, 2, 4, 2, 1, 2, 1];
     const out = new Float32Array(w * h);
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
             let sum = 0, weight = 0;
-            for (let ky = -2; ky <= 2; ky++) {
-                for (let kx = -2; kx <= 2; kx++) {
+            for (let ky = -1; ky <= 1; ky++) {
+                for (let kx = -1; kx <= 1; kx++) {
                     const nx = x + kx, ny = y + ky;
                     if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
-                        const k = K[(ky + 2) * 5 + (kx + 2)];
+                        const k = K[(ky + 1) * 3 + (kx + 1)];
                         sum += data[(ny * w + nx) * 4] * k;
                         weight += k;
                     }
@@ -152,17 +143,14 @@ function nonMaxSuppression(mag, dir, w, h) {
  * Returns a Uint8Array: 255 = strong edge, 0 = nothing.
  */
 function doubleThresholdHysteresis(nms, w, h) {
-    // Collect non-zero magnitudes to compute adaptive thresholds.
-    // Using 60th / 30th percentiles — midpoint between "too faint" (65/35) and
-    // "too dark" (55/25) to keep a moderate number of real edge pixels while
-    // relying on the subsequent component-size filter for noise removal.
+    // Collect non-zero magnitudes to compute adaptive thresholds
     const nonZero = [];
     for (let i = 0; i < nms.length; i++) {
         if (nms[i] > 0) nonZero.push(nms[i]);
     }
     nonZero.sort((a, b) => a - b);
-    const highT = nonZero.length > 0 ? percentile(nonZero, 60) : 128;
-    const lowT  = nonZero.length > 0 ? percentile(nonZero, 30) : 64;
+    const highT = nonZero.length > 0 ? percentile(nonZero, 82) : 128;
+    const lowT  = nonZero.length > 0 ? percentile(nonZero, 62) : 64;
     console.log(`🔍 Hysteresis thresholds: low=${lowT.toFixed(1)}, high=${highT.toFixed(1)}`);
 
     const STRONG = 255, WEAK = 128;
@@ -200,43 +188,6 @@ function doubleThresholdHysteresis(nms, w, h) {
         if (edges[i] !== STRONG) edges[i] = 0;
     }
     return edges;
-}
-
-/**
- * Step 8b – Remove isolated edge components smaller than minSize pixels.
- * These are noise specks that survived hysteresis but don't belong to real
- * coin features. BFS labels every connected component; any group with fewer
- * than minSize pixels is erased. Mutates `edges` in-place.
- */
-function removeSmallComponents(edges, w, h, minSize) {
-    const visited = new Uint8Array(w * h);
-    for (let i = 0; i < w * h; i++) {
-        if (edges[i] !== 255 || visited[i]) continue;
-        // BFS to collect every pixel in this connected component
-        const component = [i];
-        visited[i] = 1;
-        let qi = 0;
-        while (qi < component.length) {
-            const idx = component[qi++];
-            const x = idx % w, y = Math.floor(idx / w);
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    if (dx === 0 && dy === 0) continue;
-                    const nx = x + dx, ny = y + dy;
-                    if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
-                    const ni = ny * w + nx;
-                    if (edges[ni] === 255 && !visited[ni]) {
-                        visited[ni] = 1;
-                        component.push(ni);
-                    }
-                }
-            }
-        }
-        // Erase components too small to be real coin features
-        if (component.length < minSize) {
-            for (const idx of component) edges[idx] = 0;
-        }
-    }
 }
 
 /**
@@ -304,12 +255,9 @@ async function applyScriptSketch(image, scaledSize) {
     // Step 8 – Double-threshold hysteresis
     const edges = doubleThresholdHysteresis(nms, w, h);
 
-    // Step 8b – Remove isolated noise specks (components < 6 px)
-    removeSmallComponents(edges, w, h, 6);
-
-    // Step 10 – Dilation: 3 rounds widens NMS 1-px ridges to ~5 px — visible
-    // without flooding the image. Small coins get a fourth round.
-    const dilationRounds = scaledSize < 200 ? 4 : 3;
+    // Step 10 – Dilation: always apply 2 rounds to widen 1-px NMS ridges to ~3 px.
+    // Small coins get a third round for extra legibility.
+    const dilationRounds = scaledSize < 200 ? 3 : 2;
     for (let r = 0; r < dilationRounds; r++) {
         dilateEdges(edges, w, h);
     }
