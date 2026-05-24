@@ -269,10 +269,10 @@ router.post('/', async (req, res) => {
 8. ABSOLUTELY NO HALLUCINATION - compare your output against the source image element by element. Every mark in your output must correspond to something visible in the source. Remove anything you are not 100% certain is in the original.
 9. DO NOT use your knowledge of coins, heraldry, or history to "correct" or modify what you see. If an eagle has no crown in the source, it must have no crown in the output. Trace EXACTLY what is there, even if it seems wrong or incomplete.
 10. The coin must fill the ENTIRE image with NO border, margin, or padding. The edge of the coin should touch the edges of the image.`;
-            if (cleanYear && hasDates) {
-                prompt += `\n11. If NO year/date is visible in the source image, do NOT add one. If a year/date is visible in the source image, replace it with "${cleanYear}".`;
+            if (cleanYear) {
+                prompt += `\n11. DATE REQUIREMENT (overrides the no-hallucination rule for date only): The year "${cleanYear}" MUST appear in this sketch. If a year/date is already visible in the source image, replace it with "${cleanYear}". If no year/date is visible in the source image, render "${cleanYear}" in the location where a date would typically appear on this type of coin (e.g. along the bottom rim or beneath the main design). All other elements must still be traced exactly from the source with no additions.`;
             }
-            prompt += `\n\nTHIS IS A STRICT TRACING TASK. Trace ONLY what exists. Do NOT add any text, numbers, or symbols that are not clearly visible in the source image.`;
+            prompt += `\n\nTHIS IS A STRICT TRACING TASK. Trace ONLY what exists. Do NOT add any text, numbers, or symbols that are not clearly visible in the source image${cleanYear ? `, EXCEPT for the required year "${cleanYear}" as instructed in rule 11 above` : ''}.`;
 
             const output = await replicate.run('google/nano-banana', {
                 input: { prompt, image_input: [aiInputData], creativity: 0.1, output_format: 'png', output_quality: 100 }
