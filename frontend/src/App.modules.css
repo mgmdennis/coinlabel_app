@@ -424,6 +424,8 @@ body{
   bottom:0;
   right:1cqw;
   width: 28%;
+  overflow: visible;
+  resize: none;
 }
 
 .qr-code {

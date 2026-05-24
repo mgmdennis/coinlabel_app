@@ -104,6 +104,9 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
                 isEditable={isEditable}
                 placeholder="Ref"
                 value={reference}
+                as="textarea"
+                rows={1}
+                autoGrow
                 className="label reference"
                 onChange={(e) => setReference(e.target.value)}
             />
