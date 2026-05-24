@@ -21,6 +21,9 @@ export const VisualCustomizationCard = ({
     obverseImageUrl,
     reverseImageUrl,
     onImageFile,
+    hasMultipleDates,
+    swapDate,
+    onSwapDateChange,
 }) => {
     const fileInputRef = useRef(null);
     const [showBeta, setShowBeta] = useState(false);
@@ -322,6 +325,16 @@ export const VisualCustomizationCard = ({
                                     />
                                 </div>
                             </Form.Group>
+                            {visualMethod === 'AI' && hasMultipleDates && (
+                                <Form.Check
+                                    type="checkbox"
+                                    id="swap-date-checkbox"
+                                    label="Replace date in sketch with selected variation year"
+                                    checked={swapDate}
+                                    onChange={onSwapDateChange}
+                                    className="small mt-2"
+                                />
+                            )}
                         </Col>
                         <Col xs="auto">
                             <Button 

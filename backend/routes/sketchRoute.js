@@ -176,7 +176,7 @@ async function saveSketch(res, { imageData, method, side, sourceHash, numistaNum
 
 router.post('/', async (req, res) => {
     try {
-        const { numistaNumber, method, imageData, imageUrl, coinDiameter, year, hasDates, side } = req.body;
+        const { numistaNumber, method, imageData, imageUrl, coinDiameter, year, hasDates, swapDate, side } = req.body;
 
         // Resolve imageData: accept either inline base64 (PASTED) or a URL to fetch (NUMISTA)
         let resolvedImageData = imageData;
@@ -269,7 +269,7 @@ router.post('/', async (req, res) => {
 8. ABSOLUTELY NO HALLUCINATION - compare your output against the source image element by element. Every mark in your output must correspond to something visible in the source. Remove anything you are not 100% certain is in the original.
 9. DO NOT use your knowledge of coins, heraldry, or history to "correct" or modify what you see. If an eagle has no crown in the source, it must have no crown in the output. Trace EXACTLY what is there, even if it seems wrong or incomplete.
 10. The coin must fill the ENTIRE image with NO border, margin, or padding. The edge of the coin should touch the edges of the image.`;
-            if (cleanYear && hasDates) {
+            if (cleanYear && swapDate) {
                 prompt += `\n11. If NO year/date is visible in the source image, do NOT add one. If a year/date is visible in the source image, replace it with "${cleanYear}".`;
             }
             prompt += `\n\nTHIS IS A STRICT TRACING TASK. Trace ONLY what exists. Do NOT add any text, numbers, or symbols that are not clearly visible in the source image.`;

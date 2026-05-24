@@ -52,6 +52,8 @@ const Create = () => {
     const [marksPicture, setMarksPicture] = useState(null);
     const [marks, setMarks] = useState([]);
 
+    const [swapDate, setSwapDate] = useState(true);
+
     // --- Visual Selection State ---
     const [visualTarget, setVisualTarget] = useState("QR"); 
     const [visualMethod, setVisualMethod] = useState("SCRIPT"); 
@@ -68,9 +70,9 @@ const Create = () => {
 
     // --- Logic Functions ---
 
-    const updateFillOutDateAndDetails = (variation, description) => {
+    const updateFillOutDateAndDetails = (variation, description, useDate = swapDate) => {
         if (!variation) return;
-        setYear(variation.date);
+        if (useDate) setYear(variation.date);
         setMintage(variation.mintage.length > 0 ? `m. ${variation.mintage}` : "");
         setMarksPicture(variation.marks_picture || null);
         setMarks(variation.marks || []);
@@ -169,6 +171,7 @@ const Create = () => {
                 year,
                 side,
                 hasDates,
+                swapDate,
                 ...(imageData && { imageData }),
                 ...(imageUrl && { imageUrl }),
             };
@@ -555,6 +558,9 @@ const Create = () => {
                         obverseImageUrl={numistaDetails.obverseImage}
                         reverseImageUrl={numistaDetails.reverseImage}
                         onImageFile={handleImageFile}
+                        hasMultipleDates={(numistaDetails.variations?.length ?? 0) > 1}
+                        swapDate={swapDate}
+                        onSwapDateChange={(e) => setSwapDate(e.target.checked)}
                     />
                 </Col>
 
