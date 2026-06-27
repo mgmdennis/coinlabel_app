@@ -274,7 +274,7 @@ router.post('/', async (req, res) => {
             }
             prompt += `\n\nTHIS IS A STRICT TRACING TASK. Trace ONLY what exists. Do NOT add any text, numbers, or symbols that are not clearly visible in the source image.`;
 
-            const output = await replicate.run('google/nano-banana', {
+            const output = await replicate.run('google/nano-banana-pro', {
                 input: { prompt, image_input: [aiInputData], creativity: 0.1, output_format: 'png', output_quality: 100 }
             });
             const aiUrl = output.url ? output.url() : (Array.isArray(output) ? output[0] : output);
