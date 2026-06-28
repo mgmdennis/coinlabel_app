@@ -12,12 +12,12 @@ export const AIConfirmModal = ({ show, onHide, onConfirm, isPremiumAI }) => {
             <Modal.Body>
                 {isPremiumAI ? (
                     <>
-                        <p>Generating a <strong>Premium</strong> AI engraving sketch costs approximately <strong>$0.03</strong>.</p>
+                        <p>Generating a <strong>Premium</strong> AI engraving sketch costs approximately <strong>$0.15</strong>.</p>
                         <p className="text-muted small">Uses the <code>nano-banana-pro</code> model for higher-quality results. This process takes about 15-30 seconds. Would you like to proceed?</p>
                     </>
                 ) : (
                     <>
-                        <p>Generating an AI engraving sketch costs approximately <strong>$0.01</strong>.</p>
+                        <p>Generating an AI engraving sketch costs approximately <strong>$0.04</strong>.</p>
                         <p className="text-muted small">This process takes about 10-15 seconds. Would you like to proceed?</p>
                     </>
                 )}
