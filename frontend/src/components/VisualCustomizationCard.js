@@ -345,9 +345,6 @@ export const VisualCustomizationCard = ({
                                         <span>
                                             <Sparkles size={13} className="me-1 text-warning" />
                                             <strong>Premium</strong>
-                                            <span className="text-muted ms-1" style={{ fontSize: '0.8em' }}>
-                                                (nano-banana-pro · ~$0.03)
-                                            </span>
                                         </span>
                                     }
                                     checked={isPremiumAI}
