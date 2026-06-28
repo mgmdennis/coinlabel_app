@@ -24,6 +24,8 @@ export const VisualCustomizationCard = ({
     hasMultipleDates,
     swapDate,
     onSwapDateChange,
+    isPremiumAI,
+    onPremiumAIChange,
 }) => {
     const fileInputRef = useRef(null);
     const [showBeta, setShowBeta] = useState(false);
@@ -332,6 +334,24 @@ export const VisualCustomizationCard = ({
                                     label="Replace date in sketch with selected variation year"
                                     checked={swapDate}
                                     onChange={onSwapDateChange}
+                                    className="small mt-2"
+                                />
+                            )}
+                            {visualMethod === 'AI' && (
+                                <Form.Check
+                                    type="switch"
+                                    id="premium-ai-switch"
+                                    label={
+                                        <span>
+                                            <Sparkles size={13} className="me-1 text-warning" />
+                                            <strong>Premium</strong>
+                                            <span className="text-muted ms-1" style={{ fontSize: '0.8em' }}>
+                                                (nano-banana-pro · ~$0.03)
+                                            </span>
+                                        </span>
+                                    }
+                                    checked={isPremiumAI}
+                                    onChange={onPremiumAIChange}
                                     className="small mt-2"
                                 />
                             )}

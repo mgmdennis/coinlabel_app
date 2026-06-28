@@ -176,7 +176,7 @@ async function saveSketch(res, { imageData, method, side, sourceHash, numistaNum
 
 router.post('/', async (req, res) => {
     try {
-        const { numistaNumber, method, imageData, imageUrl, coinDiameter, year, hasDates, swapDate, side } = req.body;
+        const { numistaNumber, method, imageData, imageUrl, coinDiameter, year, hasDates, swapDate, side, premium } = req.body;
 
         // Resolve imageData: accept either inline base64 (PASTED) or a URL to fetch (NUMISTA)
         let resolvedImageData = imageData;
@@ -274,7 +274,9 @@ router.post('/', async (req, res) => {
             }
             prompt += `\n\nTHIS IS A STRICT TRACING TASK. Trace ONLY what exists. Do NOT add any text, numbers, or symbols that are not clearly visible in the source image.`;
 
-            const output = await replicate.run('google/nano-banana-pro', {
+            const aiModel = premium ? 'google/nano-banana-pro' : 'google/nano-banana';
+            console.log(`🤖 Using model: ${aiModel}`);
+            const output = await replicate.run(aiModel, {
                 input: { prompt, image_input: [aiInputData], creativity: 0.1, output_format: 'png', output_quality: 100 }
             });
             const aiUrl = output.url ? output.url() : (Array.isArray(output) ? output[0] : output);
