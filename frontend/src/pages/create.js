@@ -190,7 +190,8 @@ const Create = () => {
             });
 
             // Send to the unified backend route
-            const res = await axios.post(`${BASE_URL}/generate-sketch`, requestBody);
+            const sketchTimeout = isPremiumAI ? 120000 : 60000; // Premium gets 2 min, standard gets 1 min
+            const res = await axios.post(`${BASE_URL}/generate-sketch`, requestBody, { timeout: sketchTimeout });
 
             console.log("Backend Response:", res.data);
 
