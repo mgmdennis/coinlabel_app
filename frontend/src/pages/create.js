@@ -62,6 +62,7 @@ const Create = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isGeneratingQR, setIsGeneratingQR] = useState(false);
     const [showAIConfirm, setShowAIConfirm] = useState(false);
+    const [isPremiumAI, setIsPremiumAI] = useState(false);
     const [pasteText, setPasteText] = useState("");
     const [userChangedVisualTarget, setUserChangedVisualTarget] = useState(false);
 
@@ -172,6 +173,7 @@ const Create = () => {
                 side,
                 hasDates,
                 swapDate,
+                premium: isPremiumAI,
                 ...(imageData && { imageData }),
                 ...(imageUrl && { imageUrl }),
             };
@@ -428,6 +430,7 @@ const Create = () => {
                 show={showAIConfirm} 
                 onHide={() => setShowAIConfirm(false)}
                 onConfirm={handleGenerateVisual}
+                isPremiumAI={isPremiumAI}
             />
 
             <CreateHeader
@@ -561,6 +564,8 @@ const Create = () => {
                         hasMultipleDates={(numistaDetails.variations?.length ?? 0) > 1}
                         swapDate={swapDate}
                         onSwapDateChange={(e) => setSwapDate(e.target.checked)}
+                        isPremiumAI={isPremiumAI}
+                        onPremiumAIChange={(e) => setIsPremiumAI(e.target.checked)}
                     />
                 </Col>
 
