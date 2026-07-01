@@ -42,6 +42,15 @@ const BrandName = ({ light }) => (
 const Layout = ({ user, setUser }) => {
   const [opened, { toggle, close }] = useDisclosure(false);
 
+  // Opening the mobile drawer should dismiss any contextual UI (e.g. Home's
+  // bulk-selection action bar) so it doesn't linger over the drawer.
+  const handleBurgerClick = () => {
+    if (!opened) {
+      window.dispatchEvent(new Event('numistag:dismiss-selection'));
+    }
+    toggle();
+  };
+
   const handleLogout = async () => {
     await fetch('/api/auth/logout');
     setUser(null);
@@ -112,7 +121,7 @@ const Layout = ({ user, setUser }) => {
             {/* Mobile burger */}
             <Burger
               opened={opened}
-              onClick={toggle}
+              onClick={handleBurgerClick}
               hiddenFrom="sm"
               color="white"
               aria-label="Toggle navigation"

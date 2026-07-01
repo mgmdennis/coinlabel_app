@@ -1,4 +1,4 @@
-import { Card, NativeSelect, Stack, Group, TextInput, Text } from '@mantine/core';
+import { Badge, Card, NativeSelect, Stack, Group, TextInput, Text } from '@mantine/core';
 
 export const NumistaDataCard = ({
     numistaDetails,
@@ -9,7 +9,12 @@ export const NumistaDataCard = ({
     return (
         <Card withBorder shadow="sm" mb="lg" padding="md">
             <Card.Section withBorder inheritPadding py="xs" bg="gray.0">
-                <Text fw={700}>Automatic Data (Numista)</Text>
+                <Group justify="space-between">
+                    <Text fw={700}>Automatic Data</Text>
+                    <Badge variant="filled" color="cyan" radius="xl">
+                        Numista Mode
+                    </Badge>
+                </Group>
             </Card.Section>
             <Stack gap="md" mt="md">
                 <NativeSelect
