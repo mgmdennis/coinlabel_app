@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 
 import Print from "./pages/print";
 import Create from "./pages/create";
+import BulkCreate from "./pages/BulkCreate";
 
 import NoPage from "./pages/NoPage";
 
@@ -34,6 +35,7 @@ function App() {
           <Route index element={<Home user={user} />} />
           <Route path="/create" element={<Create user={user} />} />
           <Route path="/create/:numistaNumber" element={<Create user={user} />} />
+          <Route path="/bulk" element={<BulkCreate user={user} />} />
           <Route path="*" element={<NoPage />} />
         </Route>
         <Route path="/print" element={<Print user={user} />} />

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Button, InputGroup, Form, Row, Col, Card, Container, ButtonGroup } from 'react-bootstrap';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
-import { Search, PenLine, Pencil, Copy, ChevronDown, ChevronUp, ChevronsUpDown, Archive, ArchiveRestore, Printer, Trash2, X } from 'lucide-react';
+import { Search, PenLine, Pencil, Copy, ChevronDown, ChevronUp, ChevronsUpDown, Archive, ArchiveRestore, Printer, Trash2, X, TableProperties } from 'lucide-react';
 
 import {
   Link,
@@ -199,6 +199,18 @@ const Home = () => {
             onClick={() => navigate("/create", { state: { manualMode: true } })}
           >
             <PenLine size={13} className="me-1" />Manual Entry
+          </Button>
+
+          {/* Vertical divider — desktop only */}
+          <div style={{ width: '1px', height: '36px', background: '#dee2e6', flexShrink: 0 }} className="d-none d-md-block" />
+
+          {/* Bulk entry shortcut */}
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={() => navigate("/bulk")}
+          >
+            <TableProperties size={13} className="me-1" />Bulk Entry
           </Button>
 
         </div>
