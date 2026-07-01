@@ -186,6 +186,11 @@ const BackLabelContainer = ({
         ? (isEditable ? `${(coinDiameter / LABEL_WIDTH_MM) * 100}cqw` : `${coinDiameter}mm`)
         : '100%';
 
+    // Whether the coin visual is actively being (re)generated. Used to fade the
+    // whole coin — including the parts that overflow the .qr-code container on
+    // large coins — rather than only the container box.
+    const showGenerating = isGenerating && visualTarget !== "QR" && visualTarget !== "GALLERY";
+
     // Fetch the actual image string from the database whenever the sketchId changes
     useEffect(() => {
         if (sketchId && visualTarget !== "QR") {
@@ -247,12 +252,11 @@ const BackLabelContainer = ({
                     overflow: coinDiameter > 39.5 ? 'hidden' : 'visible'
                 }}
             >
-                {isGenerating && visualTarget !== "QR" && visualTarget !== "GALLERY" && (
+                {showGenerating && (
                     <div style={{
                         position: 'absolute',
                         top: 0, left: 0, right: 0, bottom: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'rgba(255,255,255,0.6)',
                         zIndex: 30,
                         pointerEvents: 'all',
                     }}>
@@ -278,7 +282,9 @@ const BackLabelContainer = ({
                                     mixBlendMode: 'multiply',
                                     display: 'block',
                                     zIndex: 10,
-                                    position: 'relative'
+                                    position: 'relative',
+                                    opacity: showGenerating ? 0.25 : 1,
+                                    transition: 'opacity 0.15s ease',
                                 }}
                             />
                         ) : (
