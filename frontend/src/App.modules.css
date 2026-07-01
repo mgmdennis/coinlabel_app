@@ -107,6 +107,17 @@ body {
   font-family: "Fira Sans Extra Condensed", sans-serif;
 }
 
+/* Single-line fields render as <input> in edit mode (which never wraps) but as
+   <p> in print mode. Force nowrap so the print <p> matches the edit <input>
+   instead of wrapping and colliding with other absolutely-positioned fields. */
+.date,
+.issuer,
+.grade,
+.mintage,
+.date-added {
+  white-space: nowrap;
+}
+
 .light {
   font-weight: 300;
 }
