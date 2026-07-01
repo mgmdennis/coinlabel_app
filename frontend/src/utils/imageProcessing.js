@@ -1,7 +1,6 @@
 // src/utils/imageProcessing.js
 import axios from 'axios';
-
-const BASE_URL = process.env.REACT_APP_API_URL || '';
+import { API_ORIGIN as BASE_URL } from '../config';
 
 /**
  * Converts a coin image to a Base64 string for sketch generation.

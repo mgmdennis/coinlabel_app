@@ -1,16 +1,18 @@
 import { QRCode } from "react-qr-code";
-import Form from 'react-bootstrap/Form';
 import { useState, useEffect, useCallback } from 'react';
-import { Modal, Button } from 'react-bootstrap';
+import { Modal, Button } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// Define API Base URL for fetching images
-const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
+import { BASE_URL } from '../config';
 
 /**
  * LabelField Component
- * Renders either a static text or an editable Form.Control based on isEditable prop.
+ * Renders either static text or an editable native input/textarea.
+ *
+ * Editable fields use the `plain-field` class (see App.modules.css) which
+ * replicates Bootstrap's old `.form-control-plaintext` reset so the on-screen
+ * editing preview stays visually identical to the printed static labels.
  */
 const LabelField = ({ isEditable, value, placeholder, className, as, rows, onChange, autoGrow }) => {
     const autoResize = useCallback((node) => {
@@ -28,15 +30,27 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
         );
     }
 
+    const fieldClassName = `plain-field ${className}`;
+
+    if (as === 'textarea') {
+        return (
+            <textarea
+                ref={autoGrow ? autoResize : undefined}
+                placeholder={placeholder}
+                value={value}
+                rows={autoGrow ? 1 : rows}
+                className={fieldClassName}
+                onChange={onChange}
+            />
+        );
+    }
+
     return (
-        <Form.Control
-            ref={autoGrow ? autoResize : undefined}
+        <input
+            type="text"
             placeholder={placeholder}
             value={value}
-            plaintext
-            as={as}
-            rows={autoGrow ? 1 : rows}
-            className={className}
+            className={fieldClassName}
             onChange={onChange}
         />
     );
@@ -140,13 +154,13 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
  * Handles the logic for displaying either a QR code or a fetched Sketch image.
  */
 
-const BackLabelContainer = ({ 
-    isEditable, 
-    composition, setComposition, 
-    physicalDetails, setPhysicalDetails, 
+const BackLabelContainer = ({
+    isEditable,
+    composition, setComposition,
+    physicalDetails, setPhysicalDetails,
     numistaNumber,
     dateAdded, setDateAdded,
-    visualTarget = "QR", 
+    visualTarget = "QR",
     sketchId = "",
     isGenerating = false
 }) => {
@@ -155,7 +169,7 @@ const BackLabelContainer = ({
     const navigate = useNavigate();
 
     // Extract coin diameter from physicalDetails (e.g. "⌀ 25.75 mm")
-    const coinDiameter = physicalDetails 
+    const coinDiameter = physicalDetails
         ? parseFloat(physicalDetails.match(/⌀\s*([\d.]+)/)?.[1] || '0')
         : 0;
 
@@ -246,18 +260,18 @@ const BackLabelContainer = ({
                     </div>
                 )}
                 {(visualTarget === "QR" || (!sketchId && visualTarget !== "GALLERY" && visualTarget !== "NUMISTA" && visualTarget !== "PASTED") || !sketchData) ? (
-                    <QRCode 
-                        value={`https://en.numista.com/catalogue/pieces${numistaNumber}.html`} 
-                        style={{ width: "100%", height: "100%" }} 
+                    <QRCode
+                        value={`https://en.numista.com/catalogue/pieces${numistaNumber}.html`}
+                        style={{ width: "100%", height: "100%" }}
                         viewBox={`0 0 256 256`}
                     />
                 ) : (
                     <>
                         {typeof sketchData === 'string' && sketchData.length > 0 ? (
-                            <img 
-                                src={sketchData} 
-                                alt="Coin Sketch" 
-                                style={{ 
+                            <img
+                                src={sketchData}
+                                alt="Coin Sketch"
+                                style={{
                                     width: sketchSize,
                                     height: sketchSize,
                                     flexShrink: 0,
@@ -265,28 +279,26 @@ const BackLabelContainer = ({
                                     display: 'block',
                                     zIndex: 10,
                                     position: 'relative'
-                                }} 
+                                }}
                             />
                         ) : (
-                            <div className="alert alert-warning small">
+                            <div className="sketch-warning">
                                 ⚠️ Sketch data is empty or invalid
                             </div>
                         )}
                     </>
                 )}
             </div>
-            <Modal show={showDiameterError} onHide={handleDiameterErrorClose} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Diameter Too Large</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <p>The maximum supported coin diameter is <strong>39.5mm</strong>.<br/>Please enter a smaller value to continue.</p>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="primary" onClick={handleDiameterErrorClose}>
-                        OK
-                    </Button>
-                </Modal.Footer>
+            <Modal
+                opened={showDiameterError}
+                onClose={handleDiameterErrorClose}
+                title="Diameter Too Large"
+                centered
+            >
+                <p>The maximum supported coin diameter is <strong>39.5mm</strong>.<br/>Please enter a smaller value to continue.</p>
+                <Button fullWidth mt="md" onClick={handleDiameterErrorClose}>
+                    OK
+                </Button>
             </Modal>
         </div>
     );

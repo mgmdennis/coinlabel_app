@@ -1,18 +1,17 @@
-import { Form } from 'react-bootstrap';
+import { Switch, Stack, Text } from '@mantine/core';
 
 export const ManualModeToggle = ({ isManualMode, onChange }) => {
     return (
-        <Form.Group className="mb-4">
-            <Form.Check 
-                type="switch"
+        <Stack gap={4} mb="lg">
+            <Switch
                 id="manual-mode-switch"
                 label="Enable Manual Entry Mode"
                 checked={isManualMode}
                 onChange={onChange}
             />
-            <Form.Text className="text-muted">
+            <Text size="xs" c="dimmed">
                 Toggle to manually input all coin data, including pasting images for visuals.
-            </Form.Text>
-        </Form.Group>
+            </Text>
+        </Stack>
     );
 };

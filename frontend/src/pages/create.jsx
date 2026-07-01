@@ -1,7 +1,10 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
-import { Container, Row, Col, Form, InputGroup, Button, Modal } from 'react-bootstrap';
+import { Button, Container, Grid, Group, Modal, TextInput } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+
+import { BASE_URL } from '../config';
 
 // Utilities
 import { parseNumistaText } from "../utils/parseNumistaText";
@@ -15,8 +18,6 @@ import { LabelSpecificsCard } from "../components/LabelSpecificsCard";
 import { PasteNumistaAccordion } from "../components/PasteNumistaAccordion";
 import { VisualCustomizationCard } from "../components/VisualCustomizationCard";
 import { PreviewCard } from "../components/PreviewCard";
-
-const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
 
 const Create = () => {
     const { numistaNumber: paramNumistaNumber } = useParams();
@@ -42,7 +43,7 @@ const Create = () => {
     const [details, setDetails] = useState("");
     const [denomination, setDenomination] = useState("");
     const [grade, setGrade] = useState("");
-    const [gradeDetails, setGradeDetails] = useState("");   
+    const [gradeDetails, setGradeDetails] = useState("");
     const [issuer, setIssuer] = useState("");
     const [reference, setReference] = useState("");
     const [mintage, setMintage] = useState("");
@@ -55,8 +56,8 @@ const Create = () => {
     const [swapDate, setSwapDate] = useState(true);
 
     // --- Visual Selection State ---
-    const [visualTarget, setVisualTarget] = useState("QR"); 
-    const [visualMethod, setVisualMethod] = useState("SCRIPT"); 
+    const [visualTarget, setVisualTarget] = useState("QR");
+    const [visualMethod, setVisualMethod] = useState("SCRIPT");
     const [numistaSide, setNumistaSide] = useState("OBVERSE");
     const [sketchId, setSketchId] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
@@ -76,7 +77,7 @@ const Create = () => {
         setMintage(variation.mintage.length > 0 ? `m. ${variation.mintage}` : "");
         setMarksPicture(variation.marks_picture || null);
         setMarks(variation.marks || []);
-        
+
         let comments = variation.comment || "";
         if (comments.includes("Proof")) {
             setGrade("Proof");
@@ -117,7 +118,7 @@ const Create = () => {
 
         setShowAIConfirm(false);
         setIsGenerating(true);
-        
+
         let imageData = null;   // base64 for pasted images
         let imageUrl = null;    // raw URL for Numista images (backend fetches via relay)
         let side = null;
@@ -132,10 +133,10 @@ const Create = () => {
             side = 'PASTED';
         } else if (visualTarget === 'NUMISTA') {
             side = numistaSide; // OBVERSE or REVERSE
-            const imgSource = numistaSide === "OBVERSE" 
-                ? numistaDetails.obverseImage 
+            const imgSource = numistaSide === "OBVERSE"
+                ? numistaDetails.obverseImage
                 : numistaDetails.reverseImage;
-            
+
             if (!imgSource) {
                 alert(`No ${numistaSide.toLowerCase()} image is available from Numista.`);
                 setIsGenerating(false);
@@ -147,7 +148,7 @@ const Create = () => {
             setIsGenerating(false);
             return;
         }
-        
+
         await generateSketch({ imageData, imageUrl, side });
         setIsGenerating(false);
     };
@@ -155,7 +156,7 @@ const Create = () => {
     const generateSketch = async ({ imageData, imageUrl, side }) => {
         try {
             // Extract coin diameter in mm (default to 25 if not available)
-            const coinDiameter = numistaDetails.diameter 
+            const coinDiameter = numistaDetails.diameter
                 ? parseFloat(numistaDetails.diameter.match(/[\d.]+/)?.[0] || '25')
                 : 25;
 
@@ -214,7 +215,7 @@ const Create = () => {
             setDenomination
         );
         setPasteText("");
-        alert("Data extracted and populated!");
+        notifications.show({ message: "Data extracted and populated!", color: 'green' });
     };
 
     // --- API Interactions ---
@@ -390,7 +391,7 @@ const Create = () => {
         }
 
         if (!numistaDetails.denomination) return;
-        
+
         // Create a new coin if not editing
         const editCoinId = location?.state?.coinId;
         if (!coinId && !editCoinId) {
@@ -403,7 +404,7 @@ const Create = () => {
             setSaveStatus("saving"); // Immediately show saving on any change
             const delayDebounceFn = setTimeout(() => {
                 updateCoinRemote();
-            }, 1000); 
+            }, 1000);
             return () => clearTimeout(delayDebounceFn);
         }
     }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, updateCoinRemote, coinId, initialLoadComplete]);
@@ -423,9 +424,9 @@ const Create = () => {
     };
 
     return (
-        <Container className="py-4">
-            <AIConfirmModal 
-                show={showAIConfirm} 
+        <Container size="lg" py="md">
+            <AIConfirmModal
+                show={showAIConfirm}
                 onHide={() => setShowAIConfirm(false)}
                 onConfirm={handleGenerateVisual}
             />
@@ -445,63 +446,73 @@ const Create = () => {
                 onChange={(e) => setIsManualMode(e.target.checked)}
             />
 
-            <InputGroup className="mb-4" style={{ maxWidth: 300 }}>
-                <InputGroup.Text>N#</InputGroup.Text>
-                <Form.Control
-                    type="number"
+            <Group gap={0} align="flex-end" mb="lg" maw={300} wrap="nowrap">
+                <TextInput
+                    label="Numista Number"
+                    leftSection="N#"
+                    inputMode="numeric"
                     placeholder="Numista Number"
                     value={numistaNumber}
                     onChange={(e) => setNumistaNumber(e.target.value)}
+                    style={{ flex: 1 }}
+                    styles={!isManualMode && numistaNumber && numistaNumber !== paramNumistaNumber
+                        ? { input: { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }
+                        : undefined}
                 />
                 {!isManualMode && numistaNumber && numistaNumber !== paramNumistaNumber && (
-                    <Button 
-                        variant="outline-primary"
+                    <Button
+                        variant="outline"
                         onClick={() => {
                             if (window.confirm("Changing the Numista number will discard your current work and load a new coin. Continue?")) {
                                 navigate(`/create/${numistaNumber}`);
                             }
                         }}
+                        style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, marginLeft: -1 }}
                     >
                         Load
                     </Button>
                 )}
-            </InputGroup>
+            </Group>
 
-            <Modal show={!!numistaError} centered backdrop="static">
-                <Modal.Header>
-                    <Modal.Title>Unable to Load Coin</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>{numistaError}</Modal.Body>
-                <Modal.Footer>
-                    <Button variant="outline-danger" onClick={() => navigate("/")}>Go Back</Button>
-                    <Button variant="outline-secondary" onClick={() => {
+            <Modal
+                opened={!!numistaError}
+                onClose={() => {}}
+                closeOnClickOutside={false}
+                closeOnEscape={false}
+                withCloseButton={false}
+                centered
+                title="Unable to Load Coin"
+            >
+                <p style={{ marginTop: 0 }}>{numistaError}</p>
+                <Group justify="flex-end" mt="md">
+                    <Button variant="outline" color="red" onClick={() => navigate("/")}>Go Back</Button>
+                    <Button variant="default" onClick={() => {
                         setNumistaError("");
                         setIsManualMode(true);
                         navigate("/create", { replace: true });
                     }}>Switch to Manual Mode</Button>
-                </Modal.Footer>
+                </Group>
             </Modal>
 
-            <Row>
-                <Col lg={7}>
+            <Grid gutter="lg">
+                <Grid.Col span={{ base: 12, lg: 7 }}>
                     {!isManualMode && (
                         <>
                         <NumistaDataCard
                             numistaDetails={numistaDetails}
                             reference={reference}
                             onVariationChange={(e) => updateFillOutDateAndDetails(
-                                numistaDetails.variations[e.target.selectedIndex], 
+                                numistaDetails.variations[e.target.selectedIndex],
                                 numistaDetails.description
                             )}
                             onReferenceChange={setReference}
                         />
                         {/* Mobile-only Reset button */}
-                        <div className="d-lg-none d-flex justify-content-end mt-2">
+                        <Group justify="flex-end" mt="xs" hiddenFrom="lg">
                             <Button
-                                variant="link"
-                                size="sm"
-                                className="px-1 py-0 text-muted"
-                                style={{fontWeight: 500, textDecoration: 'none'}}
+                                variant="subtle"
+                                color="gray"
+                                size="xs"
                                 onClick={async () => {
                                     if (!numistaNumber) return;
                                     try {
@@ -513,14 +524,16 @@ const Create = () => {
                                 }}
                                 title="Reset all fields to Numista data"
                                 disabled={!numistaNumber}
+                                leftSection={
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 1 0-.908-.418A6 6 0 1 0 8 2v1z" />
+                                        <path d="M8 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 0-1H8.5V1.5A.5.5 0 0 0 8 1z" />
+                                    </svg>
+                                }
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" style={{marginRight: 2, marginBottom: 2}}>
-                                  <path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 1 0-.908-.418A6 6 0 1 0 8 2v1z"/>
-                                  <path d="M8 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 0-1H8.5V1.5A.5.5 0 0 0 8 1z"/>
-                                </svg>
                                 Reset fields from Numista
                             </Button>
-                        </div>
+                        </Group>
                         </>
                     )}
 
@@ -545,12 +558,12 @@ const Create = () => {
                         numistaSide={numistaSide}
                         isGenerating={isGenerating}
                         isGeneratingQR={isGeneratingQR}
-                        onVisualTargetChange={(e) => {
-                            setVisualTarget(e.target.value);
+                        onVisualTargetChange={(value) => {
+                            setVisualTarget(value);
                             setUserChangedVisualTarget(true);
                         }}
-                        onVisualMethodChange={(e) => setVisualMethod(e.target.value)}
-                        onNumistaSideChange={(e) => setNumistaSide(e.target.value)}
+                        onVisualMethodChange={(value) => setVisualMethod(value)}
+                        onNumistaSideChange={(value) => setNumistaSide(value)}
                         onGenerateVisual={handleGenerateVisual}
                         sketchId={sketchId}
                         onSketchSelect={(id) => setSketchId(id)}
@@ -562,9 +575,9 @@ const Create = () => {
                         swapDate={swapDate}
                         onSwapDateChange={(e) => setSwapDate(e.target.checked)}
                     />
-                </Col>
+                </Grid.Col>
 
-                <Col lg={5}>
+                <Grid.Col span={{ base: 12, lg: 5 }}>
                     <PreviewCard
                         year={year} setYear={setYear}
                         issuer={issuer} setIssuer={setIssuer}
@@ -588,9 +601,10 @@ const Create = () => {
                         BASE_URL={BASE_URL}
                         saveStatus={saveStatus}
                     />
-                </Col>
-            </Row>
+                </Grid.Col>
+            </Grid>
         </Container>
     );
 };
+
 export default Create;
