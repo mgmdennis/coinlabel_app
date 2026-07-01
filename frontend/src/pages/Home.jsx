@@ -230,22 +230,22 @@ const Home = () => {
         <Box mb="lg" style={{ position: 'sticky', top: 10, zIndex: 1020 }}>
           <Paper shadow="md" radius="md" p="xs" withBorder maw={640} mx="auto">
             <Group justify="center" gap="xs" wrap="wrap">
-              <Button size="xs" color="green" onClick={handlePrintSelected} leftSection={<Printer size={13} />}>
+              <Button size="xs" onClick={handlePrintSelected} leftSection={<Printer size={13} />}>
                 Print Selected ({selectedIds.length})
               </Button>
               {view === 'collection' ? (
-                <Button size="xs" color="yellow" onClick={() => handleBulkCache(true)} leftSection={<Archive size={13} />}>
+                <Button size="xs" variant="default" onClick={() => handleBulkCache(true)} leftSection={<Archive size={13} />}>
                   Cache Selected
                 </Button>
               ) : (
-                <Button size="xs" color="cyan" onClick={() => handleBulkCache(false)} leftSection={<ArchiveRestore size={13} />}>
+                <Button size="xs" variant="default" onClick={() => handleBulkCache(false)} leftSection={<ArchiveRestore size={13} />}>
                   Restore Selected
                 </Button>
               )}
-              <Button size="xs" color="red" onClick={handleDeleteSelected} leftSection={<Trash2 size={13} />}>
+              <Button size="xs" variant="light" color="red" onClick={handleDeleteSelected} leftSection={<Trash2 size={13} />}>
                 Delete Selected
               </Button>
-              <Button size="xs" variant="default" onClick={() => setSelectedCoins({})} leftSection={<X size={13} />}>
+              <Button size="xs" variant="subtle" color="gray" onClick={() => setSelectedCoins({})} leftSection={<X size={13} />}>
                 Cancel
               </Button>
             </Group>
