@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Badge, Box, Button, Card, Checkbox, Grid, Group, Loader, Modal, Radio, Stack, Text } from '@mantine/core';
+import { Badge, Box, Button, Card, Checkbox, Grid, Group, Loader, Modal, Radio, Stack, Switch, Text } from '@mantine/core';
 import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, FolderOpen, ExternalLink } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
 import { API_ORIGIN } from '../config';
@@ -25,6 +25,8 @@ export const VisualCustomizationCard = ({
     hasMultipleDates,
     swapDate,
     onSwapDateChange,
+    isPremiumAI,
+    onPremiumAIChange,
 }) => {
     const fileInputRef = useRef(null);
     const [showBeta, setShowBeta] = useState(false);
@@ -307,6 +309,21 @@ export const VisualCustomizationCard = ({
                                     label="Replace date in sketch with selected variation year"
                                     checked={swapDate}
                                     onChange={onSwapDateChange}
+                                />
+                            )}
+                            {visualMethod === 'AI' && (
+                                <Switch
+                                    mt="xs"
+                                    size="sm"
+                                    id="premium-ai-switch"
+                                    label={
+                                        <Group gap={4} wrap="nowrap">
+                                            <Sparkles size={13} color="var(--mantine-color-yellow-6)" />
+                                            <strong>Premium</strong>
+                                        </Group>
+                                    }
+                                    checked={isPremiumAI}
+                                    onChange={onPremiumAIChange}
                                 />
                             )}
                         </Grid.Col>
