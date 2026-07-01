@@ -1,17 +1,14 @@
-import "./App.modules.css";
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import axios from "axios";
+import { Center, Loader } from "@mantine/core";
+
 import Layout from "./pages/Layout";
 import Home from "./pages/Home";
-
 import Print from "./pages/print";
 import Create from "./pages/create";
-
 import NoPage from "./pages/NoPage";
-
 import LoginGate from "./components/LoginGate";
-import axios from "axios";
-
 
 function App() {
   const [user, setUser] = useState(null);
@@ -24,13 +21,19 @@ function App() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <Center h="100vh">
+        <Loader />
+      </Center>
+    );
+  }
   if (!user) return <LoginGate />;
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout user={user} setUser={setUser} />}> 
+        <Route path="/" element={<Layout user={user} setUser={setUser} />}>
           <Route index element={<Home user={user} />} />
           <Route path="/create" element={<Create user={user} />} />
           <Route path="/create/:numistaNumber" element={<Create user={user} />} />
@@ -38,7 +41,7 @@ function App() {
         </Route>
         <Route path="/print" element={<Print user={user} />} />
       </Routes>
-    </BrowserRouter> 
+    </BrowserRouter>
   );
 }
 

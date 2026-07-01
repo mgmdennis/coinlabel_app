@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
-import { FrontLabelContainer, BackLabelContainer } from "./label";
+import { Button, Group, Title } from '@mantine/core';
 
-const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api');
+import { BASE_URL } from '../config';
+import { FrontLabelContainer, BackLabelContainer } from "./label";
 
 const Print = () => {
   const [coins, setCoins] = useState(null);
@@ -31,8 +32,8 @@ const Print = () => {
 
   let displayedCoins = [];
   if (coins) {
-    displayedCoins = selectedIds && Array.isArray(selectedIds) 
-      ? coins.filter(coin => selectedIds.includes(coin._id)) 
+    displayedCoins = selectedIds && Array.isArray(selectedIds)
+      ? coins.filter(coin => selectedIds.includes(coin._id))
       : coins;
   }
 
@@ -40,11 +41,11 @@ const Print = () => {
 
   return (
     <div className="page-container">
-      <div className="no-print d-flex align-items-center mb-4" style={{ padding: '20px' }}>
-        <button type="button" className="btn btn-outline-secondary btn-sm me-3" onClick={() => window.history.back()}>&larr; Back</button>
-        <button type="button" className="btn btn-outline-secondary btn-sm me-3" onClick={() => window.print()}>🖨️ Print</button>
-        <h1 className="m-0" style={{ fontSize: '1.5rem' }}>Print Labels</h1>
-      </div>
+      <Group className="no-print" align="center" mb="lg" p="md">
+        <Button variant="default" size="xs" onClick={() => window.history.back()}>&larr; Back</Button>
+        <Button variant="default" size="xs" onClick={() => window.print()}>🖨️ Print</Button>
+        <Title order={2} m={0} style={{ fontSize: '1.5rem' }}>Print Labels</Title>
+      </Group>
 
       <div className="print-wrapper">
         <table style={tableStyle}>
@@ -75,7 +76,7 @@ const Print = () => {
 
         @media print {
           .no-print { display: none !important; }
-          
+
           html, body {
             margin: 0 !important;
             padding: 0 !important;

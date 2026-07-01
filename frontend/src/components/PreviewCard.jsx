@@ -1,5 +1,4 @@
-
-import { Card, Button } from 'react-bootstrap';
+import { Badge, Box, Button, Card, Group, Stack, Text } from '@mantine/core';
 import axios from 'axios';
 import { useState } from 'react';
 import { FrontLabelContainer, BackLabelContainer } from "../pages/label";
@@ -41,16 +40,20 @@ export const PreviewCard = ({
         setResetting(false);
     };
     return (
-        <div className="sticky-top" style={{ top: '1rem' }}>
-            <Card className="border-info shadow">
-                <Card.Header className="bg-info text-white fw-bold d-flex justify-content-between">
-                    Live Preview <span className="small opacity-75">Scale 1:1</span>
-                </Card.Header>
-                <Card.Body className="bg-light d-flex flex-column align-items-center gap-4 py-4">
-                    <div className="preview-section text-center w-100">
-                        <span className="badge bg-secondary mb-2">Front Side</span>
+        <Box style={{ position: 'sticky', top: '1rem' }}>
+            <Card withBorder shadow="md" padding={0} style={{ borderColor: 'var(--mantine-color-cyan-5)' }}>
+                <Card.Section withBorder py="xs" px="md" bg="cyan.6" c="white">
+                    <Group justify="space-between">
+                        <Text fw={700}>Live Preview</Text>
+                        <Text size="sm" opacity={0.75}>Scale 1:1</Text>
+                    </Group>
+                </Card.Section>
+
+                <Stack align="center" gap="xl" bg="gray.0" py="xl" px="md">
+                    <Stack align="center" gap="xs" w="100%">
+                        <Badge color="gray" variant="filled">Front Side</Badge>
                         <div className="label-edit-scale-wrapper">
-                            <FrontLabelContainer 
+                            <FrontLabelContainer
                                 isEditable={true}
                                 year={year} setYear={setYear}
                                 issuer={issuer} setIssuer={setIssuer}
@@ -64,12 +67,12 @@ export const PreviewCard = ({
                                 details={details} setDetails={setDetails}
                             />
                         </div>
-                    </div>
+                    </Stack>
 
-                    <div className="preview-section text-center w-100 border-top pt-4">
-                        <span className="badge bg-secondary mb-2">Back Side</span>
+                    <Stack align="center" gap="xs" w="100%" pt="xl" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+                        <Badge color="gray" variant="filled">Back Side</Badge>
                         <div className="label-edit-scale-wrapper">
-                            <BackLabelContainer 
+                            <BackLabelContainer
                                 isEditable={true}
                                 composition={composition} setComposition={setComposition}
                                 physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
@@ -80,30 +83,34 @@ export const PreviewCard = ({
                                 isGenerating={isGenerating}
                             />
                         </div>
-                    </div>
-                </Card.Body>
-                <Card.Footer className="text-center small d-flex flex-column align-items-center gap-2">
-                    {saveStatus === "saving" && <span className="text-warning">● Saving...</span>}
-                    {saveStatus === "saved" && <span className="text-success">● All changes saved</span>}
-                    {saveStatus === "error" && <span className="text-danger">● Error saving!</span>}
-                    {!isManualMode && numistaNumber && (
-                        <Button
-                            variant="link"
-                            size="sm"
-                            className="px-1 py-0 text-muted"
-                            style={{fontWeight: 500, textDecoration: 'none'}}
-                            onClick={handleReset}
-                            disabled={resetting}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" style={{marginRight: 2, marginBottom: 2}}>
-                              <path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 1 0-.908-.418A6 6 0 1 0 8 2v1z"/>
-                              <path d="M8 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 0-1H8.5V1.5A.5.5 0 0 0 8 1z"/>
-                            </svg>
-                            {resetting ? 'Resetting...' : 'Reset fields from Numista'}
-                        </Button>
-                    )}
-                </Card.Footer>
+                    </Stack>
+                </Stack>
+
+                <Card.Section withBorder py="sm" px="md">
+                    <Stack align="center" gap="xs">
+                        {saveStatus === "saving" && <Text size="sm" c="yellow.7">● Saving...</Text>}
+                        {saveStatus === "saved" && <Text size="sm" c="green.7">● All changes saved</Text>}
+                        {saveStatus === "error" && <Text size="sm" c="red.7">● Error saving!</Text>}
+                        {!isManualMode && numistaNumber && (
+                            <Button
+                                variant="subtle"
+                                color="gray"
+                                size="xs"
+                                onClick={handleReset}
+                                disabled={resetting}
+                                leftSection={
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+                                        <path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 1 0-.908-.418A6 6 0 1 0 8 2v1z" />
+                                        <path d="M8 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 0-1H8.5V1.5A.5.5 0 0 0 8 1z" />
+                                    </svg>
+                                }
+                            >
+                                {resetting ? 'Resetting...' : 'Reset fields from Numista'}
+                            </Button>
+                        )}
+                    </Stack>
+                </Card.Section>
             </Card>
-        </div>
+        </Box>
     );
 };

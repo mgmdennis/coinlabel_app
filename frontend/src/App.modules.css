@@ -6,84 +6,12 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* font-family: monospace; */
 }
 
-body{
-  height: 100vh;
-  
-  /* background: linear-gradient(135deg, #933893, #22242b); */
-
-  /* background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%), radial-gradient(ellipse at 80% 5%, #4c00ff 0%, rgb(255 40 184 / 0%) 30%), radial-gradient(ellipse at bottom left, #ff006a 0%, rgb(98 190 255 / 31%) 60%), linear-gradient(135deg, rgba(18, 46, 119, 0) 0%, rgba(18, 46, 119, 0) 75%, #395eff 100%), linear-gradient(82deg, #dff7ff 0%, #74b5ff 27%, #88b8ff 74%, #82b3ff 100%); */
-  /* background-blend-mode: screen, hue, color, overlay; */
-
+body {
   background-repeat: no-repeat;
-
 }
 
-/* .App {
-  margin: 5vh 25vw;
-  padding: 30px;
-  background: rgba(255, 255, 255, 0.463);
-  backdrop-filter: blur(10px);
-  border-radius: 10px;
-  min-height: 80vh;
-  height: 90vh;  
-  display: flex;
-  flex-direction: column;
-
-  box-shadow: rgba(0, 0, 0, 0.25) 0px 14px 28px,
-    rgba(0, 0, 0, 0.22) 0px 10px 10px;
-    
-} */
-
-.todo-input-wrapper {
-  margin-top: 40px;
-  display: flex;
-  justify-content: center;
-  height: 10vh;
-}
-
-.todo-input-bar {
-  width: 500px;
-  height: 35px;
-  font-size: 14px;
-  outline: none;
-  border: 1px solid rgb(241, 236, 236);
-  padding: 8px;
-  border-radius: 4px;
-
-  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
-}
-
-.add-button{
-  width: 35px;
-  height: 35px;
-  border-radius: 4px;
-  margin-left: 10px;
-  background-color: rgba(0, 156, 0, 0.745);
-  text-align: center;
-  line-height: 35px;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-  border: none;
-
-  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
-}
-.add-button:hover{
-  transition: 0.3s ease-in-out;
-  transform: scale(1.03);
-}
-
-.todos-list{
-  margin-top: 30px;
-  font-size: 16px;
-  flex: 1;
-  
-  overflow-y: scroll;
-  
-}
 ::-webkit-scrollbar {
   width: 0.3rem;
 }
@@ -95,63 +23,35 @@ body{
   background: rgba(102, 101, 101, 0.831);
 }
 
+/* ---------------------------------------------------------------------------
+   Label rendering (print-precise)
+   --------------------------------------------------------------------------- */
 
-.todo{
-  display: flex;
-  justify-content: space-between;
-  width: auto;
-  background: rgba(255, 255, 255, 0.537);
-  color: #fff;
-  padding: 10px;
-  margin: 5px;
-  margin-bottom: 7px;
-  border-radius: 4px;
-  color: #404040;
-
-  box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px;
-}
-.todo:hover{
-  transition: 0.1s ease;
-  transform: scale(1.005);
-  
-}
-
-#todo-title{
-  cursor: pointer;
-  overflow-wrap: break-word;
-  max-width: 400px;
-}
-#todo-title:hover{
-  color: rgb(116, 203, 66);
-}
-
-.complete{
-  color: green;
-  text-decoration: line-through;
-}
-
-.delete{
-  color: hsla(0, 67%, 74%, 0.395);
-  font-size: 20px;
-  top: 10px;
-  right: 10px;
-  cursor: pointer;
-}
-.delete:hover{
-  transition: 0.3s ease-in-out;
-  transform: scale(1.03);
-}
-
-.error-message{
+/*
+  Reset for editable label fields (native <input>/<textarea>). Replicates the
+  old Bootstrap `.form-control-plaintext` so the on-screen editing preview stays
+  visually identical to the printed static <p> labels. Declared BEFORE the
+  positional label classes so those win on padding, font-size and position.
+*/
+.plain-field {
+  display: block;
+  width: 100%;
   margin: 0;
-  color: rgb(255, 255, 255);
-  text-shadow: 2px 2px 3px red, 0px 2px 3px red;
+  line-height: 1.5;
+  color: #212529;
+  background-color: transparent;
+  border: solid transparent;
+  border-width: 1px 0;
+  font-family: inherit;
+  resize: none;
+  -webkit-appearance: none;
+  outline: none;
 }
 
 .label {
-	margin: 0cqw;
+  margin: 0cqw;
   padding: .5cqw 2.5cqw 0.1cqw 2.5cqw;
-	font-family: 'Fira Sans', sans-serif;
+  font-family: 'Fira Sans', sans-serif;
   white-space: pre-wrap; /* This preserves new lines and spaces */
   word-wrap: break-word; /* Ensures long words don't break the layout */
   background: transparent !important;
@@ -164,15 +64,10 @@ body{
   line-height: 1.5;
 }
 
-/* Ensure ALL form fields and static text within label containers are transparent */
-/* This covers Bootstrap .form-control, .form-control-plaintext, and native textareas/inputs on iOS */
-.parent-label-for-edit .form-control,
-.parent-label-for-edit .form-control-plaintext,
+/* Ensure ALL fields and static text within label containers are transparent. */
 .parent-label-for-edit textarea,
 .parent-label-for-edit input,
 .parent-label-for-edit p,
-.parent-label-for-print .form-control,
-.parent-label-for-print .form-control-plaintext,
 .parent-label-for-print textarea,
 .parent-label-for-print input,
 .parent-label-for-print p {
@@ -188,9 +83,9 @@ body{
   font-weight: bold;
   font-size: 7cqw;
   text-align: left;
-  
-  top:0;
-  left:0;
+
+  top: 0;
+  left: 0;
   width: 30%;
 }
 .denomination {
@@ -201,12 +96,10 @@ body{
 
   resize: none;
 
-  /* font-family: "Fira Sans Extra Condensed", sans-serif; */
-  
   font-family: 'Fira Sans', sans-serif;
 
-  top:0;
-  left:25%;
+  top: 0;
+  left: 25%;
   width: 50%;
 }
 
@@ -223,18 +116,18 @@ body{
   font-size: 7cqw;
 }
 
-.secondary-text, 
-.details, 
-.grade-details, 
-.mintage, 
+.secondary-text,
+.details,
+.grade-details,
+.mintage,
 .catalogNumber,
 .composition,
 .mass,
 .diameter,
 .orientation,
 .physical-details,
-.date-added, 
-.reference, 
+.date-added,
+.reference,
 .numista-number {
   font-weight: lighter;
   font-size: 6cqw;
@@ -258,7 +151,7 @@ body{
   text-align: right;
   padding-right: 1cqw;
   top: 10.5cqw;
-  right: 2cqw; 
+  right: 2cqw;
   width: 30%;
   resize: none;
 }
@@ -266,26 +159,26 @@ body{
 .issuer {
   position: absolute;
   text-align: left;
-  
-  bottom:0;
-  left:0;
+
+  bottom: 0;
+  left: 0;
   width: 70%;
 }
 
 .catalogNumber {
   position: absolute;
   text-align: right;
-  
-  bottom:0;
-  right:0;
+
+  bottom: 0;
+  right: 0;
   width: 20%;
 }
 
 .mintage {
   position: absolute;
   text-align: left;
-  
-  bottom:14cqw;
+
+  bottom: 14cqw;
   left: 0;
   width: 70%;
 }
@@ -295,7 +188,7 @@ body{
   padding-top: 10.5cqw;
 
   padding-left: 1cqw;
-  
+
   display: flex;
   flex-direction: column;
   gap: 1cqw; /* Optional: adds a small space between image and text */
@@ -335,11 +228,11 @@ body{
 
   margin: 1.1cqw;
   padding: .1rem 0;
-  
-  /* object-fit is key here: 
+
+  /* object-fit is key here:
      'contain' shows the whole image (may leave gaps)
      'cover' fills the box (may crop edges) */
-  object-fit: contain; 
+  object-fit: contain;
 }
 
 .details {
@@ -376,7 +269,7 @@ body{
   position: absolute;
   bottom: 1cqw;
 }
-            
+
 .physical-details {
   position: absolute;
   left: 1cqw;
@@ -391,14 +284,13 @@ body{
 }
 
 .mass {
-
   text-align: left;
   width: 30%;
 }
 
 .diameter {
   text-align: left;
-  
+
   width: 30%;
 }
 
@@ -410,9 +302,9 @@ body{
 .date-added {
   position: absolute;
   text-align: right;
-  
-  top:0;
-  right:1cqw;
+
+  top: 0;
+  right: 1cqw;
   width: 40%;
   z-index: 11;
 }
@@ -421,8 +313,8 @@ body{
   position: absolute;
   text-align: right;
   z-index: 11;
-  bottom:0;
-  right:1cqw;
+  bottom: 0;
+  right: 1cqw;
   min-width: 28%;
   max-width: 60%;
   field-sizing: content;
@@ -433,20 +325,13 @@ body{
 .qr-code {
   position: absolute;
   padding: 1cqw;
-  /* overflow: hidden; */
-  
-  /* Use fixed percentages so it stays a perfect square */
 
-  
   /* Center it in the middle of the bottom half */
-  top: 14.0cqw; 
-  
-  
-  width:100%;
-  height:61%;
-  
+  top: 14.0cqw;
 
-  
+  width: 100%;
+  height: 61%;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -457,14 +342,13 @@ body{
   to { transform: rotate(360deg); }
 }
 
-
 .sketch-spinner {
   width: 8cqw;
   height: 8cqw;
   border-radius: 50%;
   background: #555;
   opacity: 0.15;
-  animation: sketch-grow 1s cubic-bezier(0.4,0,0.2,1) infinite alternate;
+  animation: sketch-grow 1s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
 }
 
 @keyframes sketch-grow {
@@ -482,16 +366,25 @@ body{
   }
 }
 
+.sketch-warning {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  background: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffe69c;
+}
+
 .parent-label-for-edit {
   /* Render at the exact same size as print so text wrapping is identical */
   width: 44mm;
   height: 45.5mm;
   container-type: size;
-  
+
   /* Background & Depth */
   background: white;
   position: relative;
-  
+
   /* The "Small Shadow" and subtle border */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -502,7 +395,7 @@ body{
   flex-direction: column;
   padding: 0;
   overflow: visible;
-  
+
   transition: box-shadow 0.3s ease;
   transform-origin: top center;
 }
@@ -554,34 +447,11 @@ body{
   height: 45.5mm;
 }
 
-.input-group>:not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
-  margin-left: 0px;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-
-@media (max-width: 750px){
-
-  .App{
-    margin: 10%;
-    display: flex;
-    margin: 5vh 10% 10%;
-    height: 80vh;
-  }
-
-  .todo-input-wrapper{
-    margin-top: 10%;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .todo-input-bar{
-    width: 100%;
-    flex: 1;
-    margin-bottom: 0.7rem;
-  }
-
-
-
+/* Decorative frame around the read-only label previews on the collection page. */
+.label-card {
+  box-shadow: 0 .125rem .25rem rgba(0, 0, 0, 0.075);
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+  padding: .25rem;
+  background: #fff;
 }
