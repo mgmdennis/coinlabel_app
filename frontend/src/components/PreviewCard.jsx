@@ -42,7 +42,7 @@ export const PreviewCard = ({
     return (
         <Box style={{ position: 'sticky', top: '1rem' }}>
             <Card withBorder shadow="md" padding={0} style={{ borderColor: 'var(--mantine-color-cyan-5)' }}>
-                <Card.Section withBorder inheritPadding py="xs" bg="cyan.6" c="white">
+                <Card.Section withBorder py="xs" px="md" bg="cyan.6" c="white">
                     <Group justify="space-between">
                         <Text fw={700}>Live Preview</Text>
                         <Text size="sm" opacity={0.75}>Scale 1:1</Text>
@@ -86,7 +86,7 @@ export const PreviewCard = ({
                     </Stack>
                 </Stack>
 
-                <Card.Section withBorder inheritPadding py="sm">
+                <Card.Section withBorder py="sm" px="md">
                     <Stack align="center" gap="xs">
                         {saveStatus === "saving" && <Text size="sm" c="yellow.7">● Saving...</Text>}
                         {saveStatus === "saved" && <Text size="sm" c="green.7">● All changes saved</Text>}
