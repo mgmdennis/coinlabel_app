@@ -40,8 +40,6 @@ router.get('/callback', async (req, res) => {
     const protocol = req.protocol || 'https';
     const host = req.get('host');
     const redirectUri = `${protocol}://${host}/api/auth/callback`;
-    // Debug: log the API key being used
-    console.log('NUMISTA_API_KEY:', process.env.NUMISTA_API_KEY);
     // Exchange code for access token (POST, x-www-form-urlencoded)
     const qs = require('querystring');
     const tokenRes = await axios.post(NUMISTA_TOKEN_URL, qs.stringify({
@@ -55,7 +53,6 @@ router.get('/callback', async (req, res) => {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
-    console.log('Numista token response:', tokenRes.data);
     const { access_token, user_id } = tokenRes.data;
     let userRes;
     let numistaId;
