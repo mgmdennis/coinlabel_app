@@ -163,6 +163,25 @@ function trimBackground(image, threshold, padFraction, label) {
     }
 }
 
+/**
+ * Snap off-white background pixels to pure white (0xFFFFFF) so the printed
+ * sketch has no gray halo around the coin. Linework (dark pixels) is left
+ * untouched. Default threshold 250 catches subtle gray without erasing
+ * highlights beyond the intended background.
+ */
+function whitenBackground(image, threshold = 250) {
+    image.scan(0, 0, image.bitmap.width, image.bitmap.height, function (x, y, idx) {
+        const r = this.bitmap.data[idx];
+        const g = this.bitmap.data[idx + 1];
+        const b = this.bitmap.data[idx + 2];
+        if (r >= threshold && g >= threshold && b >= threshold) {
+            this.bitmap.data[idx]     = 255;
+            this.bitmap.data[idx + 1] = 255;
+            this.bitmap.data[idx + 2] = 255;
+        }
+    });
+}
+
 /** Persist a completed sketch and return its id to the client. */
 async function saveSketch(res, { imageData, method, side, sourceHash, numistaNumber, year, scaledSize }) {
     const description = `${side} - ${numistaNumber ? 'N#' + numistaNumber : 'Manual'}${year ? ' (' + year + ')' : ''}`;
@@ -350,6 +369,7 @@ router.post('/', async (req, res) => {
             image.resize({ w: scaledSize, h: scaledSize, fit: 'contain' });
             const rawCanvas = new Jimp({ width: scaledSize, height: scaledSize, color: 0xFFFFFFFF });
             rawCanvas.composite(image, Math.floor((scaledSize - image.width) / 2), Math.floor((scaledSize - image.height) / 2));
+            whitenBackground(rawCanvas);
 
             return saveSketch(res, {
                 imageData: await jimpToDataUri(rawCanvas),
@@ -404,8 +424,10 @@ router.get('/status/:id', async (req, res) => {
             const aiImage = await Jimp.read(Buffer.from(aiResponse.data, 'binary'));
             console.log(`📐 AI output dimensions: ${aiImage.width}x${aiImage.height}`);
 
-            // Trim whitespace border from AI output and resize to target
+            // Trim whitespace border from AI output, force any residual
+            // off-white artifacts to pure white, then resize to target.
             trimBackground(aiImage, detectBgThreshold(aiImage), 0.02, 'AI-output');
+            whitenBackground(aiImage);
             aiImage.resize({ w: sketch.width, h: sketch.height });
 
             sketch.imageData = await jimpToDataUri(aiImage);
