@@ -90,7 +90,7 @@ const Print = () => {
             top: 0;
             left: 0;
             /* Applying your converted MM margins as padding */
-            padding-top: 2.54mm;    /* 0.1in — Color LaserJet M254dw */
+            padding-top: 3mm;       /* Color LaserJet M254dw */
             padding-left: 19.05mm;  /* 0.75in */
             padding-right: 4.57mm;  /* 0.18in */
             padding-bottom: 1.78mm; /* 0.07in */
