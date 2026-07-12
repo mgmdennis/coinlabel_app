@@ -9,7 +9,7 @@ Run these from the `frontend/` directory.
 ### `npm run dev`
 
 Starts the Vite dev server at [http://localhost:3000](http://localhost:3000) with hot module replacement.
-Requests to `/api` are proxied to the Express backend at `http://localhost:5000` (see `vite.config.js`).
+Requests to `/api` are proxied to the Express backend at `http://localhost:5001` (see `vite.config.js`).
 
 ### `npm run build`
 
@@ -24,7 +24,7 @@ Serves the contents of `build/` locally to preview the production bundle.
 ## Configuration
 
 - **API base URL** is resolved in `src/config.js` from `import.meta.env.VITE_API_URL`.
-  Locally it defaults to `http://localhost:5000/api`; in production it uses same-origin `/api`.
+  Locally it defaults to `http://localhost:5001/api`; in production it uses same-origin `/api`.
 - **Theme** lives in `src/theme.js` (Mantine theme: brand colors, fonts).
 
 ## Local development
@@ -39,4 +39,4 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The dev server proxies API calls to the backend on port 5000.
+Open [http://localhost:3000](http://localhost:3000). The dev server proxies API calls to the backend on port 5001.

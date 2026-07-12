@@ -29,7 +29,7 @@ const SketchSchema = new mongoose.Schema({
     },
     imageData: { 
         type: String, 
-        required: true 
+        default: ''  // Empty until AI generation completes
     },
     contentType: { 
         type: String, 
@@ -43,6 +43,24 @@ const SketchSchema = new mongoose.Schema({
         type: Number,
         default: 327  // Default: 27.7mm at 300 DPI (61% of 45.5mm)
     },
+    status: {
+        type: String,
+        enum: ['pending', 'completed', 'failed'],
+        default: 'completed',
+        index: true
+    },
+    predictionId: {  // Replicate prediction ID for async AI polling
+        type: String,
+        default: ''
+    },
+    aiModel: {  // Which Replicate model was used (e.g. google/nano-banana-pro)
+        type: String,
+        default: ''
+    },
+    errorMessage: {  // Failure reason if status === 'failed'
+        type: String,
+        default: ''
+    },
     createdAt: { 
         type: Date, 
         default: Date.now 
@@ -52,14 +70,15 @@ const SketchSchema = new mongoose.Schema({
 // --- THE FIFO GUARD ---
 // Before saving a new sketch, check if we have too many. 
 // If we have 60 or more, delete the oldest UNREFERENCED one.
+// Pending AI sketches are never counted or pruned (their image isn't ready yet).
 SketchSchema.pre('save', async function(next) {
     const Sketch = this.constructor;
     const Coin = mongoose.model('Coin');
-    const count = await Sketch.countDocuments();
+    const count = await Sketch.countDocuments({ status: { $ne: 'pending' } });
     
     if (count >= 60) {
-        // Find the oldest sketches and delete the first one not referenced by any coin
-        const oldestSketches = await Sketch.find().sort({ createdAt: 1 }).limit(10);
+        // Find the oldest non-pending sketches and delete the first one not referenced by any coin
+        const oldestSketches = await Sketch.find({ status: { $ne: 'pending' } }).sort({ createdAt: 1 }).limit(10);
         for (const sketch of oldestSketches) {
             const refCount = await Coin.countDocuments({ sketchId: sketch._id.toString() });
             if (refCount === 0) {

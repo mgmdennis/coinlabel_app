@@ -12,6 +12,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import version from '../version';
+import { BASE_URL } from '../config';
 
 const BrandMark = ({ size = 32 }) => (
   <svg width={size} height={size} viewBox="0 0 128 128" aria-hidden="true">
@@ -52,7 +53,7 @@ const Layout = ({ user, setUser }) => {
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout');
+    await fetch(`${BASE_URL}/auth/logout`, { credentials: 'include' });
     setUser(null);
     window.location.reload();
   };

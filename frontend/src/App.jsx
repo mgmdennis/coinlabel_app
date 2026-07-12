@@ -9,13 +9,14 @@ import Print from "./pages/print";
 import Create from "./pages/create";
 import NoPage from "./pages/NoPage";
 import LoginGate from "./components/LoginGate";
+import { BASE_URL } from "./config";
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("/api/auth/me")
+    axios.get(`${BASE_URL}/auth/me`)
       .then(res => setUser(res.data))
       .catch(() => setUser(null))
       .finally(() => setLoading(false));

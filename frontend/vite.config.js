@@ -7,9 +7,9 @@ export default defineConfig({
   server: {
     port: 3000,
     // Proxy API calls to the Express backend during development so that
-    // root-relative requests (e.g. "/api/...") reach the backend on :5000.
+    // root-relative requests (e.g. "/api/...") reach the backend on :5001.
     proxy: {
-      '/api': 'http://localhost:5000',
+      '/api': 'http://localhost:5001',
     },
   },
   build: {

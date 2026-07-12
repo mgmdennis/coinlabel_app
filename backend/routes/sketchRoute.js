@@ -230,8 +230,19 @@ router.post('/', async (req, res) => {
         if (side !== 'PASTED') {
             const existingSketch = await Sketch.findOne({ sourceHash, method, side });
             if (existingSketch) {
-                console.log(`♻️ Returning cached ${method} sketch (hash: ${sourceHash.substring(0,8)}...) - ${side}`);
-                return res.json({ sketchId: existingSketch._id });
+                if (existingSketch.status === 'pending' && existingSketch.predictionId) {
+                    // Re-use an in-flight Replicate prediction instead of creating a duplicate
+                    console.log(`♻️ Returning in-progress ${method} sketch (hash: ${sourceHash.substring(0,8)}...) - ${side}`);
+                    return res.json({ sketchId: existingSketch._id, status: 'pending' });
+                }
+                if (existingSketch.status === 'failed') {
+                    // Discard the failed attempt and re-generate below
+                    await Sketch.findByIdAndDelete(existingSketch._id);
+                    console.log(`🧹 Discarded failed ${method} sketch (hash: ${sourceHash.substring(0,8)}...)`);
+                } else {
+                    console.log(`♻️ Returning cached ${method} sketch (hash: ${sourceHash.substring(0,8)}...) - ${side}`);
+                    return res.json({ sketchId: existingSketch._id, status: 'completed' });
+                }
             }
         } else {
             // For PASTED, delete any previous sketch with the same hash so the new one replaces it
@@ -275,25 +286,25 @@ router.post('/', async (req, res) => {
             prompt += `\n\nTHIS IS A STRICT TRACING TASK. Trace ONLY what exists. Do NOT add any text, numbers, or symbols that are not clearly visible in the source image.`;
 
             const aiModel = premium ? 'google/nano-banana-pro' : 'google/nano-banana';
-            console.log(`🤖 Using model: ${aiModel}`);
-            const output = await replicate.run(aiModel, {
+            console.log(`🤖 Creating Replicate prediction with model: ${aiModel}`);
+
+            // Non-blocking: create the prediction and a pending Sketch doc, then
+            // return immediately. The frontend polls /status/:id; that handler
+            // downloads + Jimp-trims the result when Replicate reports success.
+            // This avoids Heroku's 30s router H12 timeout that kills blocking calls.
+            const prediction = await replicate.predictions.create({
+                model: aiModel,
                 input: { prompt, image_input: [aiInputData], creativity: 0.1, output_format: 'png', output_quality: 100 }
             });
-            const aiUrl = output.url ? output.url() : (Array.isArray(output) ? output[0] : output);
-            console.log(`📥 Generated image URL: ${aiUrl}`);
 
-            const response = await axios.get(aiUrl, { responseType: 'arraybuffer' });
-            const aiImage = await Jimp.read(Buffer.from(response.data, 'binary'));
-            console.log(`📐 AI output dimensions: ${aiImage.width}x${aiImage.height}`);
-
-            // Trim whitespace border from AI output and resize to target
-            trimBackground(aiImage, detectBgThreshold(aiImage), 0.02, 'AI-output');
-            aiImage.resize({ w: scaledSize, h: scaledSize });
-
-            return saveSketch(res, {
-                imageData: await jimpToDataUri(aiImage),
-                method: 'AI', side, sourceHash, numistaNumber, year, scaledSize,
+            const pendingDescription = `${side} - ${numistaNumber ? 'N#' + numistaNumber : 'Manual'}${year ? ' (' + year + ')' : ''}`;
+            const pendingSketch = await Sketch.create({
+                sourceHash, numistaNumber, year, description: pendingDescription, side,
+                imageData: '', method: 'AI', width: scaledSize, height: scaledSize,
+                status: 'pending', predictionId: prediction.id, aiModel,
             });
+            console.log(`🧾 Created pending AI sketch: ${pendingSketch._id} (prediction ${prediction.id})`);
+            return res.json({ sketchId: pendingSketch._id, status: 'pending' });
 
         } else if (method === 'SCRIPT') {
             console.log(`💻 Processing Script Sketch for #${numistaNumber}...`);
@@ -348,6 +359,73 @@ router.post('/', async (req, res) => {
 
     } catch (error) {
         console.error("❌ Generation Error:", error.stack);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * @route   GET /api/generate-sketch/status/:id
+ * Polls an in-progress AI sketch. When Replicate reports the prediction
+ * succeeded, downloads + Jimp-trims the result and stores the final image.
+ * Returns { status: 'pending' | 'completed' | 'failed', sketchId }.
+ */
+router.get('/status/:id', async (req, res) => {
+    try {
+        const sketch = await Sketch.findById(req.params.id);
+        if (!sketch) return res.status(404).json({ error: "Sketch not found" });
+
+        if (sketch.status === 'completed') {
+            return res.json({ sketchId: sketch._id, status: 'completed' });
+        }
+        if (sketch.status === 'failed') {
+            return res.json({ sketchId: sketch._id, status: 'failed', error: sketch.errorMessage });
+        }
+        if (!sketch.predictionId) {
+            return res.status(400).json({ error: "Pending sketch has no predictionId to poll" });
+        }
+
+        // Ask Replicate for the latest prediction state
+        const prediction = await replicate.predictions.get(sketch.predictionId);
+
+        if (prediction.status === 'succeeded') {
+            // Resolve the output URL — Replicate returns either a URL string
+            // or an array of URL strings for image models.
+            const rawOutput = prediction.output;
+            const aiUrl = Array.isArray(rawOutput) ? rawOutput[0] : rawOutput;
+            if (!aiUrl) {
+                sketch.status = 'failed';
+                sketch.errorMessage = 'Replicate returned no output URL';
+                await sketch.save();
+                return res.json({ sketchId: sketch._id, status: 'failed', error: sketch.errorMessage });
+            }
+            console.log(`📥 AI sketch ${sketch._id} succeeded, downloading: ${aiUrl}`);
+
+            const aiResponse = await axios.get(aiUrl, { responseType: 'arraybuffer' });
+            const aiImage = await Jimp.read(Buffer.from(aiResponse.data, 'binary'));
+            console.log(`📐 AI output dimensions: ${aiImage.width}x${aiImage.height}`);
+
+            // Trim whitespace border from AI output and resize to target
+            trimBackground(aiImage, detectBgThreshold(aiImage), 0.02, 'AI-output');
+            aiImage.resize({ w: sketch.width, h: sketch.height });
+
+            sketch.imageData = await jimpToDataUri(aiImage);
+            sketch.status = 'completed';
+            sketch.errorMessage = '';
+            await sketch.save();
+            console.log(`✅ AI Sketch completed: ${sketch._id}`);
+            return res.json({ sketchId: sketch._id, status: 'completed' });
+        } else if (prediction.status === 'failed' || prediction.status === 'canceled') {
+            sketch.status = 'failed';
+            sketch.errorMessage = prediction.error || `Replicate prediction ${prediction.status}`;
+            await sketch.save();
+            console.log(`❌ AI Sketch failed: ${sketch._id} - ${sketch.errorMessage}`);
+            return res.json({ sketchId: sketch._id, status: 'failed', error: sketch.errorMessage });
+        } else {
+            // 'starting' | 'processing' — still in progress
+            return res.json({ sketchId: sketch._id, status: 'pending' });
+        }
+    } catch (error) {
+        console.error("Status poll error:", error.stack);
         res.status(500).json({ error: error.message });
     }
 });

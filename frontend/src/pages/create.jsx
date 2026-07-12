@@ -190,12 +190,40 @@ const Create = () => {
                 hasImageUrl: !!requestBody.imageUrl,
             });
 
-            // Send to the unified backend route
-            const sketchTimeout = isPremiumAI ? 120000 : 60000; // Premium gets 2 min, standard gets 1 min
-            const res = await axios.post(`${BASE_URL}/generate-sketch`, requestBody, { timeout: sketchTimeout });
+            // Send to the unified backend route.
+            // POST timeout is short: creating a Replicate prediction (AI) or
+            // doing the SCRIPT/RAW image processing should both finish in <30s.
+            // The full budget for polling AI results is `sketchTimeout` below.
+            const sketchTimeout = isPremiumAI ? 120000 : 60000;  // Total budget incl. polling
+            const res = await axios.post(`${BASE_URL}/generate-sketch`, requestBody, { timeout: 30000 });
 
             console.log("Backend Response:", res.data);
 
+            if (res.data.status === 'pending') {
+                // AI path — backend created a Replicate prediction and returned
+                // immediately. Poll /status/:id until it completes or fails.
+                // Each poll is a quick round-trip; total budget stays inside
+                // `sketchTimeout` (120s premium / 60s standard). This avoids
+                // Heroku's 30s H12 router timeout that kills one-shot blocking
+                // calls while still enforcing a wall-clock limit client-side.
+                const pendingId = res.data.sketchId;
+                const startedAt = Date.now();
+                const pollInterval = 3000;
+                const pollTimeout = 15000;
+                while (Date.now() - startedAt < sketchTimeout) {
+                    await new Promise(r => setTimeout(r, pollInterval));
+                    const pollRes = await axios.get(`${BASE_URL}/generate-sketch/status/${pendingId}`, { timeout: pollTimeout });
+                    const s = pollRes.data.status;
+                    console.log(`Poll status for ${pendingId}: ${s}`);
+                    if (s === 'completed') { setSketchId(pendingId); return; }
+                    if (s === 'failed') { alert("AI generation failed: " + (pollRes.data.error || 'unknown error')); return; }
+                    // 'pending' → keep polling
+                }
+                alert("AI generation timed out — Replicate did not finish in time. Please try again.");
+                return;
+            }
+
+            // Sync path (SCRIPT / RAW / cached completed AI)
             setSketchId(res.data.sketchId);
         } catch (err) {
             console.error("Failed to generate visual:", err);

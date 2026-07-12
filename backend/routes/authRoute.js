@@ -14,19 +14,22 @@ router.get('/me', async (req, res) => {
 
 // Config (replace with your actual values or use env vars)
 const NUMISTA_CLIENT_ID = process.env.NUMISTA_CLIENT_ID;
-const NUMISTA_API_KEY = process.env.NUMISTA_API_KEY; 
-// Remove static NUMISTA_REDIRECT_URI; will construct dynamically
+const NUMISTA_API_KEY = process.env.NUMISTA_API_KEY;
 const NUMISTA_AUTH_URL = 'https://en.numista.com/api/oauth_authorize.php';
 const NUMISTA_TOKEN_URL = 'https://api.numista.com/v3/oauth_token';
+
+function getRedirectUri(req) {
+  if (process.env.NUMISTA_REDIRECT_URI) return process.env.NUMISTA_REDIRECT_URI;
+  const protocol = req.protocol || 'https';
+  const host = req.get('host');
+  return `${protocol}://${host}/api/auth/callback`;
+}
 
 // Step 1: Redirect user to Numista OAuth
 router.get('/login', (req, res) => {
   const state = Math.random().toString(36).substring(2);
   const scope = 'view_collection';
-  // Dynamically construct redirect_uri for Numista OAuth
-  const protocol = req.protocol || 'https';
-  const host = req.get('host');
-  const redirectUri = `${protocol}://${host}/api/auth/callback`;
+  const redirectUri = getRedirectUri(req);
   const url = `${NUMISTA_AUTH_URL}?response_type=code&client_id=${NUMISTA_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}`;
   res.redirect(url);
 });
@@ -36,10 +39,7 @@ router.get('/callback', async (req, res) => {
   const { code } = req.query;
   if (!code) return res.status(400).send('Missing code');
   try {
-    // Dynamically construct redirect_uri to match what was sent to Numista
-    const protocol = req.protocol || 'https';
-    const host = req.get('host');
-    const redirectUri = `${protocol}://${host}/api/auth/callback`;
+    const redirectUri = getRedirectUri(req);
     // Exchange code for access token (POST, x-www-form-urlencoded)
     const qs = require('querystring');
     const tokenRes = await axios.post(NUMISTA_TOKEN_URL, qs.stringify({
@@ -90,7 +90,7 @@ router.get('/callback', async (req, res) => {
       redirectUrl = `${protocol}://${req.get('host')}/`;
     } else {
       // Development: always redirect to React dev server
-      redirectUrl = 'http://localhost:3000/';
+      redirectUrl = process.env.FRONTEND_URL || 'http://localhost:3000/';
     }
     res.redirect(redirectUrl);
   } catch (err) {
