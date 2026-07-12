@@ -389,7 +389,7 @@ body {
 .parent-label-for-edit {
   /* Render at the exact same size as print so text wrapping is identical */
   width: 44mm;
-  height: 45.5mm;
+  height: 44.5mm;
   container-type: size;
 
   /* Background & Depth */
@@ -417,7 +417,7 @@ body {
   display: flex;
   justify-content: center;
   /* Reserve space for the scaled label */
-  height: calc(45.5mm * var(--label-scale));
+  height: calc(44.5mm * var(--label-scale));
   align-items: flex-start;
 }
 .label-edit-scale-wrapper > .parent-label-for-edit {
@@ -455,7 +455,7 @@ body {
   position: relative;
 
   width: 44mm;
-  height: 45.5mm;
+  height: 44.5mm;
 }
 
 /* Decorative frame around the read-only label previews on the collection page. */

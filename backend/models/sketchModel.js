@@ -41,7 +41,7 @@ const SketchSchema = new mongoose.Schema({
     },
     height: {
         type: Number,
-        default: 327  // Default: 27.7mm at 300 DPI (61% of 45.5mm)
+        default: 321  // Default: 27.1mm at 300 DPI (61% of 44.5mm)
     },
     status: {
         type: String,

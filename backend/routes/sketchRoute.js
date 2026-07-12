@@ -66,12 +66,12 @@ router.get('/list', async (req, res) => {
 
 /**
  * @route   POST /api/generate-sketch
- * Print dimensions: 44mm x 45.5mm at 300 DPI = 520 x 537 pixels
- * Sketch area: 61% of height = 327 pixels (approximately)
+ * Print dimensions: 44mm x 44.5mm at 300 DPI = 520 x 525 pixels
+ * Sketch area: 61% of height = 321 pixels (approximately)
  */
 const LABEL_WIDTH_MM = 44;
 const SKETCH_WIDTH = 520;  // 44mm at 300 DPI
-const SKETCH_HEIGHT = 327; // ~27.7mm at 300 DPI (61% of label height)
+const SKETCH_HEIGHT = 321; // ~27.1mm at 300 DPI (61% of label height)
 
 /** Decode a data-URI and return a Jimp image instance. */
 async function dataUriToJimp(dataUri) {

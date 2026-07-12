@@ -120,7 +120,7 @@ const cellStyle = {
   borderBottom: "1px dashed #bbb",
   padding: "0",
   width: "44mm",
-  height: "45.5mm",
+  height: "44.5mm",
   verticalAlign: "top",
   overflow: "hidden",
 };
