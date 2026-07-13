@@ -1,6 +1,6 @@
 {
   "name": "coinlabel-app",
-  "version": "4.1.5",
+  "version": "4.1.6",
   "description": "Coin labeling application",
   "main": "backend/server.js",
   "scripts": {

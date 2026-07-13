@@ -255,7 +255,7 @@ const Home = () => {
 
       <div className="coins-list">
         {hasVisible && (
-          <Group justify="space-between" mb="xs" pl="sm">
+          <Group justify="space-between" mb="xs" pl="md">
             <Checkbox
               id="select-all-checkbox"
               checked={allSelected}
