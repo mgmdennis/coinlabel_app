@@ -151,6 +151,10 @@ const handleDiameterChange = (e) => {
             setIssuer(jsonData.issuer);
             setComposition(jsonData.composition);
             setPhysicalDetails(`${jsonData.orientation || ''}\n⌀ ${jsonData.diameter || ''}\n${jsonData.mass || ''}`);
+            // Pre-fill legends from Numista so users can flip on the
+            // "Legends" visual target without re-typing anything.
+            setLegendObv(jsonData.obverseLettering || "");
+            setLegendRev(jsonData.reverseLettering || "");
             // Reset dateAdded to today
             const currentDate = new Date();
             const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;

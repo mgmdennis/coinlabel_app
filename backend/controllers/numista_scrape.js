@@ -174,6 +174,8 @@ async function getNumistaDetailsJSON(numistaNumber) {
             reverseImage: typeData.reverse?.picture || null,
             obverseDescription: typeData.obverse?.description || "",
             reverseDescription: typeData.reverse?.description || "",
+            obverseLettering: typeData.obverse?.lettering || "",
+            reverseLettering: typeData.reverse?.lettering || "",
             
             // Mapping mintage table from GET /types/{type_id}/issues
             variations: (issuesData || []).map(issue => ({

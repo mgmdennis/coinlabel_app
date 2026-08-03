@@ -253,7 +253,15 @@ const BackLabelContainer = ({
                 style={{
                     position: 'relative',
                     width: '100%',
-                    overflow: coinDiameter > 45.5 ? 'hidden' : 'visible'
+                    overflow: visualTarget === "LEGENDS"
+                        ? 'visible'
+                        : (coinDiameter > 45.5 ? 'hidden' : 'visible'),
+                    ...(visualTarget === "LEGENDS" ? {
+                        top: '6cqw',
+                        height: '80%',
+                        padding: '1cqw',
+                        alignItems: 'center',
+                    } : {}),
                 }}
             >
                 {showGenerating && (
@@ -269,6 +277,7 @@ const BackLabelContainer = ({
                 )}
                 {visualTarget === "LEGENDS" ? (
                     <div className="legends-block">
+                        <div className="legend-caption">Obv</div>
                         <LabelField
                             isEditable={isEditable}
                             placeholder="Obverse legend"
@@ -279,6 +288,8 @@ const BackLabelContainer = ({
                             className="label legend legend-obv"
                             onChange={(e) => setLegendObv?.(e.target.value)}
                         />
+                        {(legendObv || legendRev) && <hr className="legend-divider" />}
+                        <div className="legend-caption">Rev</div>
                         <LabelField
                             isEditable={isEditable}
                             placeholder="Reverse legend"
