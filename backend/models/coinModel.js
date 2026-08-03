@@ -62,7 +62,7 @@ const CoinSchema = new Schema({
     },
     visualTarget: {
         type: String,
-        enum: ['QR', 'OBVERSE', 'REVERSE', 'PASTED', 'GALLERY'],
+        enum: ['QR', 'OBVERSE', 'REVERSE', 'PASTED', 'GALLERY', 'LEGENDS'],
         default: 'QR',
     },
     visualMethod: {
@@ -73,6 +73,16 @@ const CoinSchema = new Schema({
     sketchId: {
         type: String,
         trim: true,
+    },
+    legendObv: {
+        type: String,
+        trim: true,
+        default: "",
+    },
+    legendRev: {
+        type: String,
+        trim: true,
+        default: "",
     },
     isManual: {
         type: Boolean,

@@ -55,6 +55,8 @@ const Create = () => {
     const [diameter, setDiameter] = useState("");
     const [orientation, setOrientation] = useState("");
     const [showDiameterWarning, setShowDiameterWarning] = useState(false);
+    const [legendObv, setLegendObv] = useState("");
+    const [legendRev, setLegendRev] = useState("");
     const [dateAdded, setDateAdded] = useState("");
     const [marksPicture, setMarksPicture] = useState(null);
     const [marks, setMarks] = useState([]);
@@ -314,7 +316,8 @@ const handleDiameterChange = (e) => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId, isManual: isManualMode
+            visualTarget, visualMethod, sketchId, isManual: isManualMode,
+            legendObv, legendRev
         })
         .then((res) => {
             setCoinId(res.data._id);
@@ -324,7 +327,7 @@ const handleDiameterChange = (e) => {
             console.error("Error creating coin:", err);
             isCreatingCoin.current = false; // Allow retry on error
         });
-    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode]);
+    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
@@ -332,7 +335,8 @@ const handleDiameterChange = (e) => {
         axios.put(`${BASE_URL}/coin/update/${coinId}`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId, isManual: isManualMode
+            visualTarget, visualMethod, sketchId, isManual: isManualMode,
+            legendObv, legendRev
         })
         .then(() => {
             setSaveStatus("saved");
@@ -342,7 +346,7 @@ const handleDiameterChange = (e) => {
             setSaveStatus("error");
             console.error("Error updating coin:", err);
         });
-    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode]);
+    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev]);
 
     // --- Effects ---
 
@@ -464,6 +468,8 @@ const handleDiameterChange = (e) => {
                     setVisualTarget(c.visualTarget || "QR");
                     setVisualMethod(c.visualMethod || "SCRIPT");
                     setSketchId(c.sketchId || "");
+                    setLegendObv(c.legendObv || "");
+                    setLegendRev(c.legendRev || "");
                     // Always update Numista details for dropdowns, but don't overwrite fields
                     if (c.numistaDetails) {
                         setNumistaDetails(c.numistaDetails);
@@ -507,7 +513,7 @@ const handleDiameterChange = (e) => {
             }, 1000);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, updateCoinRemote, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, updateCoinRemote, coinId, initialLoadComplete]);
 
     const handleDiscard = () => {
         if (window.confirm("Are you sure you want to discard this entry?")) {
@@ -519,7 +525,8 @@ const handleDiameterChange = (e) => {
         axios.post(`${BASE_URL}/coin/new`, {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId
+            visualTarget, visualMethod, sketchId,
+            legendObv, legendRev
         }).then(() => navigate("/"));
     };
 
@@ -699,6 +706,10 @@ const handleDiameterChange = (e) => {
                         onSwapDateChange={(e) => setSwapDate(e.target.checked)}
                         isPremiumAI={isPremiumAI}
                         onPremiumAIChange={(e) => setIsPremiumAI(e.target.checked)}
+                        legendObv={legendObv}
+                        onLegendObvChange={(e) => setLegendObv(e.target.value)}
+                        legendRev={legendRev}
+                        onLegendRevChange={(e) => setLegendRev(e.target.value)}
                     />
                 </Grid.Col>
 
@@ -725,6 +736,8 @@ const handleDiameterChange = (e) => {
                         updateNumistaDetails={updateNumistaDetails}
                         BASE_URL={BASE_URL}
                         saveStatus={saveStatus}
+                        legendObv={legendObv} setLegendObv={setLegendObv}
+                        legendRev={legendRev} setLegendRev={setLegendRev}
                     />
                 </Grid.Col>
             </Grid>

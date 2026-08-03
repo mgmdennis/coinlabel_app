@@ -162,7 +162,11 @@ const BackLabelContainer = ({
     dateAdded, setDateAdded,
     visualTarget = "QR",
     sketchId = "",
-    isGenerating = false
+    isGenerating = false,
+    legendObv = "",
+    setLegendObv,
+    legendRev = "",
+    setLegendRev,
 }) => {
     const [sketchData, setSketchData] = useState(null);
     const [showDiameterError, setShowDiameterError] = useState(false);
@@ -263,7 +267,30 @@ const BackLabelContainer = ({
                         <div className="sketch-spinner" />
                     </div>
                 )}
-                {(visualTarget === "QR" || (!sketchId && visualTarget !== "GALLERY" && visualTarget !== "NUMISTA" && visualTarget !== "PASTED") || !sketchData) ? (
+                {visualTarget === "LEGENDS" ? (
+                    <div className="legends-block">
+                        <LabelField
+                            isEditable={isEditable}
+                            placeholder="Obverse legend"
+                            value={legendObv}
+                            as="textarea"
+                            rows={2}
+                            autoGrow
+                            className="label legend legend-obv"
+                            onChange={(e) => setLegendObv?.(e.target.value)}
+                        />
+                        <LabelField
+                            isEditable={isEditable}
+                            placeholder="Reverse legend"
+                            value={legendRev}
+                            as="textarea"
+                            rows={2}
+                            autoGrow
+                            className="label legend legend-rev"
+                            onChange={(e) => setLegendRev?.(e.target.value)}
+                        />
+                    </div>
+                ) : (visualTarget === "QR" || (!sketchId && visualTarget !== "GALLERY" && visualTarget !== "NUMISTA" && visualTarget !== "PASTED") || !sketchData) ? (
                     <QRCode
                         value={`https://en.numista.com/catalogue/pieces${numistaNumber}.html`}
                         style={{ width: "100%", height: "100%" }}

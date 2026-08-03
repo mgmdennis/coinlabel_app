@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { Badge, Box, Button, Card, Checkbox, Group, Loader, Modal, Radio, Stack, Switch, Text, ThemeIcon } from '@mantine/core';
-import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, FolderOpen, ExternalLink } from 'lucide-react';
+import { Badge, Box, Button, Card, Checkbox, Group, Loader, Modal, Radio, Stack, Switch, Text, Textarea, ThemeIcon } from '@mantine/core';
+import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, FolderOpen, ExternalLink, ScrollText } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
 import { API_ORIGIN } from '../config';
 
@@ -27,6 +27,10 @@ export const VisualCustomizationCard = ({
     onSwapDateChange,
     isPremiumAI,
     onPremiumAIChange,
+    legendObv,
+    onLegendObvChange,
+    legendRev,
+    onLegendRevChange,
 }) => {
     const fileInputRef = useRef(null);
     const [showBeta, setShowBeta] = useState(false);
@@ -73,6 +77,10 @@ export const VisualCustomizationCard = ({
                     <Radio
                         value="GALLERY"
                         label={iconLabel(<Grid3x3 size={14} />, 'From Gallery')}
+                    />
+                    <Radio
+                        value="LEGENDS"
+                        label={iconLabel(<ScrollText size={14} />, 'Legends (text)')}
                     />
                     <Radio
                         value="PASTED"
@@ -291,6 +299,33 @@ export const VisualCustomizationCard = ({
         });
     } else if (visualTarget === 'GALLERY') {
         steps.push({ title: 'Pick a saved sketch', content: galleryPicker });
+    } else if (visualTarget === 'LEGENDS') {
+        steps.push({
+            title: 'Enter the legends',
+            content: (
+                <Stack gap="sm">
+                    <Textarea
+                        label="Obverse legend"
+                        placeholder="e.g. IMP CAESAR AVG TR POT III"
+                        autosize
+                        minRows={2}
+                        value={legendObv}
+                        onChange={onLegendObvChange}
+                    />
+                    <Textarea
+                        label="Reverse legend"
+                        placeholder="e.g. PAX AVG COS III PP"
+                        autosize
+                        minRows={2}
+                        value={legendRev}
+                        onChange={onLegendRevChange}
+                    />
+                    <Text size="xs" c="dimmed">
+                        Text appears in the visual area of the back label instead of a QR code or sketch.
+                    </Text>
+                </Stack>
+            ),
+        });
     } else if (visualTarget === 'PASTED') {
         steps.push({
             title: 'Add your coin image',

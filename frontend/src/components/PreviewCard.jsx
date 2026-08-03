@@ -24,7 +24,9 @@ export const PreviewCard = ({
     isManualMode,
     updateNumistaDetails,
     BASE_URL,
-    saveStatus
+    saveStatus,
+    legendObv, setLegendObv,
+    legendRev, setLegendRev,
 }) => {
     const [resetting, setResetting] = useState(false);
     const handleReset = async () => {
@@ -81,6 +83,8 @@ export const PreviewCard = ({
                                 visualTarget={visualTarget}
                                 sketchId={sketchId}
                                 isGenerating={isGenerating}
+                                legendObv={legendObv} setLegendObv={setLegendObv}
+                                legendRev={legendRev} setLegendRev={setLegendRev}
                             />
                         </div>
                     </Stack>
