@@ -7,10 +7,17 @@ export const parseNumistaText = (
     setIssuer,
     setYear,
     setComposition,
+    setMass,
+    setDiameter,
+    setOrientation,
     setPhysicalDetails,
     setReference,
     setDenomination
 ) => {
+    let mass = "";
+    let diameter = "";
+    let orientation = "";
+
     // Extract Numista Number (e.g., "Number	N#277174" or "Number	277174")
     const numistaMatch = text.match(/Number\s+(?:N#)?(\d+)/i);
     if (numistaMatch) {
@@ -40,21 +47,15 @@ export const parseNumistaText = (
             const decimals = Math.max(0, 4 - intPart.length);
             diam = parseFloat(num.toFixed(decimals)).toString();
         }
-        setPhysicalDetails(prev => {
-            const lines = prev.split('\n').filter(line => line.trim() && !line.match(/\d+(?:\.\d+)?\s*mm/));
-            lines.push(`⌀ ${diam} mm`);
-            return lines.join('\n');
-        });
+        diameter = diam;
+        setDiameter(diameter);
     }
 
         // Extract Weight/Mass (e.g., "Weight\t8 g" or "Weight\t8g")
     const weightMatch = text.match(/Weight\s+(\d+(?:\.\d+)?)\s*g/i);
     if (weightMatch) {
-        setPhysicalDetails(prev => {
-            const lines = prev.split('\n').filter(line => line.trim() && !line.includes('g'));
-            lines.push(`${weightMatch[1]} g`);
-            return lines.join('\n');
-        });
+        mass = weightMatch[1];
+        setMass(mass);
     }
 
     // Extract Composition (e.g., "Composition\tCopper-nickel")
@@ -68,13 +69,18 @@ export const parseNumistaText = (
     if (orientationMatch) {
         const arrowMatch = orientationMatch[1].match(/[↑↓←→]+/);
         if (arrowMatch) {
-            setPhysicalDetails(prev => {
-                const lines = prev.split('\n').filter(line => line.trim() && !line.match(/[↑↓←→]/));
-                lines.unshift(arrowMatch[0]);
-                return lines.join('\n');
-            });
+            orientation = arrowMatch[0];
+            setOrientation(orientation);
         }
     }
+
+    // Compose the physicalDetails string from the three fields, in the same
+    // format the Numista loader produces: <orientation>\n⌀ <diameter> mm\n<mass> g
+    const lines = [];
+    if (orientation) lines.push(orientation);
+    if (diameter) lines.push(`⌀ ${diameter} mm`);
+    if (mass) lines.push(`${mass} g`);
+    setPhysicalDetails(lines.join('\n'));
 
     // Extract References (KM# and Y# prioritized)
     const referencesMatch = text.match(/References\s+([^\n]+)/i);

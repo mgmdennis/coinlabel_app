@@ -13,6 +13,7 @@ import { parseNumistaText } from "../utils/parseNumistaText";
 import { AIConfirmModal } from "../components/AIConfirmModal";
 import { CreateHeader } from "../components/CreateHeader";
 import { ManualModeToggle } from "../components/ManualModeToggle";
+import { ManualPhysicalFields } from "../components/ManualPhysicalFields";
 import { NumistaDataCard } from "../components/NumistaDataCard";
 import { LabelSpecificsCard } from "../components/LabelSpecificsCard";
 import { PasteNumistaAccordion } from "../components/PasteNumistaAccordion";
@@ -49,6 +50,11 @@ const Create = () => {
     const [mintage, setMintage] = useState("");
     const [composition, setComposition] = useState("");
     const [physicalDetails, setPhysicalDetails] = useState("");
+    // In manual mode these three fields drive `physicalDetails` for display/print.
+    const [mass, setMass] = useState("");
+    const [diameter, setDiameter] = useState("");
+    const [orientation, setOrientation] = useState("");
+    const [showDiameterWarning, setShowDiameterWarning] = useState(false);
     const [dateAdded, setDateAdded] = useState("");
     const [marksPicture, setMarksPicture] = useState(null);
     const [marks, setMarks] = useState([]);
@@ -71,6 +77,52 @@ const Create = () => {
     const [saveStatus, setSaveStatus] = useState("saved"); // 'saving', 'saved', 'error'
 
     // --- Logic Functions ---
+
+    // Compose the physicalDetails string shown in the preview / stored in DB
+    // from the three separate manual-mode fields. Keeps the on-label format
+    // identical to what the Numista loader produces:
+    //   <orientation>\n⌀ <diameter> mm\n<mass> g
+    const composePhysicalDetails = (m = mass, d = diameter, o = orientation) => {
+        const lines = [];
+        if (o) lines.push(o);
+        if (d) lines.push(`⌀ ${d} mm`);
+        if (m) lines.push(`${m} g`);
+        setPhysicalDetails(lines.join('\n'));
+    };
+
+    // Split an existing physicalDetails string (e.g. a loaded manual coin or a
+    // non-manual coin being switched to manual mode) back into the three fields.
+    const splitPhysicalDetails = (pd) => {
+        if (!pd) return;
+        const m = pd.match(/([\d.]+)\s*g/);
+        const d = pd.match(/⌀\s*([\d.]+)/);
+        const o = pd.match(/[↑↓←→]+/);
+        setMass(m?.[1] || "");
+        setDiameter(d?.[1] || "");
+        setOrientation(o?.[0] || "");
+    };
+
+    // Max supported coin diameter in mm (matches BackLabelContainer cap).
+    const MAX_DIAMETER = 45.5;
+
+    // Manual-mode setters: update their own field state and re-compose physicalDetails.
+    const handleMassChange = (e) => { const v = e.target.value; setMass(v); composePhysicalDetails(v, diameter, orientation); };
+const handleDiameterChange = (e) => {
+        const v = e.target.value;
+        const num = parseFloat(v);
+        if (v && !isNaN(num) && num > MAX_DIAMETER) {
+            // Reject values above the cap — clearing the field keeps the
+            // preview/print pipeline out of the error state. Show an
+            // explanation modal so the user understands why it was cleared.
+            setDiameter("");
+            composePhysicalDetails(mass, "", orientation);
+            setShowDiameterWarning(true);
+            return;
+        }
+        setDiameter(v);
+        composePhysicalDetails(mass, v, orientation);
+    };
+    const handleOrientationChange = (e) => { const v = e.target.value; setOrientation(v); composePhysicalDetails(mass, diameter, v); };
 
     const updateFillOutDateAndDetails = (variation, description, useDate = swapDate) => {
         if (!variation) return;
@@ -241,6 +293,9 @@ const Create = () => {
             setIssuer,
             setYear,
             setComposition,
+            setMass,
+            setDiameter,
+            setOrientation,
             setPhysicalDetails,
             setReference,
             setDenomination
@@ -333,6 +388,17 @@ const Create = () => {
         }
     }, [isManualMode, visualTarget]);
 
+    // When entering manual mode, seed the three physical-detail fields from
+    // whatever physicalDetails already holds (e.g. data loaded from a Numista
+    // coin before toggling, or a previously-saved manual coin). Only runs the
+    // seed when all three fields are empty so we never clobber user input.
+    useEffect(() => {
+        if (isManualMode && !mass && !diameter && !orientation && physicalDetails) {
+            splitPhysicalDetails(physicalDetails);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isManualMode]);
+
     useEffect(() => {
         const currentDate = new Date();
         const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;
@@ -388,6 +454,9 @@ const Create = () => {
                     setReference(c.reference || "");
                     setComposition(c.composition || "");
                     setPhysicalDetails(c.physicalDetails || "");
+                    if (c.isManual) {
+                        splitPhysicalDetails(c.physicalDetails || "");
+                    }
                     setMintage(c.mintage || "");
                     setDateAdded(c.dateAdded || dateAdded);
                     setMarksPicture(c.marksPicture || null);
@@ -526,6 +595,17 @@ const Create = () => {
                 </Group>
             </Modal>
 
+            <Modal
+                opened={showDiameterWarning}
+                onClose={() => setShowDiameterWarning(false)}
+                title="Diameter Too Large"
+                centered
+            >
+                <p>The maximum supported coin diameter is <strong>{MAX_DIAMETER}mm</strong>.<br/>
+                The value you entered was cleared — please enter a smaller diameter.</p>
+                <Button fullWidth mt="md" onClick={() => setShowDiameterWarning(false)}>OK</Button>
+            </Modal>
+
             <Grid gutter="lg">
                 <Grid.Col span={{ base: 12, lg: 7 }}>
                     {!isManualMode && (
@@ -573,6 +653,17 @@ const Create = () => {
                         grade={grade}
                         onGradeChange={(e) => setGrade(e.target.value)}
                     />
+
+                    {isManualMode && (
+                        <ManualPhysicalFields
+                            mass={mass}
+                            onMassChange={handleMassChange}
+                            diameter={diameter}
+                            onDiameterChange={handleDiameterChange}
+                            orientation={orientation}
+                            onOrientationChange={handleOrientationChange}
+                        />
+                    )}
 
                     {isManualMode && (
                         <PasteNumistaAccordion

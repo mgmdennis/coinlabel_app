@@ -173,9 +173,9 @@ const BackLabelContainer = ({
         ? parseFloat(physicalDetails.match(/⌀\s*([\d.]+)/)?.[1] || '0')
         : 0;
 
-    // Cap diameter at 39.5mm
+    // Cap diameter at 45.5mm
     useEffect(() => {
-        if (coinDiameter > 39.5) {
+        if (coinDiameter > 45.5) {
             setShowDiameterError(true);
         }
     }, [coinDiameter]);
@@ -249,7 +249,7 @@ const BackLabelContainer = ({
                 style={{
                     position: 'relative',
                     width: '100%',
-                    overflow: coinDiameter > 39.5 ? 'hidden' : 'visible'
+                    overflow: coinDiameter > 45.5 ? 'hidden' : 'visible'
                 }}
             >
                 {showGenerating && (
@@ -301,7 +301,7 @@ const BackLabelContainer = ({
                 title="Diameter Too Large"
                 centered
             >
-                <p>The maximum supported coin diameter is <strong>39.5mm</strong>.<br/>Please enter a smaller value to continue.</p>
+                <p>The maximum supported coin diameter is <strong>45.5mm</strong>.<br/>Please enter a smaller value to continue.</p>
                 <Button fullWidth mt="md" onClick={handleDiameterErrorClose}>
                     OK
                 </Button>
