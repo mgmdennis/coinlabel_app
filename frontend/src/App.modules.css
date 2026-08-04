@@ -372,7 +372,7 @@ body {
   border: none;
   outline: none;
   resize: none;
-  padding: 0;
+  padding: .5cqw 2.5cqw 0.1cqw 2.5cqw;
   margin: 0;
   color: #000;
   font-family: inherit;
