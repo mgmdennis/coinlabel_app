@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { Box, Button, Group, Text } from '@mantine/core';
 import { FolderOpen, X } from 'lucide-react';
+import { compressImage } from '../utils/compressImage';
 
 /**
  * Reusable input for capturing coin photos via paste or file picker.
@@ -30,7 +31,10 @@ export const PasteImageInput = ({
                 const file = item.getAsFile();
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = (ev) => onChange(ev.target.result);
+                    reader.onload = async (ev) => {
+                        const compressed = await compressImage(ev.target.result);
+                        onChange(compressed);
+                    };
                     reader.readAsDataURL(file);
                 }
                 break;
@@ -38,10 +42,13 @@ export const PasteImageInput = ({
         }
     }, [onChange]);
 
-    const handleFile = (file) => {
+    const handleFile = async (file) => {
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (ev) => onChange(ev.target.result);
+        reader.onload = async (ev) => {
+            const compressed = await compressImage(ev.target.result);
+            onChange(compressed);
+        };
         reader.readAsDataURL(file);
     };
 

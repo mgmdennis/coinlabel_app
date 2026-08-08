@@ -8,6 +8,7 @@ import {
 import { Pencil, Upload, X } from 'lucide-react';
 import { BASE_URL } from '../config';
 import { GradeSelect } from '../components/GradeSelect';
+import { compressImage } from '../utils/compressImage';
 
 const CollectionItem = () => {
     const { id } = useParams();
@@ -39,12 +40,13 @@ const CollectionItem = () => {
         setSaving(false);
     };
 
-    const handleImageUpload = (side, file) => {
+    const handleImageUpload = async (side, file) => {
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
+            const compressed = await compressImage(e.target.result);
             const field = side === 'obverse' ? 'collectionObvImage' : 'collectionRevImage';
-            setItem(prev => ({ ...prev, [field]: e.target.result }));
+            setItem(prev => ({ ...prev, [field]: compressed }));
         };
         reader.readAsDataURL(file);
     };
