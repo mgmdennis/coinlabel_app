@@ -112,7 +112,7 @@ const CollectionItem = () => {
                     >
                         Edit Label
                     </Button>
-                    <Button size="xs" onClick={() => navigate('/')}>
+                    <Button size="xs" onClick={() => navigate('/', { state: { view: 'collection' } })}>
                         Done
                     </Button>
                 </Group>

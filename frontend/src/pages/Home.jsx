@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Badge,
   Box,
@@ -27,7 +27,8 @@ import { FrontLabelContainer, BackLabelContainer } from "./label";
 const Home = () => {
   const [coins, setCoins] = useState(null);
   const [numistaNumber, setNumistaNumber] = useState("");
-  const [view, setView] = useState('labels'); // 'labels' | 'cached' | 'collection'
+  const location = useLocation();
+  const [view, setView] = useState(location?.state?.view || 'labels'); // 'labels' | 'cached' | 'collection'
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
@@ -196,8 +197,40 @@ const visibleCoins = q && viewCoins
   return (
     <Container size="lg" pb="xl">
 
+      {/* Entry box — coloured, visually distinct from the list */}
+      <Paper withBorder radius="md" p="md" mb="lg" shadow="xs" bg="blue.0" style={{ borderColor: 'var(--mantine-color-blue-2)' }}>
+        <Group align="center" gap="md" wrap="wrap">
+          <form onSubmit={handleFormSubmit} style={{ flex: '1 1 auto', minWidth: 0 }}>
+            <Group gap={0} wrap="nowrap" align="stretch">
+              <TextInput
+                leftSection={<Text size="sm" c="dimmed">N#</Text>}
+                value={numistaNumber}
+                onChange={(e) => setNumistaNumber(e.target.value.trim().replace(/\D+/g, ''))}
+                placeholder="Numista number..."
+                style={{ flex: 1, minWidth: 0 }}
+                styles={{ input: { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
+              />
+              <Button type="submit" px="md" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
+                Go
+              </Button>
+            </Group>
+          </form>
+
+          <Box visibleFrom="md" style={{ width: 1, height: 36, background: 'var(--mantine-color-blue-2)', flexShrink: 0 }} />
+
+          <Button
+            variant="default"
+            size="xs"
+            leftSection={<PenLine size={13} />}
+            onClick={() => navigate("/create", { state: { manualMode: true } })}
+          >
+            Manual Entry
+          </Button>
+        </Group>
+      </Paper>
+
       {/* View toggle */}
-      <Group mb="md" gap="xs">
+      <Group mb="sm" gap="xs">
         <Button
           variant={view === 'labels' ? 'filled' : 'default'}
           size="xs"
@@ -224,6 +257,7 @@ const visibleCoins = q && viewCoins
         </Button>
       </Group>
 
+      {/* Search — sits right above the list */}
       <TextInput
         placeholder="Search — issuer, year, grade, details, composition, reference…"
         value={searchQuery}
@@ -235,38 +269,6 @@ const visibleCoins = q && viewCoins
           <X size={14} style={{ cursor: 'pointer' }} onClick={() => setSearchQuery("")} />
         ) : undefined}
       />
-
-      <Paper withBorder radius="md" p="md" mb="lg" shadow="xs">
-        <Group align="center" gap="md" wrap="wrap">
-          {/* Numista lookup */}
-          <form onSubmit={handleFormSubmit} style={{ flex: '1 1 auto', minWidth: 0 }}>
-            <Group gap={0} wrap="nowrap" align="stretch">
-              <TextInput
-                leftSection={<Text size="sm" c="dimmed">N#</Text>}
-                value={numistaNumber}
-                onChange={(e) => setNumistaNumber(e.target.value.trim().replace(/\D+/g, ''))}
-                placeholder="Numista number..."
-                style={{ flex: 1, minWidth: 0 }}
-                styles={{ input: { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
-              />
-              <Button type="submit" px="md" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
-                <Search size={14} />
-              </Button>
-            </Group>
-          </form>
-
-          <Box visibleFrom="md" style={{ width: 1, height: 36, background: 'var(--mantine-color-gray-3)', flexShrink: 0 }} />
-
-          <Button
-            variant="default"
-            size="xs"
-            leftSection={<PenLine size={13} />}
-            onClick={() => navigate("/create", { state: { manualMode: true } })}
-          >
-            Manual Entry
-          </Button>
-        </Group>
-      </Paper>
 
       {/* Action Bar */}
       {selectedIds.length > 0 && (
@@ -341,7 +343,9 @@ const visibleCoins = q && viewCoins
                 <path d="M8 11a3 3 0 1 1 0-6a3 3 0 0 1 0 6z" />
               </svg>
             </Box>
-            {view === 'cached' ? (
+            {q ? (
+              <Text size="lg" c="dimmed" mt="sm">No results for "{searchQuery}"</Text>
+            ) : view === 'cached' ? (
               <Text size="lg" c="dimmed" mt="sm">There are no cached labels.</Text>
             ) : view === 'collection' ? (
               <>
