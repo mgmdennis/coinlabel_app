@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  Badge,
   Box,
   Button,
   Card,
@@ -9,6 +10,7 @@ import {
   Container,
   Group,
   Paper,
+  SimpleGrid,
   Skeleton,
   Stack,
   Text,
@@ -25,7 +27,8 @@ import { FrontLabelContainer, BackLabelContainer } from "./label";
 const Home = () => {
   const [coins, setCoins] = useState(null);
   const [numistaNumber, setNumistaNumber] = useState("");
-  const [view, setView] = useState('collection'); // 'collection' | 'cache'
+  const [view, setView] = useState('labels'); // 'labels' | 'cached' | 'collection'
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
   // --- Persistence Logic ---
@@ -110,11 +113,28 @@ const Home = () => {
     setSelectedCoins(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const activeCoins = coins ? coins.filter(c => !c.cached) : null;
-  const cachedCoins = coins ? coins.filter(c => c.cached) : null;
-  const visibleCoins = view === 'collection' ? activeCoins : cachedCoins;
+const activeCoins = coins ? coins.filter(c => !c.cached) : null;
+    const cachedCoins = coins ? coins.filter(c => c.cached) : null;
+    const itemCoins = coins ? coins.filter(c => c.isCollectionItem) : null;
+    const viewCoins = view === 'labels' ? activeCoins : view === 'cached' ? cachedCoins : itemCoins;
 
-  const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
+    const searchFields = ['issuer', 'denomination', 'year', 'grade', 'gradeDetails', 'details', 'composition', 'physicalDetails', 'reference', 'mintage', 'numistaNumber', 'legendObv', 'legendRev'];
+    const q = searchQuery.trim().toLowerCase();
+const visibleCoins = q && viewCoins
+        ? viewCoins.filter(c => searchFields.some(f => (c[f] || '').toString().toLowerCase().includes(q)))
+        : viewCoins;
+
+    // --- Pagination (client-side, 20 per page) ---
+    const PAGE_SIZE = 20;
+    const [pageCount, setPageCount] = useState(1);
+    // Reset page when view or search changes
+    useEffect(() => {
+        setPageCount(1);
+    }, [view, searchQuery]);
+    const displayedCoins = visibleCoins ? visibleCoins.slice(0, pageCount * PAGE_SIZE) : null;
+    const hasMore = visibleCoins && visibleCoins.length > displayedCoins?.length;
+
+    const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
 
   // --- Collapse state ---
   const [collapsedCards, setCollapsedCards] = useState({});
@@ -141,7 +161,10 @@ const Home = () => {
   };
 
   const handleDuplicateCoin = (coin) => {
-    navigate('/create/' + coin.numistaNumber, { state: { ...coin, _id: undefined } });
+    navigate(
+      coin.numistaNumber ? `/create/${coin.numistaNumber}` : "/create",
+      { state: { ...coin, _id: undefined, ...(coin.isManual ? { manualMode: true } : {}) } }
+    );
   };
 
   const handleFormSubmit = (e) => {
@@ -176,22 +199,42 @@ const Home = () => {
       {/* View toggle */}
       <Group mb="md" gap="xs">
         <Button
+          variant={view === 'labels' ? 'filled' : 'default'}
+          size="xs"
+          onClick={() => { setView('labels'); setSelectedCoins({}); }}
+        >
+          My Labels {activeCoins ? `(${activeCoins.length})` : ''}
+        </Button>
+        <Button
+          variant={view === 'cached' ? 'filled' : 'default'}
+          color={view === 'cached' ? 'yellow' : undefined}
+          size="xs"
+          leftSection={<Archive size={13} />}
+          onClick={() => { setView('cached'); setSelectedCoins({}); }}
+        >
+          Cached Labels {cachedCoins && cachedCoins.length > 0 ? `(${cachedCoins.length})` : ''}
+        </Button>
+        <Button
           variant={view === 'collection' ? 'filled' : 'default'}
+          color={view === 'collection' ? 'green' : undefined}
           size="xs"
           onClick={() => { setView('collection'); setSelectedCoins({}); }}
         >
-          My Collection {activeCoins ? `(${activeCoins.length})` : ''}
-        </Button>
-        <Button
-          variant={view === 'cache' ? 'filled' : 'default'}
-          color={view === 'cache' ? 'yellow' : undefined}
-          size="xs"
-          leftSection={<Archive size={13} />}
-          onClick={() => { setView('cache'); setSelectedCoins({}); }}
-        >
-          Cached {cachedCoins && cachedCoins.length > 0 ? `(${cachedCoins.length})` : ''}
+          My Collection {itemCoins && itemCoins.length > 0 ? `(${itemCoins.length})` : ''}
         </Button>
       </Group>
+
+      <TextInput
+        placeholder="Search — issuer, year, grade, details, composition, reference…"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        mb="md"
+        leftSection={<Search size={14} />}
+        rightSectionPointerEvents="all"
+        rightSection={searchQuery ? (
+          <X size={14} style={{ cursor: 'pointer' }} onClick={() => setSearchQuery("")} />
+        ) : undefined}
+      />
 
       <Paper withBorder radius="md" p="md" mb="lg" shadow="xs">
         <Group align="center" gap="md" wrap="wrap">
@@ -233,15 +276,15 @@ const Home = () => {
               <Button size="xs" onClick={handlePrintSelected} leftSection={<Printer size={13} />}>
                 Print Selected ({selectedIds.length})
               </Button>
-              {view === 'collection' ? (
+              {view === 'labels' ? (
                 <Button size="xs" variant="default" onClick={() => handleBulkCache(true)} leftSection={<Archive size={13} />}>
                   Cache Selected
                 </Button>
-              ) : (
+              ) : view === 'cached' ? (
                 <Button size="xs" variant="default" onClick={() => handleBulkCache(false)} leftSection={<ArchiveRestore size={13} />}>
                   Restore Selected
                 </Button>
-              )}
+              ) : null}
               <Button size="xs" variant="light" color="red" onClick={handleDeleteSelected} leftSection={<Trash2 size={13} />}>
                 Delete Selected
               </Button>
@@ -298,18 +341,118 @@ const Home = () => {
                 <path d="M8 11a3 3 0 1 1 0-6a3 3 0 0 1 0 6z" />
               </svg>
             </Box>
-            {view === 'cache' ? (
-              <Text size="lg" c="dimmed" mt="sm">There are no items cached.</Text>
+            {view === 'cached' ? (
+              <Text size="lg" c="dimmed" mt="sm">There are no cached labels.</Text>
+            ) : view === 'collection' ? (
+              <>
+                <Text size="lg" c="dimmed" mt="sm">No collection items yet</Text>
+                <Text c="dimmed">Check "Save to collection" when creating a label to track items here.</Text>
+              </>
             ) : (
               <>
-                <Text size="lg" c="dimmed" mt="sm">No coins in your collection yet</Text>
+                <Text size="lg" c="dimmed" mt="sm">No labels yet</Text>
                 <Text c="dimmed">Start by adding your first coin to see it here.</Text>
               </>
             )}
           </Stack>
+        ) : view === 'collection' ? (
+          <SimpleGrid cols={{ base: 1, xs: 2, sm: 2, md: 3 }} spacing="sm">
+            {coins === null ? (
+              [1, 2, 3, 4, 6, 8].map(i => (
+                <Card key={i} withBorder shadow="sm" padding={0}>
+                  <Skeleton style={{ aspectRatio: '2.2' }} />
+                  <Box p="sm">
+                    <Skeleton height={14} width="70%" radius="sm" mb={6} />
+                    <Skeleton height={11} width="50%" radius="sm" />
+                  </Box>
+                </Card>
+              ))
+            ) : (
+            displayedCoins.map((coin) => {
+              const isSelected = !!selectedCoins[coin._id];
+              return (
+                <Card
+                    key={coin._id}
+                    withBorder
+                    shadow="sm"
+                    padding={0}
+                    style={{
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                      transition: 'box-shadow 0.15s, transform 0.15s, border-color 0.15s',
+                      borderColor: isSelected ? 'var(--mantine-color-green-6)' : undefined,
+                    }}
+                    onClick={() => navigate(`/item/${coin._id}`)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--mantine-color-green-6)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = isSelected ? 'var(--mantine-color-green-6)' : 'var(--mantine-color-gray-3)';
+                      e.currentTarget.style.boxShadow = 'var(--mantine-shadow-sm)';
+                    }}
+                  >
+                    <Box
+                      style={{
+                        aspectRatio: '2.2',
+                        background: 'var(--mantine-color-gray-1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        padding: '6px',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      {coin.collectionObvImage || coin.collectionRevImage ? (
+                        <Group gap={6} wrap="nowrap" align="center" style={{ width: '100%', height: '100%' }}>
+                          {coin.collectionObvImage && (
+                            <img
+                              src={coin.collectionObvImage}
+                              alt="Obv"
+                              style={{ flex: 1, minWidth: 0, maxHeight: '100%', objectFit: 'contain' }}
+                            />
+                          )}
+                          {coin.collectionRevImage && (
+                            <img
+                              src={coin.collectionRevImage}
+                              alt="Rev"
+                              style={{ flex: 1, minWidth: 0, maxHeight: '100%', objectFit: 'contain' }}
+                            />
+                          )}
+                        </Group>
+                      ) : (
+                        <Text size="xl" c="gray.4">🪙</Text>
+                      )}
+                      {coin.grade && (
+                        <Badge
+                          size="xs"
+                          variant="filled"
+                          color="blue"
+                          style={{ position: 'absolute', bottom: 6, right: 6 }}
+                        >
+                          {coin.grade}
+                        </Badge>
+                      )}
+                    </Box>
+
+                    <Box p="sm">
+                      <Text fw={700} size="xs" lineClamp={1}>
+                        {coin.issuer} {coin.denomination}
+                      </Text>
+                      <Text size="xs" c="dimmed" lineClamp={1}>
+                        {coin.year || '—'}{coin.reference ? ` · ${coin.reference}` : ''}
+                      </Text>
+                    </Box>
+                  </Card>
+              );
+            })
+            )}
+          </SimpleGrid>
         ) : (
           <Stack gap="lg">
-            {visibleCoins.map((coin) => {
+            {displayedCoins.map((coin) => {
               const isSelected = !!selectedCoins[coin._id];
               const isCollapsed = collapsedCards[coin._id];
               return (
@@ -339,9 +482,17 @@ const Home = () => {
                           onChange={() => toggleSelect(coin._id)}
                         />
                       </Box>
-                      <Text fw={700} tt="uppercase" style={{ letterSpacing: '0.5px', flex: 1 }}>
-                        {coin.issuer} — {coin.denomination}, {coin.year}
-                      </Text>
+<Text
+                            fw={700} tt="uppercase" style={{ letterSpacing: '0.5px', flex: 1, cursor: view === 'collection' ? 'pointer' : 'default' }}
+                            onClick={(e) => {
+                                if (view === 'collection') {
+                                    e.stopPropagation();
+                                    navigate(`/item/${coin._id}`);
+                                }
+                            }}
+                        >
+                            {coin.issuer} — {coin.denomination}, {coin.year}
+                        </Text>
                       {isCollapsed
                         ? <ChevronDown size={16} style={{ opacity: isSelected ? 1 : 0.6 }} />
                         : <ChevronUp size={16} style={{ opacity: isSelected ? 1 : 0.6 }} />
@@ -353,6 +504,18 @@ const Home = () => {
                     <Box p="md">
                       <Group align="center" gap="lg" justify="center" wrap="wrap">
                         <Group gap="md" justify="center" style={{ flex: 1 }} wrap="wrap">
+                          {view === 'collection' && (coin.collectionObvImage || coin.collectionRevImage) && (
+                            <Group gap="xs">
+                              {coin.collectionObvImage && (
+                                <img src={coin.collectionObvImage} alt="Obv"
+                                  style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }} />
+                              )}
+                              {coin.collectionRevImage && (
+                                <img src={coin.collectionRevImage} alt="Rev"
+                                  style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }} />
+                              )}
+                            </Group>
+                          )}
                           <div className="label-wrapper label-card">
                             <FrontLabelContainer isEditable={false} {...coin} />
                           </div>
@@ -364,8 +527,8 @@ const Home = () => {
                         <Button.Group>
                           <Button
                             component={Link}
-                            to={`/create/${coin.numistaNumber}`}
-                            state={{ coinId: coin._id }}
+                            to={coin.numistaNumber ? `/create/${coin.numistaNumber}` : "/create"}
+                            state={{ coinId: coin._id, ...(coin.isManual ? { manualMode: true } : {}) }}
                             variant="default"
                             size="xs"
                             leftSection={<Pencil size={13} />}
@@ -388,6 +551,14 @@ const Home = () => {
               );
             })}
           </Stack>
+        )}
+
+        {hasMore && (
+          <Group justify="center" mt="lg" mb="xl">
+            <Button variant="default" onClick={() => setPageCount(p => p + 1)}>
+              Load more ({visibleCoins.length - displayedCoins.length} remaining)
+            </Button>
+          </Group>
         )}
       </div>
     </Container>

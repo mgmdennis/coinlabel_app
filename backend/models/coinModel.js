@@ -84,6 +84,18 @@ const CoinSchema = new Schema({
         trim: true,
         default: "",
     },
+    isCollectionItem: {
+        type: Boolean,
+        default: false,
+    },
+    collectionObvImage: {
+        type: String,
+        default: "",
+    },
+    collectionRevImage: {
+        type: String,
+        default: "",
+    },
     isManual: {
         type: Boolean,
         default: false,

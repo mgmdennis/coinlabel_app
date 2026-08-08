@@ -67,3 +67,10 @@ exports.updateCoin = updateCoin;
 exports.deleteCoin = deleteCoin;
 exports.bulkSetCached = bulkSetCached;
 exports.getNumistaDetails = getNumistaDetails;
+
+const getCollectionItems = async (req, res) => {
+  const coins = await Coin.find({ userId: req.session.userId, isCollectionItem: true });
+  res.json(coins);
+};
+
+exports.getCollectionItems = getCollectionItems;

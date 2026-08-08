@@ -4,9 +4,11 @@ const router = express.Router();
 
 
 const requireAuth = require('../middleware/requireAuth');
-const { getCoins, getCoin, getNumistaDetails, createCoin, updateCoin, deleteCoin, bulkSetCached } = require("../controllers/coinController");
+const { getCoins, getCoin, getNumistaDetails, createCoin, updateCoin, deleteCoin, bulkSetCached, getCollectionItems } = require("../controllers/coinController");
 
 router.get("/coins", requireAuth, getCoins);
+
+router.get("/coins/collection", requireAuth, getCollectionItems);
 
 router.get("/numista/:numistaNumber", getNumistaDetails);
 

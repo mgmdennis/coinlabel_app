@@ -14,6 +14,7 @@ import { AIConfirmModal } from "../components/AIConfirmModal";
 import { CreateHeader } from "../components/CreateHeader";
 import { ManualModeToggle } from "../components/ManualModeToggle";
 import { ManualPhysicalFields } from "../components/ManualPhysicalFields";
+import { CollectionSettingsCard } from "../components/CollectionSettingsCard";
 import { NumistaDataCard } from "../components/NumistaDataCard";
 import { LabelSpecificsCard } from "../components/LabelSpecificsCard";
 import { PasteNumistaAccordion } from "../components/PasteNumistaAccordion";
@@ -57,6 +58,9 @@ const Create = () => {
     const [showDiameterWarning, setShowDiameterWarning] = useState(false);
     const [legendObv, setLegendObv] = useState("");
     const [legendRev, setLegendRev] = useState("");
+    const [isCollectionItem, setIsCollectionItem] = useState(false);
+    const [collectionObvImage, setCollectionObvImage] = useState("");
+    const [collectionRevImage, setCollectionRevImage] = useState("");
     const [dateAdded, setDateAdded] = useState("");
     const [marksPicture, setMarksPicture] = useState(null);
     const [marks, setMarks] = useState([]);
@@ -321,7 +325,8 @@ const handleDiameterChange = (e) => {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId, isManual: isManualMode,
-            legendObv, legendRev
+            legendObv, legendRev,
+            isCollectionItem, collectionObvImage, collectionRevImage
         })
         .then((res) => {
             setCoinId(res.data._id);
@@ -329,9 +334,9 @@ const handleDiameterChange = (e) => {
         })
         .catch((err) => {
             console.error("Error creating coin:", err);
-            isCreatingCoin.current = false; // Allow retry on error
+            isCreatingCoin.current = false;
         });
-    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev]);
+    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
@@ -340,7 +345,8 @@ const handleDiameterChange = (e) => {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId, isManual: isManualMode,
-            legendObv, legendRev
+            legendObv, legendRev,
+            isCollectionItem, collectionObvImage, collectionRevImage
         })
         .then(() => {
             setSaveStatus("saved");
@@ -350,7 +356,7 @@ const handleDiameterChange = (e) => {
             setSaveStatus("error");
             console.error("Error updating coin:", err);
         });
-    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev]);
+    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
 
     // --- Effects ---
 
@@ -405,6 +411,13 @@ const handleDiameterChange = (e) => {
             splitPhysicalDetails(physicalDetails);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isManualMode]);
+
+    // Default "Save to collection" based on mode — manual entries are collection
+    // items by default; Numista labels are throwaway by default. Only set the
+    // default once (on first mount or mode switch), never clobber user choice.
+    useEffect(() => {
+        setIsCollectionItem(isManualMode);
     }, [isManualMode]);
 
     useEffect(() => {
@@ -474,6 +487,9 @@ const handleDiameterChange = (e) => {
                     setSketchId(c.sketchId || "");
                     setLegendObv(c.legendObv || "");
                     setLegendRev(c.legendRev || "");
+                    setIsCollectionItem(c.isCollectionItem || false);
+                    setCollectionObvImage(c.collectionObvImage || "");
+                    setCollectionRevImage(c.collectionRevImage || "");
                     // Always update Numista details for dropdowns, but don't overwrite fields
                     if (c.numistaDetails) {
                         setNumistaDetails(c.numistaDetails);
@@ -517,7 +533,7 @@ const handleDiameterChange = (e) => {
             }, 1000);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, updateCoinRemote, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, updateCoinRemote, coinId, initialLoadComplete]);
 
     const handleDiscard = () => {
         if (window.confirm("Are you sure you want to discard this entry?")) {
@@ -530,7 +546,8 @@ const handleDiameterChange = (e) => {
             numistaNumber, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId,
-            legendObv, legendRev
+            legendObv, legendRev,
+            isCollectionItem, collectionObvImage, collectionRevImage
         }).then(() => navigate("/"));
     };
 
@@ -714,6 +731,17 @@ const handleDiameterChange = (e) => {
                         onLegendObvChange={(e) => setLegendObv(e.target.value)}
                         legendRev={legendRev}
                         onLegendRevChange={(e) => setLegendRev(e.target.value)}
+                    />
+
+                    <CollectionSettingsCard
+                        isCollectionItem={isCollectionItem}
+                        onToggleCollection={(e) => setIsCollectionItem(e.target.checked)}
+                        collectionObvImage={collectionObvImage}
+                        onObvImageUpload={setCollectionObvImage}
+                        onObvImageClear={() => setCollectionObvImage("")}
+                        collectionRevImage={collectionRevImage}
+                        onRevImageUpload={setCollectionRevImage}
+                        onRevImageClear={() => setCollectionRevImage("")}
                     />
                 </Grid.Col>
 

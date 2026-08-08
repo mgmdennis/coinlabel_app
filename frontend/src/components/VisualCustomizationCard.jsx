@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Badge, Box, Button, Card, Checkbox, Group, Loader, Modal, Radio, Stack, Switch, Text, Textarea, ThemeIcon } from '@mantine/core';
 import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, FolderOpen, ExternalLink, ScrollText } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
+import { PasteImageInput } from './PasteImageInput';
 import { API_ORIGIN } from '../config';
 
 export const VisualCustomizationCard = ({
@@ -38,18 +39,14 @@ export const VisualCustomizationCard = ({
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-    const handleLocalPaste = useCallback((e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const items = e.clipboardData?.items;
-        if (!items) return;
-        for (const item of items) {
-            if (item.kind === 'file' && item.type.startsWith('image/')) {
-                const file = item.getAsFile();
-                if (file && onImageFile) onImageFile(file);
-                break;
-            }
-        }
+    // Callback wrapper: PasteImageInput returns base64 — keep the existing
+    // onImageFile(File) contract for downstream sketch generation.
+    const handlePastedImage = useCallback((dataUrl) => {
+        if (!dataUrl || !onImageFile) return;
+        fetch(dataUrl)
+            .then(res => res.blob())
+            .then(blob => onImageFile(new File([blob], 'pasted.png', { type: blob.type || 'image/png' })))
+            .catch(() => {});
     }, [onImageFile]);
 
     const [isPasteAreaFocused, setIsPasteAreaFocused] = useState(false);
@@ -132,94 +129,12 @@ export const VisualCustomizationCard = ({
     );
 
     const pasteZone = (
-        <div>
-            {/* Hidden file input for file picker fallback */}
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file && onImageFile) onImageFile(file);
-                    e.target.value = '';
-                }}
-            />
-            {/* Paste zone: visible display layer + invisible textarea overlay */}
-            <Box pos="relative" mb="xs">
-                {/* Visual display layer (pointer-events: none so taps pass through to textarea) */}
-                <div
-                    style={{
-                        minHeight: '100px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        padding: '1rem',
-                        textAlign: 'center',
-                        background: 'var(--mantine-color-gray-0)',
-                        border: '1px solid var(--mantine-color-gray-3)',
-                        borderRadius: 'var(--mantine-radius-md)',
-                        pointerEvents: 'none',
-                        transition: 'border-color 0.15s, box-shadow 0.15s',
-                        ...(isPasteAreaFocused ? {
-                            borderColor: 'var(--mantine-color-blue-6)',
-                            boxShadow: '0 0 0 0.2rem rgba(13,110,253,.25)',
-                        } : {}),
-                    }}
-                >
-                    {pastedImage ? (
-                        <>
-                            <img src={pastedImage} alt="Pasted preview" style={{ maxWidth: '80px', maxHeight: '80px' }} />
-                            <Text c="green.7" size="sm">Image ready — tap &amp; hold to replace</Text>
-                        </>
-                    ) : (
-                        <>
-                            <Text c="dimmed" size="sm" fw={600}>Tap &amp; hold → <strong>Paste</strong></Text>
-                            <Text c="dimmed" style={{ fontSize: '0.75em' }}>or Ctrl/Cmd+V on desktop</Text>
-                        </>
-                    )}
-                </div>
-                {/* Invisible textarea overlay — textarea is what iOS Safari reliably shows
-                    the "Paste" context menu for. */}
-                <textarea
-                    onPaste={handleLocalPaste}
-                    onInput={e => { e.target.value = ''; }}
-                    onFocus={() => setIsPasteAreaFocused(true)}
-                    onBlur={() => setIsPasteAreaFocused(false)}
-                    autoComplete="off"
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    spellCheck="false"
-                    aria-label="Tap and hold to paste a coin image"
-                    style={{
-                        position: 'absolute',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        fontSize: '16px', // prevents iOS zoom on focus
-                        color: 'transparent',
-                        background: 'transparent',
-                        border: 'none',
-                        outline: 'none',
-                        resize: 'none',
-                        caretColor: 'transparent',
-                        WebkitTapHighlightColor: 'transparent',
-                        borderRadius: '0.375rem',
-                        cursor: 'default',
-                        zIndex: 1,
-                    }}
-                />
-            </Box>
-            <Button
-                variant="default"
-                size="xs"
-                fullWidth
-                leftSection={<FolderOpen size={13} />}
-                onClick={() => fileInputRef.current?.click()}
-            >
-                Choose Image
-            </Button>
-        </div>
+        <PasteImageInput
+            value={pastedImage}
+            onChange={(val) => val && handlePastedImage(val)}
+            label="Coin image"
+            minHeight={100}
+        />
     );
 
     const sideSelector = (
