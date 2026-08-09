@@ -27,7 +27,7 @@ const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
 function getRedirectUri(req) {
   if (process.env.NUMISTA_REDIRECT_URI) return process.env.NUMISTA_REDIRECT_URI;
-  const protocol = req.protocol || 'https';
+  const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
   const host = req.get('host');
   return `${protocol}://${host}/api/auth/callback`;
 }
