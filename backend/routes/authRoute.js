@@ -27,7 +27,11 @@ const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
 function getRedirectUri(req) {
   if (process.env.NUMISTA_REDIRECT_URI) return process.env.NUMISTA_REDIRECT_URI;
-  const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+  // On Heroku, TLS is terminated at the router. trust proxy is enabled,
+  // so req.protocol reflects the original protocol. Also check the header
+  // directly as a belt-and-suspenders fallback.
+  const xfProto = req.headers['x-forwarded-proto'];
+  const protocol = (xfProto && xfProto.includes('https')) ? 'https' : (req.protocol || 'https');
   const host = req.get('host');
   return `${protocol}://${host}/api/auth/callback`;
 }
