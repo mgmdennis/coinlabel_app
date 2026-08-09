@@ -84,6 +84,18 @@ const Layout = ({ user, setUser }) => {
       >
         PRINT 2×2 LABELS
       </Button>
+      <Anchor
+        component={Link}
+        to="/settings"
+        onClick={close}
+        c="gray.4"
+        fw={700}
+        tt="uppercase"
+        size="sm"
+        underline="never"
+      >
+        Settings
+      </Anchor>
     </>
   );
 

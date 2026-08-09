@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Print from "./pages/print";
 import Create from "./pages/create";
 import CollectionItem from "./pages/CollectionItem";
+import Settings from "./pages/Settings";
 import NoPage from "./pages/NoPage";
 import LoginGate from "./components/LoginGate";
 import { BASE_URL } from "./config";
@@ -40,6 +41,7 @@ function App() {
           <Route path="/create" element={<Create user={user} />} />
           <Route path="/create/:numistaNumber" element={<Create user={user} />} />
           <Route path="/item/:id" element={<CollectionItem user={user} />} />
+          <Route path="/settings" element={<Settings user={user} />} />
           <Route path="*" element={<NoPage />} />
         </Route>
         <Route path="/print" element={<Print user={user} />} />
