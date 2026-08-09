@@ -327,7 +327,7 @@ const visibleCoins = q && viewCoins
       )}
 
       <div className="coins-list">
-        {hasVisible && (
+        {hasVisible && view !== 'collection' && (
           <Group justify="space-between" mb="xs" pl="md">
             <Checkbox
               id="select-all-checkbox"
