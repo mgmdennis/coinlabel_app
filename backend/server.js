@@ -27,6 +27,9 @@ const authRoute = require('./routes/authRoute');
 
 const app = express();
 
+// Trust Heroku proxy so req.protocol and req.get('x-forwarded-proto') work
+app.set('trust proxy', 1);
+
 // --- 1. THE "BIG BITES" FIX ---
 // Increase the limit to 50mb so large Base64 strings can pass through
 app.use(express.json({ limit: '50mb' }));
