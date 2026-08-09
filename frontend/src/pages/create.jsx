@@ -536,8 +536,14 @@ const handleDiameterChange = (e) => {
     }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, updateCoinRemote, coinId, initialLoadComplete]);
 
     const handleDiscard = () => {
-        if (window.confirm("Are you sure you want to discard this entry?")) {
-            axios.delete(`${BASE_URL}/coin/delete/${coinId}`).then(() => navigate("/"));
+        if (isCollectionItem) {
+            if (window.confirm("This coin is saved to your collection. Delete the label only and keep the collection item?")) {
+                axios.put(`${BASE_URL}/coin/detach-label/${coinId}`).then(() => navigate("/"));
+            }
+        } else {
+            if (window.confirm("Are you sure you want to discard this entry?")) {
+                axios.delete(`${BASE_URL}/coin/delete/${coinId}`).then(() => navigate("/"));
+            }
         }
     };
 

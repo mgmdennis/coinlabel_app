@@ -4,7 +4,7 @@ const router = express.Router();
 
 
 const requireAuth = require('../middleware/requireAuth');
-const { getCoins, getCoin, getNumistaDetails, createCoin, updateCoin, deleteCoin, bulkSetCached, getCollectionItems } = require("../controllers/coinController");
+const { getCoins, getCoin, getNumistaDetails, createCoin, updateCoin, deleteCoin, bulkSetCached, getCollectionItems, detachLabel } = require("../controllers/coinController");
 
 router.get("/coins", requireAuth, getCoins);
 
@@ -19,6 +19,8 @@ router.post("/coin/new", requireAuth, createCoin);
 router.put("/coin/update/:id", requireAuth, updateCoin);
 
 router.delete("/coin/delete/:id", requireAuth, deleteCoin);
+
+router.put("/coin/detach-label/:id", requireAuth, detachLabel);
 
 router.patch("/coins/cache", requireAuth, bulkSetCached);
 

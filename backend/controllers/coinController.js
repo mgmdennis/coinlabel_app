@@ -47,9 +47,30 @@ const updateCoin = async (req, res) => {
 }
 
 const deleteCoin = async (req, res) => {
-  const deletedCoin = await Coin.findOneAndDelete({ _id: req.params.id, userId: req.session.userId });
-  res.json(deletedCoin);
+  const coin = await Coin.findOneAndDelete({ _id: req.params.id, userId: req.session.userId });
+  res.json(coin);
 }
+
+// Detach the label from a collection item — clears label-specific fields
+// and sets hasLabel=false, but preserves the collection item.
+const detachLabel = async (req, res) => {
+  const LABEL_FIELDS = {
+    hasLabel: false,
+    visualTarget: 'QR',
+    visualMethod: 'SCRIPT',
+    sketchId: '',
+    marks: [],
+    marksPicture: null,
+    cached: false,
+  };
+  const coin = await Coin.findOneAndUpdate(
+    { _id: req.params.id, userId: req.session.userId },
+    { $set: LABEL_FIELDS },
+    { new: true }
+  );
+  if (!coin) return res.status(404).json({ error: 'Not found' });
+  res.json(coin);
+};
 
 const bulkSetCached = async (req, res) => {
   const { ids, cached } = req.body;
@@ -65,6 +86,7 @@ exports.getCoin = getCoin;
 exports.createCoin = createCoin;
 exports.updateCoin = updateCoin;
 exports.deleteCoin = deleteCoin;
+exports.detachLabel = detachLabel;
 exports.bulkSetCached = bulkSetCached;
 exports.getNumistaDetails = getNumistaDetails;
 

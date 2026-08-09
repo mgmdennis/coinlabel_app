@@ -100,6 +100,10 @@ const CoinSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    hasLabel: {
+        type: Boolean,
+        default: true,
+    },
     cached: {
         type: Boolean,
         default: false,

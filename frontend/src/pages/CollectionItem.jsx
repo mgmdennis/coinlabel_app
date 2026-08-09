@@ -5,7 +5,7 @@ import {
     Box, Button, Card, Container, Group, Stack, Text, TextInput, Textarea,
     FileInput, SimpleGrid, Title, Badge, Skeleton,
 } from '@mantine/core';
-import { Pencil, Upload, X } from 'lucide-react';
+import { Pencil, Upload, X, Trash2 } from 'lucide-react';
 import { BASE_URL } from '../config';
 import { GradeSelect } from '../components/GradeSelect';
 import { compressImage } from '../utils/compressImage';
@@ -113,6 +113,18 @@ const CollectionItem = () => {
                         leftSection={<Pencil size={13} />}
                     >
                         Edit Label
+                    </Button>
+                    <Button
+                        variant="outline" color="red" size="xs"
+                        leftSection={<Trash2 size={13} />}
+                        onClick={() => {
+                            if (window.confirm('Permanently delete this collection item and its label?')) {
+                                axios.delete(`${BASE_URL}/coin/delete/${item._id}`)
+                                    .then(() => navigate('/', { state: { view: 'collection' } }));
+                            }
+                        }}
+                    >
+                        Delete
                     </Button>
                     <Button size="xs" onClick={() => navigate('/', { state: { view: 'collection' } })}>
                         Done

@@ -61,10 +61,19 @@ const Home = () => {
   };
 
   const executeDelete = (id) => {
-    return axios
-      .delete(`${BASE_URL}/coin/delete/${id}`)
+    const coin = coins?.find(c => c._id === id);
+    const isCollection = coin?.isCollectionItem;
+    const req = isCollection
+      ? axios.put(`${BASE_URL}/coin/detach-label/${id}`)
+      : axios.delete(`${BASE_URL}/coin/delete/${id}`);
+    return req
       .then((res) => {
-        setCoins(prev => prev.filter((coin) => coin._id !== res.data._id));
+        if (isCollection) {
+          // Keep the record but update it (label detached)
+          setCoins(prev => prev.map(c => c._id === id ? res.data : c));
+        } else {
+          setCoins(prev => prev.filter((coin) => coin._id !== res.data._id));
+        }
         setSelectedCoins(prev => {
           const newState = { ...prev };
           delete newState[id];
@@ -77,10 +86,29 @@ const Home = () => {
   const handleDeleteSelected = async () => {
     const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
     const count = selectedIds.length;
-    if (window.confirm(`Are you sure you want to delete ${count} selected coins?`)) {
+    const hasCollectionItems = selectedIds.some(id => coins?.find(c => c._id === id)?.isCollectionItem);
+    const msg = hasCollectionItems
+      ? `Delete ${count} selected label(s)? Labels on collection items will be detached but the collection items kept.`
+      : `Are you sure you want to delete ${count} selected label(s)?`;
+    if (window.confirm(msg)) {
       try {
-        await Promise.all(selectedIds.map(id => axios.delete(`${BASE_URL}/coin/delete/${id}`)));
-        setCoins(prev => prev.filter(coin => !selectedIds.includes(coin._id)));
+        const results = await Promise.all(selectedIds.map(id => {
+          const coin = coins?.find(c => c._id === id);
+          return coin?.isCollectionItem
+            ? axios.put(`${BASE_URL}/coin/detach-label/${id}`).then(r => ({ type: 'detach', data: r.data }))
+            : axios.delete(`${BASE_URL}/coin/delete/${id}`).then(r => ({ type: 'delete', data: r.data }));
+        }));
+        setCoins(prev => {
+          let updated = [...prev];
+          results.forEach(r => {
+            if (r.type === 'detach') {
+              updated = updated.map(c => c._id === r.data._id ? r.data : c);
+            } else {
+              updated = updated.filter(c => c._id !== r.data._id);
+            }
+          });
+          return updated;
+        });
         setSelectedCoins({});
       } catch (err) {
         console.error("Error deleting coins:", err);
@@ -114,8 +142,8 @@ const Home = () => {
     setSelectedCoins(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-const activeCoins = coins ? coins.filter(c => !c.cached) : null;
-    const cachedCoins = coins ? coins.filter(c => c.cached) : null;
+const activeCoins = coins ? coins.filter(c => !c.cached && c.hasLabel !== false) : null;
+    const cachedCoins = coins ? coins.filter(c => c.cached && c.hasLabel !== false) : null;
     const itemCoins = coins ? coins.filter(c => c.isCollectionItem) : null;
     const viewCoins = view === 'labels' ? activeCoins : view === 'cached' ? cachedCoins : itemCoins;
 
