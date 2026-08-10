@@ -26,6 +26,7 @@ import { FrontLabelContainer, BackLabelContainer } from "./label";
 
 const Home = () => {
   const [coins, setCoins] = useState(null);
+  const [coinsWithImages, setCoinsWithImages] = useState(null);
   const [numistaNumber, setNumistaNumber] = useState("");
   const location = useLocation();
   const [view, setView] = useState(location?.state?.view || 'labels'); // 'labels' | 'cached' | 'collection'
@@ -59,6 +60,18 @@ const Home = () => {
       .then((res) => setCoins(res.data))
       .catch((err) => console.error(err));
   };
+
+  const getCoinsWithImages = () => {
+    if (coinsWithImages) return;
+    axios
+      .get(`${BASE_URL}/coins?includeCollectionImages=1`)
+      .then((res) => setCoinsWithImages(res.data))
+      .catch((err) => console.error(err));
+  };
+
+  useEffect(() => {
+    if (view === 'collection') getCoinsWithImages();
+  }, [view]);
 
   const executeDelete = (id) => {
     const coin = coins?.find(c => c._id === id);
@@ -144,7 +157,7 @@ const Home = () => {
 
 const activeCoins = coins ? coins.filter(c => !c.cached && c.hasLabel !== false) : null;
     const cachedCoins = coins ? coins.filter(c => c.cached && c.hasLabel !== false) : null;
-    const itemCoins = coins ? coins.filter(c => c.isCollectionItem) : null;
+    const itemCoins = coinsWithImages ? coinsWithImages.filter(c => c.isCollectionItem) : null;
     const viewCoins = view === 'labels' ? activeCoins : view === 'cached' ? cachedCoins : itemCoins;
 
     const searchFields = ['issuer', 'denomination', 'year', 'grade', 'gradeDetails', 'details', 'composition', 'physicalDetails', 'reference', 'mintage', 'numistaNumber', 'legendObv', 'legendRev'];

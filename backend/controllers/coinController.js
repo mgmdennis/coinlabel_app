@@ -4,6 +4,17 @@ const numista = require("./numista_scrape");
 
 const getCoins = async (req, res) => {
   const coins = await Coin.find({ userId: req.session.userId });
+  // Strip base64 collection photos by default to keep the response small.
+  // Frontend passes ?includeCollectionImages=1 for the My Collection view.
+  if (req.query.includeCollectionImages !== '1') {
+    const stripped = coins.map(c => {
+      const obj = c.toObject();
+      delete obj.collectionObvImage;
+      delete obj.collectionRevImage;
+      return obj;
+    });
+    return res.json(stripped);
+  }
   res.json(coins);
 };
 
