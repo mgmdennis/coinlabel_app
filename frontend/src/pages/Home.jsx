@@ -157,7 +157,12 @@ const Home = () => {
 
 const activeCoins = coins ? coins.filter(c => !c.cached && c.hasLabel !== false) : null;
     const cachedCoins = coins ? coins.filter(c => c.cached && c.hasLabel !== false) : null;
-    const itemCoins = coinsWithImages ? coinsWithImages.filter(c => c.isCollectionItem) : null;
+    // For the collection view, use coinsWithImages (lazy-loaded).
+    // But use the lightweight `coins` to check if any collection items exist,
+    // so we can show a loading skeleton while images are still fetching.
+    const collectionCount = coins ? coins.filter(c => c.isCollectionItem).length : 0;
+    const collectionLoading = view === 'collection' && collectionCount > 0 && !coinsWithImages;
+    const itemCoins = coinsWithImages ? coinsWithImages.filter(c => c.isCollectionItem) : (collectionLoading ? [] : null);
     const viewCoins = view === 'labels' ? activeCoins : view === 'cached' ? cachedCoins : itemCoins;
 
     const searchFields = ['issuer', 'denomination', 'year', 'grade', 'gradeDetails', 'details', 'composition', 'physicalDetails', 'reference', 'mintage', 'numistaNumber', 'legendObv', 'legendRev'];
@@ -375,6 +380,18 @@ const visibleCoins = q && viewCoins
               </Card>
             ))}
           </Stack>
+        ) : collectionLoading ? (
+          <SimpleGrid cols={{ base: 1, xs: 2, sm: 2, md: 3 }} spacing="sm">
+            {[...Array(Math.min(collectionCount, 6))].map((_, i) => (
+              <Card key={i} withBorder shadow="sm" padding={0}>
+                <Skeleton style={{ aspectRatio: '2.2' }} />
+                <Box p="sm">
+                  <Skeleton height={14} width="70%" radius="sm" mb={6} />
+                  <Skeleton height={11} width="50%" radius="sm" />
+                </Box>
+              </Card>
+            ))}
+          </SimpleGrid>
         ) : !hasVisible ? (
           <Stack align="center" my="xl" gap={4}>
             <Box style={{ color: 'var(--mantine-color-gray-5)' }}>
