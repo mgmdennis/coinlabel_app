@@ -24,6 +24,7 @@ const coinRoute = require("./routes/coinRoute");
 const sketchRoute = require('./routes/sketchRoute');
 const proxyRoute = require('./routes/proxyRoute');
 const authRoute = require('./routes/authRoute');
+const ocreRoute = require('./routes/ocreRoute');
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.post('/api/auth', (req, res) => {
 });
 
 app.use('/api/auth', authRoute);
+app.use('/api', ocreRoute);
 
 // Mounting at /api/generate-sketch makes the sub-routes like /image-proxy 
 // resolve to /api/generate-sketch/image-proxy

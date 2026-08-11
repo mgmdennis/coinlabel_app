@@ -18,7 +18,7 @@ import {
 } from '@mantine/core';
 import {
   Search, PenLine, Pencil, Copy, ChevronDown, ChevronUp, ChevronsUpDown,
-  Archive, ArchiveRestore, Printer, Trash2, X,
+  Archive, ArchiveRestore, Printer, Trash2, X, ScrollText,
 } from 'lucide-react';
 
 import { BASE_URL } from '../config';
@@ -27,11 +27,12 @@ import { FrontLabelContainer, BackLabelContainer } from "./label";
 const Home = () => {
   const [coins, setCoins] = useState(null);
   const [coinsWithImages, setCoinsWithImages] = useState(null);
-  const [numistaNumber, setNumistaNumber] = useState("");
+  const [lookupMode, setLookupMode] = useState('numista'); // 'numista' | 'ocre'
+  const [lookupValue, setLookupValue] = useState("");
   const location = useLocation();
-  const [view, setView] = useState(location?.state?.view || 'labels'); // 'labels' | 'cached' | 'collection'
-  const [searchQuery, setSearchQuery] = useState("");
+  const [view, setView] = useState(location?.state?.view || 'labels');
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
 
   // --- Persistence Logic ---
   const [selectedCoins, setSelectedCoins] = useState(() => {
@@ -216,8 +217,18 @@ const visibleCoins = q && viewCoins
 
   const handleFormSubmit = (e) => {
     if (e) e.preventDefault();
-    if (numistaNumber) {
-      navigate('/create/' + numistaNumber);
+    let val = lookupValue.trim();
+    if (!val) return;
+    // Strip URLs: extract the OCRE/Numista ID from a pasted URL
+    if (val.includes('numismatics.org/ocre/id/')) {
+      val = val.split('numismatics.org/ocre/id/').pop().split(/[?#]/)[0];
+    } else if (val.includes('en.numista.com/catalogue/pieces')) {
+      val = val.split('pieces').pop().replace(/[^0-9]/g, '');
+    }
+    if (lookupMode === 'numista') {
+      navigate('/create/' + val.replace(/\D+/g, ''));
+    } else {
+      navigate('/create', { state: { ocreId: val, manualMode: true } });
     }
   };
 
@@ -248,13 +259,51 @@ const visibleCoins = q && viewCoins
         <Group align="center" gap="md" wrap="wrap">
           <form onSubmit={handleFormSubmit} style={{ flex: '1 1 auto', minWidth: 0 }}>
             <Group gap={0} wrap="nowrap" align="stretch">
+              <Box
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '0 10px',
+                  background: 'var(--mantine-color-blue-1)',
+                  borderTopLeftRadius: 'var(--mantine-radius-default)',
+                  borderBottomLeftRadius: 'var(--mantine-radius-default)',
+                  border: '1px solid var(--mantine-color-blue-3)',
+                  borderRight: 'none',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+                onClick={() => setLookupMode(lookupMode === 'numista' ? 'ocre' : 'numista')}
+                title={`Switch to ${lookupMode === 'numista' ? 'OCRE' : 'Numista'} lookup`}
+              >
+                {lookupMode === 'numista' ? (
+                  <Text size="sm" fw={700} c="blue.8">N#</Text>
+                ) : (
+                  <Group gap={4} wrap="nowrap">
+                    <ScrollText size={14} />
+                    <Text size="sm" fw={700} c="blue.8">OCRE</Text>
+                  </Group>
+                )}
+              </Box>
               <TextInput
-                leftSection={<Text size="sm" c="dimmed">N#</Text>}
-                value={numistaNumber}
-                onChange={(e) => setNumistaNumber(e.target.value.trim().replace(/\D+/g, ''))}
-                placeholder="Numista number..."
+                value={lookupValue}
+                onChange={(e) => setLookupValue(e.target.value)}
+                onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    let val = pasted.trim();
+                    if (val.includes('numismatics.org/ocre/id/')) {
+                        val = val.split('numismatics.org/ocre/id/').pop().split(/[?#]/)[0];
+                    } else if (val.includes('en.numista.com/catalogue/pieces')) {
+                        val = val.split('pieces').pop().replace(/[^0-9]/g, '');
+                    }
+                    if (val !== pasted.trim()) {
+                        e.preventDefault();
+                        setLookupValue(val);
+                    }
+                }}
+                placeholder={lookupMode === 'numista' ? 'Numista number...' : 'e.g. ric.2_3(2).hdn.1907'}
                 style={{ flex: 1, minWidth: 0 }}
-                styles={{ input: { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
+                styles={{ input: { borderRadius: 0 } }}
               />
               <Button type="submit" px="md" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
                 Go

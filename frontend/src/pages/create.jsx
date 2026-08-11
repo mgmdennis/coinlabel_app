@@ -1,7 +1,7 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
-import { Button, Container, Grid, Group, Modal, TextInput } from '@mantine/core';
+import { Button, Container, Grid, Group, Modal, Text, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 
 import { BASE_URL } from '../config';
@@ -61,6 +61,8 @@ const Create = () => {
     const [isCollectionItem, setIsCollectionItem] = useState(false);
     const [collectionObvImage, setCollectionObvImage] = useState("");
     const [collectionRevImage, setCollectionRevImage] = useState("");
+    const [ocreId, setOcreId] = useState("");
+    const [ocreError, setOcreError] = useState("");
     const [dateAdded, setDateAdded] = useState("");
     const [marksPicture, setMarksPicture] = useState(null);
     const [marks, setMarks] = useState([]);
@@ -388,6 +390,92 @@ const handleDiameterChange = (e) => {
         };
     }, [isManualMode, visualTarget]); // Rerun if isManualMode or visualTarget changes
 
+    // --- OCRE Lookup ---
+    const MATERIAL_MAP = {
+        'ar': 'Silver', 'av': 'Gold', 'ae': 'Bronze', 'orichalcum': 'Brass',
+        'cu': 'Copper', 'billon': 'Billon', 'lead': 'Lead', 'electrum': 'Electrum',
+    };
+    const mapMaterial = (m) => MATERIAL_MAP[m?.toLowerCase()] || m || "";
+
+    // Condense obv/rev descriptions: "Head of Augustus, bare, left" → "(Augustus)"
+    const condenseDescription = (desc) => {
+        if (!desc) return "";
+        const m = desc.match(/^(?:Bust of|Head of|Portrait of|Laureate (?:head|bust) of|Radiate (?:head|bust) of|Draped bust of)\s+([A-Z][A-Za-z]+(?:\s+[IVXLCDM]+)?)/i);
+        if (m) return `(${m[1]})`;
+        return desc;
+    };
+
+    const condenseRevDescription = (desc) => {
+        if (!desc) return "";
+        return desc
+            .replace(/\bstanding\b/gi, 'stg.')
+            .replace(/\bseated\b/gi, 'seat.')
+            .replace(/\bwalking\b/gi, 'walk.')
+            .replace(/\brunning\b/gi, 'run.')
+            .replace(/\bkneeling\b/gi, 'kneel.')
+            .replace(/\bright\b/gi, 'r.')
+            .replace(/\bleft\b/gi, 'l.')
+            .replace(/\bholding\b/gi, 'hold.')
+            .replace(/\bwearing\b/gi, 'wear.')
+            .replace(/\bcrowned\b/gi, 'crown.')
+            .replace(/\bdraped\b/gi, 'drap.')
+            .replace(/\bradiate\b/gi, 'rad.')
+            .replace(/\blaureate\b/gi, 'laur.')
+            .replace(/\bnaked\b/gi, 'nak.')
+            .replace(/\bcuirassed\b/gi, 'cuir.')
+            .replace(/\badvancing\b/gi, 'adv.')
+            .replace(/\bpresenting\b/gi, 'pres.')
+            .replace(/\bplacing\b/gi, 'plac.')
+            .replace(/\bresting\b/gi, 'rest.')
+            .replace(/\bextending\b/gi, 'ext.');
+    };
+    const handleOcreLookup = (idArg) => {
+        const id = (idArg || ocreId).trim();
+        if (!id) return;
+        setOcreError("");
+        axios.get(`${BASE_URL}/ocre/${encodeURIComponent(id)}`)
+            .then((res) => {
+                const d = res.data;
+                setTitle(d.title || "");
+                setIssuer("Roman Empire");
+                setDenomination(d.denomination || "");
+                setComposition(mapMaterial(d.material));
+                setReference(d.reference || "");
+                setYear(d.year || "");
+                const obv = condenseDescription(d.obverseDescription);
+                const rev = d.reverseDescription ? `Rev: ${condenseRevDescription(d.reverseDescription)}` : "";
+                setDetails([obv, rev].filter(Boolean).join('\n'));
+                setLegendObv(d.obverseLegend || "");
+                setLegendRev(d.reverseLegend || "");
+                if (visualTarget === 'QR' && (d.obverseLegend || d.reverseLegend)) {
+                    setVisualTarget('LEGENDS');
+                }
+                setPhysicalDetails("");
+                setMass("");
+                setDiameter("");
+                setOrientation("");
+                const currentDate = new Date();
+                const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;
+                setDateAdded(formattedDate);
+            })
+            .catch((err) => {
+                const message = err.response?.data?.error || "Failed to fetch OCRE data.";
+                setOcreError(message);
+            });
+    };
+
+    // Auto-load OCRE data if navigated with state.ocreId
+    useEffect(() => {
+        const ocreIdParam = location?.state?.ocreId;
+        if (ocreIdParam && !isManualMode) {
+            setIsManualMode(true);
+        }
+        if (ocreIdParam) {
+            handleOcreLookup(ocreIdParam);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location]);
+
     // File picker handler — same pipeline as clipboard paste (iOS fallback)
     const handleImageFile = (file) => {
         const reader = new FileReader();
@@ -679,7 +767,8 @@ const handleDiameterChange = (e) => {
                             >
                                 Reset fields from Numista
                             </Button>
-                        </Group>
+</Group>
+
                         </>
                     )}
 
