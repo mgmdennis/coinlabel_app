@@ -322,7 +322,7 @@ const BackLabelContainer = ({
                             onChange={(e) => setLegendObv?.(e.target.value)}
                         />
                         {(legendObv || legendRev) && <hr className="legend-divider" />}
-                        <div className="legend-caption">Reverse</div>
+                        <div className="legend-caption legend-caption-reverse">Reverse</div>
                         <LabelField
                             isEditable={isEditable}
                             placeholder="Reverse legend"

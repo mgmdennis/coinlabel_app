@@ -421,6 +421,10 @@ body {
   flex: 0 0 auto;
 }
 
+.legends-block .legend-caption-reverse {
+  margin-top: 2cqw;
+}
+
 @keyframes sketch-spin {
   to { transform: rotate(360deg); }
 }
