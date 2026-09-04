@@ -24,9 +24,14 @@ import {
 import { BASE_URL } from '../config';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
 
+// Collection photos are served as separately-cacheable binaries; `updatedAt`
+// busts the cache when a photo is re-uploaded.
+const coinImageUrl = (coin, side) =>
+  `${BASE_URL}/coin/${coin._id}/image/${side}?v=${encodeURIComponent(coin.updatedAt || '')}`;
+
 const Home = () => {
   const [coins, setCoins] = useState(null);
-  const [coinsWithImages, setCoinsWithImages] = useState(null);
+  const [collectionItems, setCollectionItems] = useState(null);
   const [lookupMode, setLookupMode] = useState('numista'); // 'numista' | 'ocre'
   const [lookupValue, setLookupValue] = useState("");
   const location = useLocation();
@@ -62,16 +67,16 @@ const Home = () => {
       .catch((err) => console.error(err));
   };
 
-  const getCoinsWithImages = () => {
-    if (coinsWithImages) return;
+  const getCollectionItems = () => {
+    if (collectionItems) return;
     axios
-      .get(`${BASE_URL}/coins?includeCollectionImages=1`)
-      .then((res) => setCoinsWithImages(res.data))
+      .get(`${BASE_URL}/coins/collection`)
+      .then((res) => setCollectionItems(res.data))
       .catch((err) => console.error(err));
   };
 
   useEffect(() => {
-    if (view === 'collection') getCoinsWithImages();
+    if (view === 'collection') getCollectionItems();
   }, [view]);
 
   const executeDelete = (id) => {
@@ -158,12 +163,12 @@ const Home = () => {
 
 const activeCoins = coins ? coins.filter(c => !c.cached && c.hasLabel !== false) : null;
     const cachedCoins = coins ? coins.filter(c => c.cached && c.hasLabel !== false) : null;
-    // For the collection view, use coinsWithImages (lazy-loaded).
+    // For the collection view, use collectionItems (lazy-loaded).
     // But use the lightweight `coins` to check if any collection items exist,
     // so we can show a loading skeleton while images are still fetching.
     const collectionCount = coins ? coins.filter(c => c.isCollectionItem).length : 0;
-    const collectionLoading = view === 'collection' && collectionCount > 0 && !coinsWithImages;
-    const itemCoins = coinsWithImages ? coinsWithImages.filter(c => c.isCollectionItem) : (collectionLoading ? [] : null);
+    const collectionLoading = view === 'collection' && collectionCount > 0 && !collectionItems;
+    const itemCoins = collectionItems ? collectionItems.filter(c => c.isCollectionItem) : (collectionLoading ? [] : null);
     const viewCoins = view === 'labels' ? activeCoins : view === 'cached' ? cachedCoins : itemCoins;
 
     const searchFields = ['issuer', 'denomination', 'year', 'grade', 'gradeDetails', 'details', 'composition', 'physicalDetails', 'reference', 'mintage', 'numistaNumber', 'legendObv', 'legendRev'];
@@ -516,19 +521,21 @@ const visibleCoins = q && viewCoins
                         boxSizing: 'border-box',
                       }}
                     >
-                      {coin.collectionObvImage || coin.collectionRevImage ? (
+                      {coin.hasObvImage || coin.hasRevImage ? (
                         <Group gap={6} wrap="nowrap" align="center" style={{ width: '100%', height: '100%' }}>
-                          {coin.collectionObvImage && (
+                          {coin.hasObvImage && (
                             <img
-                              src={coin.collectionObvImage}
+                              src={coinImageUrl(coin, 'obv')}
                               alt="Obv"
+                              onError={e => { e.currentTarget.style.display = 'none'; }}
                               style={{ flex: 1, minWidth: 0, maxHeight: '100%', objectFit: 'contain' }}
                             />
                           )}
-                          {coin.collectionRevImage && (
+                          {coin.hasRevImage && (
                             <img
-                              src={coin.collectionRevImage}
+                              src={coinImageUrl(coin, 'rev')}
                               alt="Rev"
+                              onError={e => { e.currentTarget.style.display = 'none'; }}
                               style={{ flex: 1, minWidth: 0, maxHeight: '100%', objectFit: 'contain' }}
                             />
                           )}

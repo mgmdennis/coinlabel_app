@@ -113,7 +113,7 @@ const CoinSchema = new Schema({
         ref: 'User',
         required: true
     }
-})
+}, { timestamps: true })
 
 const Coin = mongoose.model("Coin", CoinSchema)
 

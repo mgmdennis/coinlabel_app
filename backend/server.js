@@ -15,6 +15,7 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 const fs = require('fs');
 const connectdb = require("./mongodb");
 const session = require('express-session');
@@ -42,6 +43,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }));
+
+// --- 2.2 GZIP/BROTLI COMPRESSION ---
+app.use(compression());
 
 // --- 2.5. SESSION SETUP ---
 app.use(session({
