@@ -63,6 +63,7 @@ const Layout = ({ user, setUser }) => {
       <Anchor
         component={Link}
         to="/"
+        state={{ view: 'labels' }}
         onClick={close}
         c="gray.4"
         fw={700}
@@ -71,6 +72,19 @@ const Layout = ({ user, setUser }) => {
         underline="never"
       >
         Home
+      </Anchor>
+      <Anchor
+        component={Link}
+        to="/"
+        state={{ view: 'collection' }}
+        onClick={close}
+        c="gray.4"
+        fw={700}
+        tt="uppercase"
+        size="sm"
+        underline="never"
+      >
+        My Collection
       </Anchor>
       <Button
         component={Link}

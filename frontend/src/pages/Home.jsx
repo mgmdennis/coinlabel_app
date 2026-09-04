@@ -36,6 +36,15 @@ const Home = () => {
   const [lookupValue, setLookupValue] = useState("");
   const location = useLocation();
   const [view, setView] = useState(location?.state?.view || 'labels');
+
+  // A nav link can carry { state: { view } } to jump straight to a tab —
+  // handle it even if Home is already mounted (same route, so the lazy
+  // useState initializer above won't re-run on its own).
+  useEffect(() => {
+    if (location?.state?.view) {
+      setView(location.state.view);
+    }
+  }, [location.state]);
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -346,14 +355,6 @@ const visibleCoins = q && viewCoins
           onClick={() => { setView('cached'); setSelectedCoins({}); }}
         >
           Cached Labels {cachedCoins && cachedCoins.length > 0 ? `(${cachedCoins.length})` : ''}
-        </Button>
-        <Button
-          variant={view === 'collection' ? 'filled' : 'default'}
-          color={view === 'collection' ? 'green' : undefined}
-          size="xs"
-          onClick={() => { setView('collection'); setSelectedCoins({}); }}
-        >
-          My Collection {itemCoins && itemCoins.length > 0 ? `(${itemCoins.length})` : ''}
         </Button>
       </Group>
 
