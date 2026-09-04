@@ -171,7 +171,7 @@ const activeCoins = coins ? coins.filter(c => !c.cached && c.hasLabel !== false)
     const itemCoins = collectionItems ? collectionItems.filter(c => c.isCollectionItem) : (collectionLoading ? [] : null);
     const viewCoins = view === 'labels' ? activeCoins : view === 'cached' ? cachedCoins : itemCoins;
 
-    const searchFields = ['issuer', 'denomination', 'year', 'grade', 'gradeDetails', 'details', 'composition', 'physicalDetails', 'reference', 'mintage', 'numistaNumber', 'legendObv', 'legendRev'];
+    const searchFields = ['issuer', 'denomination', 'year', 'grade', 'gradeDetails', 'details', 'composition', 'physicalDetails', 'reference', 'mintage', 'numistaNumber', 'ocreId', 'legendObv', 'legendRev'];
     const q = searchQuery.trim().toLowerCase();
 const visibleCoins = q && viewCoins
         ? viewCoins.filter(c => searchFields.some(f => (c[f] || '').toString().toLowerCase().includes(q)))

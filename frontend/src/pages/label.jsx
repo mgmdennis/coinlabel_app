@@ -1,5 +1,5 @@
 import { QRCode } from "react-qr-code";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Modal, Button } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -161,6 +161,7 @@ const BackLabelContainer = ({
     composition, setComposition,
     physicalDetails, setPhysicalDetails,
     numistaNumber,
+    ocreId = "",
     dateAdded, setDateAdded,
     visualTarget = "QR",
     sketchId = "",
@@ -279,7 +280,7 @@ const BackLabelContainer = ({
                 )}
                 {visualTarget === "LEGENDS" ? (
                     <div className="legends-block">
-                        <div className="legend-caption">Obv</div>
+                        <div className="legend-caption">Obverse</div>
                         <LabelField
                             isEditable={isEditable}
                             placeholder="Obverse legend"
@@ -291,7 +292,7 @@ const BackLabelContainer = ({
                             onChange={(e) => setLegendObv?.(e.target.value)}
                         />
                         {(legendObv || legendRev) && <hr className="legend-divider" />}
-                        <div className="legend-caption">Rev</div>
+                        <div className="legend-caption">Reverse</div>
                         <LabelField
                             isEditable={isEditable}
                             placeholder="Reverse legend"
@@ -305,7 +306,13 @@ const BackLabelContainer = ({
                     </div>
                 ) : (visualTarget === "QR" || (!sketchId && visualTarget !== "GALLERY" && visualTarget !== "NUMISTA" && visualTarget !== "PASTED") || !sketchData) ? (
                     <QRCode
-                        value={`https://en.numista.com/catalogue/pieces${numistaNumber}.html`}
+                        value={
+                            numistaNumber
+                                ? `https://en.numista.com/catalogue/pieces${numistaNumber}.html`
+                                : ocreId
+                                    ? `https://numismatics.org/ocre/id/${ocreId}`
+                                    : `https://en.numista.com/catalogue/pieces${numistaNumber}.html`
+                        }
                         style={{ width: "100%", height: "100%" }}
                         viewBox={`0 0 256 256`}
                     />

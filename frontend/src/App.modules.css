@@ -410,9 +410,8 @@ body {
 }
 
 .legends-block .legend-caption {
-  font-size: 4.5cqw;
-  font-style: italic;
-  font-weight: 700;
+  font-size: 6cqw;
+  font-weight: 300;
   text-align: center;
   letter-spacing: 0.08em;
   color: #444;

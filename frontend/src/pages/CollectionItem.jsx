@@ -90,6 +90,7 @@ const CollectionItem = () => {
         { key: 'mintage', label: 'Mintage', type: 'text' },
         { key: 'details', label: 'Details', type: 'textarea', rows: 4 },
         { key: 'numistaNumber', label: 'Numista Number', type: 'text' },
+        { key: 'ocreId', label: 'OCRE ID', type: 'text' },
     ];
 
     return (
@@ -102,6 +103,18 @@ const CollectionItem = () => {
                     <Group gap="xs">
                         <Badge color="green" variant="light" size="sm">Collection Item</Badge>
                         {item.isManual && <Badge color="gray" variant="light" size="sm">Manual</Badge>}
+                        {item.ocreId && (
+                            <Badge
+                                component="a"
+                                href={`https://numismatics.org/ocre/id/${encodeURIComponent(item.ocreId)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                color="blue" variant="light" size="sm"
+                                style={{ cursor: 'pointer' }}
+                            >
+                                OCRE ↗
+                            </Badge>
+                        )}
                     </Group>
                 </Stack>
                 <Group gap="xs" wrap="nowrap">

@@ -7,6 +7,11 @@ const CoinSchema = new Schema({
         default: "",
         trim: true,
     },
+    ocreId: {
+        type: String,
+        default: "",
+        trim: true,
+    },
     year: {
         type: String,
         trim: true,

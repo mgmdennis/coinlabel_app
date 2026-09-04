@@ -324,7 +324,7 @@ const handleDiameterChange = (e) => {
         if (isCreatingCoin.current) return;
         isCreatingCoin.current = true;
         axios.post(`${BASE_URL}/coin/new`, {
-            numistaNumber, year, issuer, denomination, grade, gradeDetails,
+            numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId, isManual: isManualMode,
             legendObv, legendRev,
@@ -338,13 +338,13 @@ const handleDiameterChange = (e) => {
             console.error("Error creating coin:", err);
             isCreatingCoin.current = false;
         });
-    }, [numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
+    }, [numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
         setSaveStatus("saving");
         axios.put(`${BASE_URL}/coin/update/${coinId}`, {
-            numistaNumber, year, issuer, denomination, grade, gradeDetails,
+            numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId, isManual: isManualMode,
             legendObv, legendRev,
@@ -358,7 +358,7 @@ const handleDiameterChange = (e) => {
             setSaveStatus("error");
             console.error("Error updating coin:", err);
         });
-    }, [coinId, numistaNumber, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
+    }, [coinId, numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
 
     // --- Effects ---
 
@@ -432,6 +432,7 @@ const handleDiameterChange = (e) => {
     const handleOcreLookup = (idArg) => {
         const id = (idArg || ocreId).trim();
         if (!id) return;
+        setOcreId(id);
         setOcreError("");
         axios.get(`${BASE_URL}/ocre/${encodeURIComponent(id)}`)
             .then((res) => {
@@ -554,6 +555,7 @@ const handleDiameterChange = (e) => {
                     setCoinId(c._id);
                     setTitle(c.title || "");
                     setNumistaNumber(c.numistaNumber || "");
+                    setOcreId(c.ocreId || "");
                     setYear(c.year || "");
                     setIssuer(c.issuer || "");
                     setDenomination(c.denomination || "");
@@ -621,7 +623,7 @@ const handleDiameterChange = (e) => {
             }, 1000);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, updateCoinRemote, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, numistaNumber, ocreId, updateCoinRemote, coinId, initialLoadComplete]);
 
     const handleDiscard = () => {
         if (isCollectionItem) {
@@ -637,7 +639,7 @@ const handleDiameterChange = (e) => {
 
     const handleDuplicate = () => {
         axios.post(`${BASE_URL}/coin/new`, {
-            numistaNumber, year, issuer, denomination, grade, gradeDetails,
+            numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId,
             legendObv, legendRev,
@@ -695,7 +697,22 @@ const handleDiameterChange = (e) => {
                         Load
                     </Button>
                 )}
-            </Group>
+             </Group>
+
+            {ocreId && (
+                <Group mb="lg" maw={300}>
+                    <Button
+                        component="a"
+                        href={`https://numismatics.org/ocre/id/${encodeURIComponent(ocreId)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        variant="light"
+                        size="xs"
+                    >
+                        View on OCRE ↗
+                    </Button>
+                </Group>
+            )}
 
             <Modal
                 opened={!!numistaError}
@@ -855,6 +872,7 @@ const handleDiameterChange = (e) => {
                         composition={composition} setComposition={setComposition}
                         physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
                         numistaNumber={numistaNumber}
+                        ocreId={ocreId}
                         dateAdded={dateAdded} setDateAdded={setDateAdded}
                         visualTarget={visualTarget}
                         sketchId={sketchId}

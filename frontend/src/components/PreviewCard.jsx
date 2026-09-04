@@ -17,6 +17,7 @@ export const PreviewCard = ({
     composition, setComposition,
     physicalDetails, setPhysicalDetails,
     numistaNumber,
+    ocreId,
     dateAdded, setDateAdded,
     visualTarget,
     sketchId,
@@ -79,6 +80,7 @@ export const PreviewCard = ({
                                 composition={composition} setComposition={setComposition}
                                 physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
                                 numistaNumber={numistaNumber}
+                                ocreId={ocreId}
                                 dateAdded={dateAdded} setDateAdded={setDateAdded}
                                 visualTarget={visualTarget}
                                 sketchId={sketchId}

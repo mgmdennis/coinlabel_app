@@ -135,10 +135,23 @@ async function getOcreDetailsJSON(ocreId) {
             const materialAbbr = uriToMaterialAbbr(getUri(typeNode['nmo:hasMaterial']));
             const denomination = materialAbbr && denomLabel ? `${materialAbbr} ${denomLabel}` : denomLabel;
 
+            // The authority belongs in the notes, not the citation — strip it
+            // from the reference (e.g. "RIC II, Part 3 (second edition) Hadrian
+            // 1907" -> "RIC II, Part 3 (second edition) 1907").
+            const authority = getLabel(typeNode['nmo:hasAuthority']);
+            let reference = prefLabel;
+            if (authority) {
+                const escaped = authority.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                reference = prefLabel
+                    .replace(new RegExp(`\\s*${escaped}\\s*`, 'gi'), ' ')
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
+            }
+
             const features = {
             ocreId: id,
             title: prefLabel,
-            reference: prefLabel,
+            reference,
             denomination: denomination,
             issuer: getLabel(typeNode['nmo:hasIssuer']),
             authority: getLabel(typeNode['nmo:hasAuthority']),

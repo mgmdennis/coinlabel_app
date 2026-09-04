@@ -174,6 +174,8 @@ const Layout = ({ user, setUser }) => {
         <Text size="sm" c="dimmed">
           © {new Date().getFullYear()} NumisTag | Premium Coin Labeling powered by{' '}
           <Anchor href="https://en.numista.com" target="_blank" rel="noopener noreferrer">Numista</Anchor>
+          {' '}&{' '}
+          <Anchor href="https://numismatics.org/ocre/" target="_blank" rel="noopener noreferrer">OCRE</Anchor>
           <Text span size="xs" c="dimmed" ml="xs">v{version}</Text>
         </Text>
       </Box>
