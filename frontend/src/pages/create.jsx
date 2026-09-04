@@ -43,6 +43,7 @@ const Create = () => {
     // --- Label Field State ---
     const [year, setYear] = useState("");
     const [details, setDetails] = useState("");
+    const [detailsWidth, setDetailsWidth] = useState(45);
     const [denomination, setDenomination] = useState("");
     const [grade, setGrade] = useState("");
     const [gradeDetails, setGradeDetails] = useState("");
@@ -327,6 +328,7 @@ const handleDiameterChange = (e) => {
             numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId, isManual: isManualMode,
+            detailsWidth,
             legendObv, legendRev,
             isCollectionItem, collectionObvImage, collectionRevImage
         })
@@ -338,7 +340,7 @@ const handleDiameterChange = (e) => {
             console.error("Error creating coin:", err);
             isCreatingCoin.current = false;
         });
-    }, [numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
+    }, [numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, detailsWidth, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
@@ -347,6 +349,7 @@ const handleDiameterChange = (e) => {
             numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId, isManual: isManualMode,
+            detailsWidth,
             legendObv, legendRev,
             isCollectionItem, collectionObvImage, collectionRevImage
         })
@@ -358,7 +361,7 @@ const handleDiameterChange = (e) => {
             setSaveStatus("error");
             console.error("Error updating coin:", err);
         });
-    }, [coinId, numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
+    }, [coinId, numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, detailsWidth, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
 
     // --- Effects ---
 
@@ -580,6 +583,7 @@ const handleDiameterChange = (e) => {
                     setIsCollectionItem(c.isCollectionItem || false);
                     setCollectionObvImage(c.collectionObvImage || "");
                     setCollectionRevImage(c.collectionRevImage || "");
+                    setDetailsWidth(c.detailsWidth || 45);
                     // Always update Numista details for dropdowns, but don't overwrite fields
                     if (c.numistaDetails) {
                         setNumistaDetails(c.numistaDetails);
@@ -623,7 +627,7 @@ const handleDiameterChange = (e) => {
             }, 1000);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, numistaNumber, ocreId, updateCoinRemote, coinId, initialLoadComplete]);
+    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, numistaNumber, ocreId, detailsWidth, updateCoinRemote, coinId, initialLoadComplete]);
 
     const handleDiscard = () => {
         if (isCollectionItem) {
@@ -642,6 +646,7 @@ const handleDiameterChange = (e) => {
             numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
             details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
             visualTarget, visualMethod, sketchId,
+            detailsWidth,
             legendObv, legendRev,
             isCollectionItem, collectionObvImage, collectionRevImage
         }).then(() => navigate("/"));
@@ -869,6 +874,7 @@ const handleDiameterChange = (e) => {
                         marksPicture={marksPicture}
                         marks={marks}
                         details={details} setDetails={setDetails}
+                        detailsWidth={detailsWidth} setDetailsWidth={setDetailsWidth}
                         composition={composition} setComposition={setComposition}
                         physicalDetails={physicalDetails} setPhysicalDetails={setPhysicalDetails}
                         numistaNumber={numistaNumber}

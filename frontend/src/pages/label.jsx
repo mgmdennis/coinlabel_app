@@ -1,5 +1,5 @@
 import { QRCode } from "react-qr-code";
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { Modal, Button } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -14,7 +14,7 @@ import { BASE_URL } from '../config';
  * replicates Bootstrap's old `.form-control-plaintext` reset so the on-screen
  * editing preview stays visually identical to the printed static labels.
  */
-const LabelField = ({ isEditable, value, placeholder, className, as, rows, onChange, autoGrow }) => {
+const LabelField = ({ isEditable, value, placeholder, className, as, rows, onChange, autoGrow, style }) => {
     const autoResize = useCallback((node) => {
         if (node && autoGrow) {
             node.style.height = 'auto';
@@ -26,7 +26,7 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
 
     if (!isEditable) {
         return (
-            <p className={`${className} static-label`}>
+            <p className={`${className} static-label`} style={style}>
                 {value}
             </p>
         );
@@ -43,6 +43,7 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
                 rows={autoGrow ? 1 : rows}
                 className={fieldClassName}
                 onChange={onChange}
+                style={style}
             />
         );
     }
@@ -54,6 +55,7 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
             value={value}
             className={fieldClassName}
             onChange={onChange}
+            style={style}
         />
     );
 };
@@ -61,9 +63,36 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
 /**
  * FrontLabelContainer Component
  */
-const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks }) => {
+const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks, detailsWidth = 45, setDetailsWidth }) => {
+    const labelRef = useRef(null);
+
+    // Avoid a scrollbar on the details field: re-derive the width from
+    // scratch on every change — try 45%, and if the real textarea would
+    // overflow its 7-row box at that width, step up by 5% and re-check, up
+    // to a 65% cap. Recomputing from 45% each time (rather than only ever
+    // growing from the last value) means it shrinks back down naturally when
+    // text is edited shorter, not just grows. useLayoutEffect runs the probe
+    // synchronously before paint, so the intermediate widths it tries are
+    // never visible — only the final, settled width ever renders. This is a
+    // plain DOM measurement of the one field being edited — no font/canvas
+    // simulation, nothing hardcoded. The result is persisted on the coin, so
+    // print/collection labels just read it with zero computation.
+    useLayoutEffect(() => {
+        if (!isEditable || !setDetailsWidth) return;
+        const field = labelRef.current && labelRef.current.querySelector('.details');
+        if (!field) return;
+
+        let width = 45;
+        field.style.width = `${width}%`;
+        while (field.scrollHeight > field.clientHeight + 1 && width < 65) {
+            width += 5;
+            field.style.width = `${width}%`;
+        }
+        if (width !== detailsWidth) setDetailsWidth(width);
+    }, [details, detailsWidth, isEditable, setDetailsWidth]);
+
     return (
-        <div className={isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
+        <div ref={labelRef} className={isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
             <LabelField
                 isEditable={isEditable}
                 placeholder="Year"
@@ -145,6 +174,7 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
                     as="textarea"
                     rows={7}
                     onChange={(e) => setDetails(e.target.value)}
+                    style={{ width: `${detailsWidth}%` }}
                 />
             </div>
         </div>

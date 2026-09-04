@@ -14,6 +14,7 @@ export const PreviewCard = ({
     marksPicture,
     marks,
     details, setDetails,
+    detailsWidth, setDetailsWidth,
     composition, setComposition,
     physicalDetails, setPhysicalDetails,
     numistaNumber,
@@ -68,6 +69,7 @@ export const PreviewCard = ({
                                 marksPicture={marksPicture}
                                 marks={marks}
                                 details={details} setDetails={setDetails}
+                                detailsWidth={detailsWidth} setDetailsWidth={setDetailsWidth}
                             />
                         </div>
                     </Stack>

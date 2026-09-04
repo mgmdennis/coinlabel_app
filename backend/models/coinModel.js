@@ -105,6 +105,10 @@ const CoinSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    detailsWidth: {
+        type: Number,
+        default: 45,
+    },
     hasLabel: {
         type: Boolean,
         default: true,
