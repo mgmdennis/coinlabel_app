@@ -18,7 +18,9 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
     const autoResize = useCallback((node) => {
         if (node && autoGrow) {
             node.style.height = 'auto';
-            node.style.height = node.scrollHeight + 'px';
+            const styles = window.getComputedStyle(node);
+            const borderY = parseFloat(styles.borderTopWidth) + parseFloat(styles.borderBottomWidth);
+            node.style.height = `${node.scrollHeight + borderY}px`;
         }
     }, [value, autoGrow]);
 
