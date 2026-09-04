@@ -88,6 +88,14 @@ body {
   left: 0;
   width: 30%;
 }
+
+/* Widen the year input while editing so longer dates ("1943-1945", "44 BC")
+   aren't clipped. Left-anchored so text doesn't shift; raised z-index keeps
+   the input clickable where it overlaps the denomination box. */
+.parent-label-for-edit .date {
+  width: 34%;
+  z-index: 12;
+}
 .denomination {
   position: absolute;
   font-weight: bold;
