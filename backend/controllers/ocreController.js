@@ -82,6 +82,21 @@ function formatReference(ocreId) {
     return ocreId;
 }
 
+// Spelled-out edition ordinals take up a lot of room on a small label —
+// abbreviate them (e.g. "(second edition)" -> "(2nd)").
+const ORDINAL_ABBR = {
+    first: '1st', second: '2nd', third: '3rd', fourth: '4th', fifth: '5th',
+    sixth: '6th', seventh: '7th', eighth: '8th', ninth: '9th', tenth: '10th',
+};
+
+function abbreviateEditions(text) {
+    if (!text) return text;
+    return text.replace(
+        /\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+edition\b/gi,
+        (match, word) => ORDINAL_ABBR[word.toLowerCase()] || match
+    );
+}
+
 /**
  * Fetch an OCRE coin type by its identifier (e.g. "ric.2_3(2).hdn.1907")
  * and parse the JSON-LD response into a flat object suitable for the frontend.
@@ -147,6 +162,7 @@ async function getOcreDetailsJSON(ocreId) {
                     .replace(/\s{2,}/g, ' ')
                     .trim();
             }
+            reference = abbreviateEditions(reference);
 
             const features = {
             ocreId: id,
