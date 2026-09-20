@@ -205,7 +205,16 @@ async function getOcreDetailsJSON(ocreId) {
                 const lines = [];
                 if (concordance.rsc.length) lines.push(`RSC ${concordance.rsc[0]}`);
                 if (concordance.bmc.length) lines.push(`BMC ${concordance.bmc[0]}`);
-                if (lines.length) features.reference = [...lines, reference].join('\n');
+                if (lines.length) {
+                    features.reference = [...lines, reference].join('\n');
+                    // Provenance for the frontend — lets the user one-click the
+                    // WildWinds entry and verify the cross-references.
+                    features.concordance = {
+                        rsc: concordance.rsc[0] || null,
+                        bmc: concordance.bmc[0] || null,
+                        sourceUrl: concordance.sourceUrl,
+                    };
+                }
             }
 
             return features;

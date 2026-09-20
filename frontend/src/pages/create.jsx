@@ -49,6 +49,9 @@ const Create = () => {
     const [gradeDetails, setGradeDetails] = useState("");
     const [issuer, setIssuer] = useState("");
     const [reference, setReference] = useState("");
+    // WildWinds page that sourced the RSC/BMC concordance lines (OCRE lookups
+    // only) — surfaced as a verify-before-printing link on the preview card.
+    const [concordanceSource, setConcordanceSource] = useState(null);
     const [mintage, setMintage] = useState("");
     const [composition, setComposition] = useState("");
     const [physicalDetails, setPhysicalDetails] = useState("");
@@ -169,6 +172,8 @@ const handleDiameterChange = (e) => {
             if (jsonData.variations?.length > 0) {
                 updateFillOutDateAndDetails(jsonData.variations[0], jsonData.description);
             }
+            // Numista references are primary-source; no WildWinds concordance applies.
+            setConcordanceSource(null);
             if (jsonData.references?.length > 0) {
                 setReference(jsonData.references[0]);
             }
@@ -481,10 +486,12 @@ const handleDiameterChange = (e) => {
                 const currentDate = new Date();
                 const formattedDate = `${currentDate.getFullYear()}-${currentDate.toLocaleString('default', { month: 'short' }).toUpperCase()}-${String(currentDate.getDate()).padStart(2, '0')}`;
                 setDateAdded(formattedDate);
+                setConcordanceSource(d.concordance?.sourceUrl || null);
             })
             .catch((err) => {
                 const message = err.response?.data?.error || "Failed to fetch OCRE data.";
                 setOcreError(message);
+                setConcordanceSource(null);
             });
     };
 
@@ -604,6 +611,8 @@ const handleDiameterChange = (e) => {
                     setCollectionObvImage(c.collectionObvImage || "");
                     setCollectionRevImage(c.collectionRevImage || "");
                     setDetailsWidth(c.detailsWidth || 45);
+                    // Saved coins may carry hand-edited references; no live concordance link.
+                    setConcordanceSource(null);
                     // Seed the save-diff snapshot with exactly what the setters
                     // normalized to, so the first auto-save after load is a no-op.
                     lastSavedRef.current = {
@@ -938,6 +947,7 @@ const handleDiameterChange = (e) => {
                         saveStatus={saveStatus}
                         legendObv={legendObv} setLegendObv={setLegendObv}
                         legendRev={legendRev} setLegendRev={setLegendRev}
+                        concordanceSource={concordanceSource}
                     />
                 </Grid.Col>
             </Grid>

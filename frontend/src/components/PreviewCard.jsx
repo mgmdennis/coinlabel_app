@@ -1,4 +1,4 @@
-import { Badge, Box, Button, Card, Group, Stack, Text } from '@mantine/core';
+import { Anchor, Badge, Box, Button, Card, Group, Stack, Text } from '@mantine/core';
 import axios from 'axios';
 import { useState } from 'react';
 import { FrontLabelContainer, BackLabelContainer } from "../pages/label";
@@ -29,6 +29,7 @@ export const PreviewCard = ({
     saveStatus,
     legendObv, setLegendObv,
     legendRev, setLegendRev,
+    concordanceSource,
 }) => {
     const [resetting, setResetting] = useState(false);
     const handleReset = async () => {
@@ -96,6 +97,18 @@ export const PreviewCard = ({
 
                 <Card.Section withBorder py="sm" px="md">
                     <Stack align="center" gap="xs">
+                        {concordanceSource && (
+                            <Anchor
+                                href={concordanceSource}
+                                target="_blank"
+                                rel="noreferrer"
+                                size="xs"
+                                c="gray.7"
+                                title="WildWinds entry the RSC/BMC lines came from — verify before printing"
+                            >
+                                RSC/BMC via WildWinds ↗
+                            </Anchor>
+                        )}
                         {saveStatus === "saving" && <Text size="sm" c="yellow.7">● Saving...</Text>}
                         {saveStatus === "saved" && <Text size="sm" c="green.7">● All changes saved</Text>}
                         {saveStatus === "error" && <Text size="sm" c="red.7">● Error saving!</Text>}
