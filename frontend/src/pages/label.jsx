@@ -196,6 +196,7 @@ const BackLabelContainer = ({
     visualTarget = "QR",
     sketchId = "",
     isGenerating = false,
+    sketchPreview = false,
     legendObv = "",
     setLegendObv,
     legendRev = "",
@@ -228,9 +229,15 @@ const BackLabelContainer = ({
     // large coins — rather than only the container box.
     const showGenerating = isGenerating && visualTarget !== "QR" && visualTarget !== "GALLERY";
 
-    // Fetch the actual image string from the database whenever the sketchId changes
+    // Fetch the actual image string from the database whenever the sketchId changes.
+    // sketchPreview mode skips the fetch entirely: the img src points at the
+    // tiny immutable-cached /thumbnail/:id binary (~15KB vs the full PNG).
     useEffect(() => {
         if (sketchId && visualTarget !== "QR") {
+            if (sketchPreview) {
+                setSketchData(`${BASE_URL}/generate-sketch/thumbnail/${sketchId}`);
+                return;
+            }
             axios.get(`${BASE_URL}/generate-sketch/${sketchId}`)
                 .then(res => {
                     setSketchData(res.data.imageData);
@@ -241,7 +248,7 @@ const BackLabelContainer = ({
         } else {
             setSketchData(null);
         }
-    }, [sketchId, visualTarget, coinDiameter]);
+    }, [sketchId, visualTarget, coinDiameter, sketchPreview]);
 
     // Handle redirect after closing error modal
     const handleDiameterErrorClose = () => {
@@ -352,6 +359,7 @@ const BackLabelContainer = ({
                             <img
                                 src={sketchData}
                                 alt="Coin Sketch"
+                                onError={() => setSketchData(null)}
                                 style={{
                                     width: sketchSize,
                                     height: sketchSize,

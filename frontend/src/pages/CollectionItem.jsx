@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import {
@@ -14,13 +14,14 @@ const CollectionItem = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [item, setItem] = useState(null);
+    const originalRef = useRef(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         axios.get(`${BASE_URL}/coin/${id}`)
-            .then(res => setItem(res.data))
+            .then(res => { setItem(res.data); originalRef.current = res.data; })
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
     }, [id]);
@@ -32,7 +33,14 @@ const CollectionItem = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await axios.put(`${BASE_URL}/coin/update/${item._id}`, item);
+            const original = originalRef.current || {};
+            const { collectionObvImage, collectionRevImage, ...rest } = item;
+            const body = { ...rest };
+            // Only re-send a photo when it was uploaded or removed this session
+            if (collectionObvImage !== (original.collectionObvImage ?? "")) body.collectionObvImage = collectionObvImage;
+            if (collectionRevImage !== (original.collectionRevImage ?? "")) body.collectionRevImage = collectionRevImage;
+            await axios.put(`${BASE_URL}/coin/update/${item._id}`, body);
+            originalRef.current = { ...original, ...body };
             setEditing(false);
         } catch (err) {
             console.error('Save error:', err);

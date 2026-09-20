@@ -24,10 +24,13 @@ import {
 import { BASE_URL } from '../config';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
 
-// Collection photos are served as separately-cacheable binaries; `updatedAt`
-// busts the cache when a photo is re-uploaded.
-const coinImageUrl = (coin, side) =>
-  `${BASE_URL}/coin/${coin._id}/image/${side}?v=${encodeURIComponent(coin.updatedAt || '')}`;
+// Collection photos are served as separately-cacheable binaries. The cache-bust
+// key is the image's own version hash (changed only when the photo changes) so
+// unrelated field edits don't evict the cache; legacy docs fall back to updatedAt.
+const coinImageUrl = (coin, side) => {
+  const version = (side === 'obv' ? coin.obvImageVersion : coin.revImageVersion) || coin.updatedAt || '';
+  return `${BASE_URL}/coin/${coin._id}/image/${side}?v=${encodeURIComponent(version)}`;
+};
 
 const Home = () => {
   const [coins, setCoins] = useState(null);
@@ -512,7 +515,7 @@ const visibleCoins = q && viewCoins
                     <Box
                       style={{
                         aspectRatio: '2.2',
-                        background: 'var(--mantine-color-gray-1)',
+                        background: 'var(--mantine-color-white)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -623,14 +626,16 @@ const visibleCoins = q && viewCoins
                     <Box p="md">
                       <Group align="center" gap="lg" justify="center" wrap="wrap">
                         <Group gap="md" justify="center" style={{ flex: 1 }} wrap="wrap">
-                          {view === 'collection' && (coin.collectionObvImage || coin.collectionRevImage) && (
+                          {view === 'collection' && (coin.hasObvImage || coin.hasRevImage) && (
                             <Group gap="xs">
-                              {coin.collectionObvImage && (
-                                <img src={coin.collectionObvImage} alt="Obv"
+                              {coin.hasObvImage && (
+                                <img src={coinImageUrl(coin, 'obv')}
+                                  alt="Obv" loading="lazy"
                                   style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }} />
                               )}
-                              {coin.collectionRevImage && (
-                                <img src={coin.collectionRevImage} alt="Rev"
+                              {coin.hasRevImage && (
+                                <img src={coinImageUrl(coin, 'rev')}
+                                  alt="Rev" loading="lazy"
                                   style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }} />
                               )}
                             </Group>
@@ -639,7 +644,7 @@ const visibleCoins = q && viewCoins
                             <FrontLabelContainer isEditable={false} {...coin} />
                           </div>
                           <div className="label-wrapper label-card">
-                            <BackLabelContainer isEditable={false} {...coin} />
+                            <BackLabelContainer isEditable={false} {...coin} sketchPreview />
                           </div>
                         </Group>
 

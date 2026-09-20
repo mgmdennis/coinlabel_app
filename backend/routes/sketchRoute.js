@@ -10,6 +10,17 @@ const replicate = new Replicate({
     auth: process.env.REPLICATE_API_TOKEN,
 });
 
+// Upstream fetches fail fast instead of hanging into Heroku's 30s H12 router timeout
+const FETCH_TIMEOUT_MS = 10 * 1000;
+const DOWNLOAD_TIMEOUT_MS = 15 * 1000;
+// Gallery/list thumbnail edge length (pixels) and JPEG quality. 192px covers
+// the 44mm label render size (~167px at 96dpi); q85 is visually lossless for
+// line art and keeps thumbnails around 15KB.
+const THUMB_SIZE = 192;
+const THUMB_JPEG_QUALITY = 85;
+// A 'pending'/'processing' doc older than this is considered dead (dyno restart, crash)
+const STALE_PENDING_MS = 10 * 60 * 1000;
+
 /**
  * @route   GET /api/generate-sketch/image-proxy
  */
@@ -25,12 +36,13 @@ router.get('/image-proxy', async (req, res) => {
             // Try direct fetch first
             response = await axios.get(url, {
                 responseType: 'arraybuffer',
+                timeout: FETCH_TIMEOUT_MS,
                 headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
             });
         } catch (directErr) {
             console.log(`⚠️ Direct proxy failed (${directErr.response?.status || directErr.message}), trying relay...`);
             const relayUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-            response = await axios.get(relayUrl, { responseType: 'arraybuffer' });
+            response = await axios.get(relayUrl, { responseType: 'arraybuffer', timeout: FETCH_TIMEOUT_MS });
         }
 
         res.set('Content-Type', response.headers['content-type']);
@@ -43,8 +55,9 @@ router.get('/image-proxy', async (req, res) => {
 
 /**
  * @route   GET /api/generate-sketch/list
- * Returns all cached sketches (id, description, method, side, dimensions, createdAt)
- * with a small thumbnail preview. Supports optional ?numistaNumber= filter.
+ * Returns lightweight metadata for all cached sketches. Images are NOT
+ * included — the gallery loads small thumbnails via /thumbnail/:id and the
+ * full image via /:id, keeping this response (and its gzip buffers) tiny.
  */
 router.get('/list', async (req, res) => {
     try {
@@ -54,9 +67,8 @@ router.get('/list', async (req, res) => {
         }
         const sketches = await Sketch.find(filter)
             .sort({ createdAt: -1 })
-            .select('_id numistaNumber year description method side width height createdAt imageData');
-        
-        // Return sketches with imageData included for thumbnail display
+            .select('_id numistaNumber year description method side width height createdAt');
+
         res.json(sketches);
     } catch (error) {
         console.error('Error listing sketches:', error);
@@ -83,6 +95,38 @@ async function dataUriToJimp(dataUri) {
 async function jimpToDataUri(image) {
     const buf = await image.getBuffer('image/png');
     return `data:image/png;base64,${buf.toString('base64')}`;
+}
+
+/** Build a small square JPEG data-URI from a Jimp image (white background). */
+async function makeThumbnailDataUri(image) {
+    const thumb = image.clone();
+    thumb.resize({ w: THUMB_SIZE, h: THUMB_SIZE, fit: 'contain' });
+    const canvas = new Jimp({ width: THUMB_SIZE, height: THUMB_SIZE, color: 0xFFFFFFFF });
+    canvas.composite(thumb, Math.floor((THUMB_SIZE - thumb.width) / 2), Math.floor((THUMB_SIZE - thumb.height) / 2));
+    const buf = await canvas.getBuffer('image/jpeg', { quality: THUMB_JPEG_QUALITY });
+    return `data:image/jpeg;base64,${buf.toString('base64')}`;
+}
+
+/**
+ * Persist the final image + thumbnail and flip a pending sketch to completed.
+ * Used by the background SCRIPT/RAW worker and the AI finalizer.
+ */
+async function completeSketch(sketchId, image) {
+    const imageData = await jimpToDataUri(image);
+    const thumbnailData = await makeThumbnailDataUri(image);
+    await Sketch.findOneAndUpdate(
+        { _id: sketchId },
+        { $set: { imageData, thumbnailData, status: 'completed', errorMessage: '' } }
+    );
+}
+
+/** Mark a sketch failed (best-effort — never throws). */
+async function failSketch(sketchId, errorMessage) {
+    try {
+        await Sketch.findOneAndUpdate({ _id: sketchId }, { $set: { status: 'failed', errorMessage: String(errorMessage).slice(0, 500) } });
+    } catch (e) {
+        console.error(`Failed to mark sketch ${sketchId} as failed:`, e.message);
+    }
 }
 
 /**
@@ -182,15 +226,56 @@ function whitenBackground(image, threshold = 250) {
     });
 }
 
-/** Persist a completed sketch and return its id to the client. */
-async function saveSketch(res, { imageData, method, side, sourceHash, numistaNumber, year, scaledSize }) {
-    const description = `${side} - ${numistaNumber ? 'N#' + numistaNumber : 'Manual'}${year ? ' (' + year + ')' : ''}`;
-    const sketch = await Sketch.create({
-        sourceHash, numistaNumber, year, description, side,
-        imageData, method, width: scaledSize, height: scaledSize, status: 'completed',
-    });
-    console.log(`✅ ${method} Sketch saved: ${sketch._id}`);
-    return res.json({ sketchId: sketch._id });
+/** Background worker for SCRIPT/RAW sketches — runs off the request path. */
+async function processSketch(sketchId, { method, scaledSize, sourceData }) {
+    const image = await dataUriToJimp(sourceData);
+
+    if (method === 'SCRIPT') {
+        // Trim background on greyscale version before aggressive filters
+        image.greyscale();
+        trimBackground(image, detectBgThreshold(image), 0.02, 'SCRIPT');
+
+        image.contrast(0.95);
+        try { image.blur(1); } catch (e) { console.log('Blur skipped'); }
+        try {
+            image.convolute([[-1,-1,-1],[-1,9,-1],[-1,-1,-1]]);
+        } catch (e) { console.log('Sharpening skipped'); }
+        try {
+            image.scan(0, 0, image.bitmap.width, image.bitmap.height, function (x, y, idx) {
+                const v = this.bitmap.data[idx];
+                this.bitmap.data[idx] = v > 128 ? 255 : 0;
+            });
+        } catch (e) { console.log('Thresholding skipped'); }
+    } else {
+        // RAW: greyscale + trim only
+        image.greyscale();
+        trimBackground(image, detectBgThreshold(image), 0.02, 'RAW');
+    }
+
+    // Fit into square canvas (preserves full coin, no clipping)
+    image.resize({ w: scaledSize, h: scaledSize, fit: 'contain' });
+    const canvas = new Jimp({ width: scaledSize, height: scaledSize, color: 0xFFFFFFFF });
+    canvas.composite(image, Math.floor((scaledSize - image.width) / 2), Math.floor((scaledSize - image.height) / 2));
+    if (method === 'RAW') whitenBackground(canvas);
+
+    await completeSketch(sketchId, canvas);
+    console.log(`✅ ${method} Sketch completed: ${sketchId}`);
+}
+
+/** Background worker: download a finished Replicate prediction, trim, and store. */
+async function finalizeAiSketch(sketchId, aiUrl, width, height) {
+    const aiResponse = await axios.get(aiUrl, { responseType: 'arraybuffer', timeout: DOWNLOAD_TIMEOUT_MS });
+    const aiImage = await Jimp.read(Buffer.from(aiResponse.data, 'binary'));
+    console.log(`📐 AI output dimensions: ${aiImage.width}x${aiImage.height}`);
+
+    // Trim whitespace border from AI output, force any residual
+    // off-white artifacts to pure white, then resize to target.
+    trimBackground(aiImage, detectBgThreshold(aiImage), 0.02, 'AI-output');
+    whitenBackground(aiImage);
+    aiImage.resize({ w: width, h: height });
+
+    await completeSketch(sketchId, aiImage);
+    console.log(`✅ AI Sketch completed: ${sketchId}`);
 }
 
 router.post('/', async (req, res) => {
@@ -205,6 +290,7 @@ router.post('/', async (req, res) => {
                 // Try direct fetch first (works locally / most servers)
                 const directResp = await axios.get(imageUrl, {
                     responseType: 'arraybuffer',
+                    timeout: FETCH_TIMEOUT_MS,
                     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
                 });
                 const ct = directResp.headers['content-type'] || 'image/jpeg';
@@ -213,7 +299,7 @@ router.post('/', async (req, res) => {
             } catch (directErr) {
                 console.log(`⚠️ Direct fetch failed (${directErr.response?.status || directErr.message}), trying relay...`);
                 const relayUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
-                const relayResp = await axios.get(relayUrl, { responseType: 'arraybuffer' });
+                const relayResp = await axios.get(relayUrl, { responseType: 'arraybuffer', timeout: FETCH_TIMEOUT_MS });
                 const ct = relayResp.headers['content-type'] || 'image/jpeg';
                 resolvedImageData = `data:${ct};base64,${Buffer.from(relayResp.data).toString('base64')}`;
                 console.log(`✅ Relay fetch succeeded (${Math.round(resolvedImageData.length / 1024)}KB)`);
@@ -249,15 +335,16 @@ router.post('/', async (req, res) => {
         if (side !== 'PASTED') {
             const existingSketch = await Sketch.findOne({ sourceHash, method, side });
             if (existingSketch) {
-                if (existingSketch.status === 'pending' && existingSketch.predictionId) {
+                const ageMs = Date.now() - new Date(existingSketch.createdAt).getTime();
+                if (existingSketch.status === 'pending' && existingSketch.predictionId && ageMs < STALE_PENDING_MS) {
                     // Re-use an in-flight Replicate prediction instead of creating a duplicate
                     console.log(`♻️ Returning in-progress ${method} sketch (hash: ${sourceHash.substring(0,8)}...) - ${side}`);
                     return res.json({ sketchId: existingSketch._id, status: 'pending' });
                 }
-                if (existingSketch.status === 'failed') {
-                    // Discard the failed attempt and re-generate below
+                if (existingSketch.status !== 'completed') {
+                    // Discard failed/stale attempts (including stuck pending SCRIPT/RAW jobs) and re-generate below
                     await Sketch.findByIdAndDelete(existingSketch._id);
-                    console.log(`🧹 Discarded failed ${method} sketch (hash: ${sourceHash.substring(0,8)}...)`);
+                    console.log(`🧹 Discarded ${existingSketch.status} ${method} sketch (hash: ${sourceHash.substring(0,8)}...)`);
                 } else {
                     console.log(`♻️ Returning cached ${method} sketch (hash: ${sourceHash.substring(0,8)}...) - ${side}`);
                     return res.json({ sketchId: existingSketch._id, status: 'completed' });
@@ -325,56 +412,26 @@ router.post('/', async (req, res) => {
             console.log(`🧾 Created pending AI sketch: ${pendingSketch._id} (prediction ${prediction.id})`);
             return res.json({ sketchId: pendingSketch._id, status: 'pending' });
 
-        } else if (method === 'SCRIPT') {
-            console.log(`💻 Processing Script Sketch for #${numistaNumber}...`);
+        } else if (method === 'SCRIPT' || method === 'RAW') {
+            console.log(`💻 Queueing ${method} sketch for #${numistaNumber}...`);
 
-            const image = await dataUriToJimp(resolvedImageData);
-
-            // Trim background on greyscale version before aggressive filters
-            image.greyscale();
-            trimBackground(image, detectBgThreshold(image), 0.02, 'SCRIPT');
-
-            image.contrast(0.95);
-            try { image.blur(1); } catch (e) { console.log('Blur skipped'); }
-            try {
-                image.convolute([[-1,-1,-1],[-1,9,-1],[-1,-1,-1]]);
-            } catch (e) { console.log('Sharpening skipped'); }
-            try {
-                image.scan(0, 0, image.bitmap.width, image.bitmap.height, function (x, y, idx) {
-                    const v = this.bitmap.data[idx];
-                    this.bitmap.data[idx] = v > 128 ? 255 : 0;
-                });
-            } catch (e) { console.log('Thresholding skipped'); }
-
-            // Fit into square canvas (preserves full coin, no clipping)
-            image.resize({ w: scaledSize, h: scaledSize, fit: 'contain' });
-            const scriptCanvas = new Jimp({ width: scaledSize, height: scaledSize, color: 0xFFFFFFFF });
-            scriptCanvas.composite(image, Math.floor((scaledSize - image.width) / 2), Math.floor((scaledSize - image.height) / 2));
-
-            return saveSketch(res, {
-                imageData: await jimpToDataUri(scriptCanvas),
-                method: 'SCRIPT', side, sourceHash, numistaNumber, year, scaledSize,
+            // Non-blocking: create a pending Sketch doc and process it in the
+            // background, same pattern as the AI path. The frontend polls
+            // /status/:id; the worker flips the doc to completed/failed.
+            const pendingDescription = `${side} - ${numistaNumber ? 'N#' + numistaNumber : 'Manual'}${year ? ' (' + year + ')' : ''}`;
+            const pendingSketch = await Sketch.create({
+                sourceHash, numistaNumber, year, description: pendingDescription, side,
+                imageData: '', method, width: scaledSize, height: scaledSize, status: 'pending',
             });
-
-        } else if (method === 'RAW') {
-            console.log(`📷 Processing RAW (grayscale + trim) for #${numistaNumber}...`);
-
-            const image = await dataUriToJimp(resolvedImageData);
-
-            // Trim background using adaptive corner-sampled threshold.
-            image.greyscale();
-            trimBackground(image, detectBgThreshold(image), 0.02, 'RAW');
-
-            // Fit into square canvas (preserves full coin, no clipping)
-            image.resize({ w: scaledSize, h: scaledSize, fit: 'contain' });
-            const rawCanvas = new Jimp({ width: scaledSize, height: scaledSize, color: 0xFFFFFFFF });
-            rawCanvas.composite(image, Math.floor((scaledSize - image.width) / 2), Math.floor((scaledSize - image.height) / 2));
-            whitenBackground(rawCanvas);
-
-            return saveSketch(res, {
-                imageData: await jimpToDataUri(rawCanvas),
-                method: 'RAW', side, sourceHash, numistaNumber, year, scaledSize,
+            console.log(`🧾 Created pending ${method} sketch: ${pendingSketch._id}`);
+            setImmediate(() => {
+                processSketch(pendingSketch._id, { method, scaledSize, sourceData: resolvedImageData })
+                    .catch(err => {
+                        console.error(`❌ ${method} sketch failed (${pendingSketch._id}):`, err.stack);
+                        return failSketch(pendingSketch._id, err.message);
+                    });
             });
+            return res.json({ sketchId: pendingSketch._id, status: 'pending' });
         }
 
     } catch (error) {
@@ -385,8 +442,9 @@ router.post('/', async (req, res) => {
 
 /**
  * @route   GET /api/generate-sketch/status/:id
- * Polls an in-progress AI sketch. When Replicate reports the prediction
- * succeeded, downloads + Jimp-trims the result and stores the final image.
+ * Polls an in-progress sketch (AI prediction or background SCRIPT/RAW job).
+ * When Replicate reports success, the doc is claimed ('processing') and the
+ * download + Jimp trim runs in the background — the poll returns immediately.
  * Returns { status: 'pending' | 'completed' | 'failed', sketchId }.
  */
 router.get('/status/:id', async (req, res) => {
@@ -400,8 +458,17 @@ router.get('/status/:id', async (req, res) => {
         if (sketch.status === 'failed') {
             return res.json({ sketchId: sketch._id, status: 'failed', error: sketch.errorMessage });
         }
+        if (sketch.status === 'processing') {
+            // A worker is finalizing. If it died (dyno restart), reset so a
+            // later poll re-triggers finalization from the stored predictionId.
+            if (sketch.predictionId && Date.now() - new Date(sketch.updatedAt).getTime() > STALE_PENDING_MS) {
+                await Sketch.findOneAndUpdate({ _id: sketch._id }, { $set: { status: 'pending' } });
+            }
+            return res.json({ sketchId: sketch._id, status: 'pending' });
+        }
         if (!sketch.predictionId) {
-            return res.status(400).json({ error: "Pending sketch has no predictionId to poll" });
+            // Background SCRIPT/RAW job — the worker updates the doc directly.
+            return res.json({ sketchId: sketch._id, status: 'pending' });
         }
 
         // Ask Replicate for the latest prediction state
@@ -413,35 +480,32 @@ router.get('/status/:id', async (req, res) => {
             const rawOutput = prediction.output;
             const aiUrl = Array.isArray(rawOutput) ? rawOutput[0] : rawOutput;
             if (!aiUrl) {
-                sketch.status = 'failed';
-                sketch.errorMessage = 'Replicate returned no output URL';
-                await sketch.save();
-                return res.json({ sketchId: sketch._id, status: 'failed', error: sketch.errorMessage });
+                await failSketch(sketch._id, 'Replicate returned no output URL');
+                return res.json({ sketchId: sketch._id, status: 'failed', error: 'Replicate returned no output URL' });
             }
-            console.log(`📥 AI sketch ${sketch._id} succeeded, downloading: ${aiUrl}`);
 
-            const aiResponse = await axios.get(aiUrl, { responseType: 'arraybuffer' });
-            const aiImage = await Jimp.read(Buffer.from(aiResponse.data, 'binary'));
-            console.log(`📐 AI output dimensions: ${aiImage.width}x${aiImage.height}`);
+            // Claim the doc atomically so concurrent polls can't double-finalize
+            const claimed = await Sketch.findOneAndUpdate(
+                { _id: sketch._id, status: 'pending' },
+                { $set: { status: 'processing' } },
+                { new: true }
+            );
+            if (!claimed) return res.json({ sketchId: sketch._id, status: 'pending' });
 
-            // Trim whitespace border from AI output, force any residual
-            // off-white artifacts to pure white, then resize to target.
-            trimBackground(aiImage, detectBgThreshold(aiImage), 0.02, 'AI-output');
-            whitenBackground(aiImage);
-            aiImage.resize({ w: sketch.width, h: sketch.height });
-
-            sketch.imageData = await jimpToDataUri(aiImage);
-            sketch.status = 'completed';
-            sketch.errorMessage = '';
-            await sketch.save();
-            console.log(`✅ AI Sketch completed: ${sketch._id}`);
-            return res.json({ sketchId: sketch._id, status: 'completed' });
+            console.log(`📥 AI sketch ${sketch._id} succeeded, finalizing in background: ${aiUrl}`);
+            setImmediate(() => {
+                finalizeAiSketch(sketch._id, aiUrl, sketch.width, sketch.height)
+                    .catch(err => {
+                        console.error(`❌ AI finalize error (${sketch._id}):`, err.stack);
+                        return failSketch(sketch._id, err.message);
+                    });
+            });
+            return res.json({ sketchId: sketch._id, status: 'pending' });
         } else if (prediction.status === 'failed' || prediction.status === 'canceled') {
-            sketch.status = 'failed';
-            sketch.errorMessage = prediction.error || `Replicate prediction ${prediction.status}`;
-            await sketch.save();
-            console.log(`❌ AI Sketch failed: ${sketch._id} - ${sketch.errorMessage}`);
-            return res.json({ sketchId: sketch._id, status: 'failed', error: sketch.errorMessage });
+            const errorMessage = prediction.error || `Replicate prediction ${prediction.status}`;
+            await failSketch(sketch._id, errorMessage);
+            console.log(`❌ AI Sketch failed: ${sketch._id} - ${errorMessage}`);
+            return res.json({ sketchId: sketch._id, status: 'failed', error: errorMessage });
         } else {
             // 'starting' | 'processing' — still in progress
             return res.json({ sketchId: sketch._id, status: 'pending' });
@@ -452,10 +516,49 @@ router.get('/status/:id', async (req, res) => {
     }
 });
 
+/**
+ * @route   GET /api/generate-sketch/thumbnail/:id
+ * Small JPEG thumbnail for gallery grids, served as binary with immutable
+ * caching. For sketches saved before thumbnails existed, it is generated
+ * lazily from the stored full image and cached in the doc.
+ */
+router.get('/thumbnail/:id', async (req, res) => {
+    try {
+        const sketch = await Sketch.findById(req.params.id).select('imageData thumbnailData');
+        if (!sketch) return res.status(404).end();
+
+        let thumb = sketch.thumbnailData || '';
+        if (!thumb) {
+            if (!sketch.imageData) return res.status(404).end();
+            const image = await dataUriToJimp(sketch.imageData);
+            thumb = await makeThumbnailDataUri(image);
+            await Sketch.findOneAndUpdate(
+                { _id: sketch._id, thumbnailData: { $in: ['', null] } },
+                { $set: { thumbnailData: thumb } }
+            );
+        }
+
+        const m = /^data:image\/[a-z0-9.+-]+;base64,(.+)$/is.exec(thumb);
+        if (!m) return res.status(404).end();
+        res.set('Content-Type', 'image/jpeg');
+        res.set('Cache-Control', 'private, max-age=31536000, immutable');
+        res.send(Buffer.from(m[1], 'base64'));
+    } catch (error) {
+        console.error('Thumbnail error:', error.message);
+        res.status(500).end();
+    }
+});
+
 router.get('/:id', async (req, res) => {
     try {
         const sketch = await Sketch.findById(req.params.id);
         if (!sketch) return res.status(404).json({ error: "Sketch not found" });
+
+        // Completed sketches are immutable (regeneration creates a new _id),
+        // so browsers can cache them for a year. Pending docs are not cached.
+        if (sketch.status === 'completed') {
+            res.set('Cache-Control', 'private, max-age=31536000, immutable');
+        }
         
         // Ensure imageData is properly formatted as a string
         if (sketch.imageData && typeof sketch.imageData !== 'string') {

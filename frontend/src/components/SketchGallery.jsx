@@ -53,14 +53,15 @@ export const SketchGallery = ({ currentSketchId, onSelect, numistaNumber }) => {
                                 border: isSelected ? '3px solid var(--mantine-color-blue-6)' : '2px solid transparent',
                                 borderRadius: '6px',
                                 padding: '2px',
-                                background: isSelected ? '#e7f1ff' : (isMatch ? '#f0faf0' : '#f8f9fa'),
+                                background: isSelected ? '#e7f1ff' : (isMatch ? '#f0faf0' : '#ffffff'),
                                 textAlign: 'center',
                                 transition: 'border-color 0.15s'
                             }}
                         >
                             <img
-                                src={sketch.imageData}
+                                src={`${BASE_URL}/generate-sketch/thumbnail/${sketch._id}`}
                                 alt={sketch.description}
+                                loading="lazy"
                                 style={{
                                     width: '100%',
                                     aspectRatio: '1',

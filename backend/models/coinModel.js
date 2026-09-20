@@ -101,6 +101,14 @@ const CoinSchema = new Schema({
         type: String,
         default: "",
     },
+    obvImageVersion: {
+        type: String,
+        default: "",
+    },
+    revImageVersion: {
+        type: String,
+        default: "",
+    },
     isManual: {
         type: Boolean,
         default: false,

@@ -265,8 +265,9 @@ const handleDiameterChange = (e) => {
             console.log("Backend Response:", res.data);
 
             if (res.data.status === 'pending') {
-                // AI path — backend created a Replicate prediction and returned
-                // immediately. Poll /status/:id until it completes or fails.
+                // Backend created a job (Replicate prediction for AI, background
+                // worker for SCRIPT/RAW) and returned immediately. Poll
+                // /status/:id until it completes or fails.
                 // Each poll is a quick round-trip; total budget stays inside
                 // `sketchTimeout` (120s premium / 60s standard). This avoids
                 // Heroku's 30s H12 router timeout that kills one-shot blocking
@@ -281,14 +282,14 @@ const handleDiameterChange = (e) => {
                     const s = pollRes.data.status;
                     console.log(`Poll status for ${pendingId}: ${s}`);
                     if (s === 'completed') { setSketchId(pendingId); return; }
-                    if (s === 'failed') { alert("AI generation failed: " + (pollRes.data.error || 'unknown error')); return; }
+                    if (s === 'failed') { alert("Generation failed: " + (pollRes.data.error || 'unknown')); return; }
                     // 'pending' → keep polling
                 }
-                alert("AI generation timed out — Replicate did not finish in time. Please try again.");
+                alert("Generation timed out — the backend did not finish in time. Please try again.");
                 return;
             }
 
-            // Sync path (SCRIPT / RAW / cached completed AI)
+            // Cached completed sketch returned synchronously
             setSketchId(res.data.sketchId);
         } catch (err) {
             console.error("Failed to generate visual:", err);
@@ -321,18 +322,41 @@ const handleDiameterChange = (e) => {
 
     const isCreatingCoin = useRef(false);
 
+    // Snapshot of the last successfully saved payload. Auto-saves diff against
+    // it so unchanged fields — especially the heavy base64 photos — are never
+    // re-sent on every keystroke-level save.
+    const lastSavedRef = useRef(null);
+
+    const buildPayload = useCallback(() => ({
+        numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
+        details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
+        visualTarget, visualMethod, sketchId, isManual: isManualMode,
+        detailsWidth,
+        legendObv, legendRev,
+        isCollectionItem, collectionObvImage, collectionRevImage
+    }), [numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, detailsWidth, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
+
+    const diffAgainstSnapshot = (payload) => {
+        const snapshot = lastSavedRef.current;
+        const changed = {};
+        for (const key of Object.keys(payload)) {
+            const curr = payload[key];
+            const prev = snapshot ? snapshot[key] : undefined;
+            const isEqual = Array.isArray(curr) || Array.isArray(prev)
+                ? JSON.stringify(curr) === JSON.stringify(prev)
+                : curr === prev;
+            if (!isEqual) changed[key] = curr;
+        }
+        return changed;
+    };
+
     const createCoin = useCallback(() => {
         if (isCreatingCoin.current) return;
         isCreatingCoin.current = true;
-        axios.post(`${BASE_URL}/coin/new`, {
-            numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
-            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId, isManual: isManualMode,
-            detailsWidth,
-            legendObv, legendRev,
-            isCollectionItem, collectionObvImage, collectionRevImage
-        })
+        const payload = buildPayload();
+        axios.post(`${BASE_URL}/coin/new`, payload)
         .then((res) => {
+            lastSavedRef.current = payload;
             setCoinId(res.data._id);
             setInitialLoadComplete(true);
         })
@@ -340,28 +364,24 @@ const handleDiameterChange = (e) => {
             console.error("Error creating coin:", err);
             isCreatingCoin.current = false;
         });
-    }, [numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, detailsWidth, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
+    }, [buildPayload]);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
+        const changed = diffAgainstSnapshot(buildPayload());
+        if (!Object.keys(changed).length) { setSaveStatus("saved"); return; }
         setSaveStatus("saving");
-        axios.put(`${BASE_URL}/coin/update/${coinId}`, {
-            numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
-            details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
-            visualTarget, visualMethod, sketchId, isManual: isManualMode,
-            detailsWidth,
-            legendObv, legendRev,
-            isCollectionItem, collectionObvImage, collectionRevImage
-        })
+        axios.put(`${BASE_URL}/coin/update/${coinId}`, changed)
         .then(() => {
+            lastSavedRef.current = { ...(lastSavedRef.current || {}), ...changed };
             setSaveStatus("saved");
-            console.log("Auto-saved changes");
+            console.log("Auto-saved fields:", Object.keys(changed).join(", "));
         })
         .catch((err) => {
             setSaveStatus("error");
             console.error("Error updating coin:", err);
         });
-    }, [coinId, numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, detailsWidth, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
+    }, [coinId, buildPayload]);
 
     // --- Effects ---
 
@@ -584,6 +604,35 @@ const handleDiameterChange = (e) => {
                     setCollectionObvImage(c.collectionObvImage || "");
                     setCollectionRevImage(c.collectionRevImage || "");
                     setDetailsWidth(c.detailsWidth || 45);
+                    // Seed the save-diff snapshot with exactly what the setters
+                    // normalized to, so the first auto-save after load is a no-op.
+                    lastSavedRef.current = {
+                        numistaNumber: c.numistaNumber || "",
+                        ocreId: c.ocreId || "",
+                        year: c.year || "",
+                        issuer: c.issuer || "",
+                        denomination: c.denomination || "",
+                        grade: c.grade || "",
+                        gradeDetails: c.gradeDetails || "",
+                        details: c.details || "",
+                        reference: c.reference || "",
+                        composition: c.composition || "",
+                        physicalDetails: c.physicalDetails || "",
+                        mintage: c.mintage || "",
+                        dateAdded: c.dateAdded || dateAdded,
+                        marksPicture: c.marksPicture || null,
+                        marks: c.marks || [],
+                        visualTarget: c.visualTarget || "QR",
+                        visualMethod: c.visualMethod || "SCRIPT",
+                        sketchId: c.sketchId || "",
+                        isManual: !!c.isManual,
+                        detailsWidth: c.detailsWidth || 45,
+                        legendObv: c.legendObv || "",
+                        legendRev: c.legendRev || "",
+                        isCollectionItem: c.isCollectionItem || false,
+                        collectionObvImage: c.collectionObvImage || "",
+                        collectionRevImage: c.collectionRevImage || "",
+                    };
                     // Always update Numista details for dropdowns, but don't overwrite fields
                     if (c.numistaDetails) {
                         setNumistaDetails(c.numistaDetails);

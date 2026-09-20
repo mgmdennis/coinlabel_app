@@ -119,6 +119,7 @@ async function getNumistaDetailsJSON(numistaNumber) {
     async function makeRequest(url, retries = 0) {
         try {
             return await axios.get(url, {
+                timeout: 15000,
                 headers: { 'Numista-API-Key': apiKey, 'User-Agent': 'CoinLabelApp/1.0' }
             });
         } catch (err) {

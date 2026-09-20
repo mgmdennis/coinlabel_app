@@ -29,7 +29,11 @@ const SketchSchema = new mongoose.Schema({
     },
     imageData: { 
         type: String, 
-        default: ''  // Empty until AI generation completes
+        default: ''  // Empty until generation completes
+    },
+    thumbnailData: {
+        type: String,
+        default: ''  // Small JPEG data-URI for gallery grids; backfilled lazily
     },
     contentType: { 
         type: String, 
@@ -45,7 +49,7 @@ const SketchSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'completed', 'failed'],
+        enum: ['pending', 'processing', 'completed', 'failed'],
         default: 'completed',
         index: true
     },
@@ -70,15 +74,16 @@ const SketchSchema = new mongoose.Schema({
 // --- THE FIFO GUARD ---
 // Before saving a new sketch, check if we have too many. 
 // If we have 60 or more, delete the oldest UNREFERENCED one.
-// Pending AI sketches are never counted or pruned (their image isn't ready yet).
+// Pending/processing sketches are never counted or pruned (their image isn't ready yet).
 SketchSchema.pre('save', async function(next) {
     const Sketch = this.constructor;
     const Coin = mongoose.model('Coin');
-    const count = await Sketch.countDocuments({ status: { $ne: 'pending' } });
+    const active = { status: { $nin: ['pending', 'processing'] } };
+    const count = await Sketch.countDocuments(active);
     
     if (count >= 60) {
-        // Find the oldest non-pending sketches and delete the first one not referenced by any coin
-        const oldestSketches = await Sketch.find({ status: { $ne: 'pending' } }).sort({ createdAt: 1 }).limit(10);
+        // Find the oldest non-active sketches and delete the first one not referenced by any coin
+        const oldestSketches = await Sketch.find(active).sort({ createdAt: 1 }).limit(10);
         for (const sketch of oldestSketches) {
             const refCount = await Coin.countDocuments({ sketchId: sketch._id.toString() });
             if (refCount === 0) {

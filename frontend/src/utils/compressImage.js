@@ -2,8 +2,9 @@ const MAX_DIMENSION = 1024;
 const JPEG_QUALITY = 0.75;
 
 /**
- * Compress an image data URL. Preserves transparency as PNG;
- * opaque images are compressed to JPEG at JPEG_QUALITY.
+ * Compress an image data URL to JPEG. Any transparency is flattened onto a
+ * white background first — coin photos never need alpha, and opaque JPEGs
+ * are several times smaller than cut-out PNGs.
  */
 export function compressImage(dataUrl) {
     return new Promise((resolve) => {
@@ -23,18 +24,10 @@ export function compressImage(dataUrl) {
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
             ctx.drawImage(img, 0, 0, width, height);
-
-            const imageData = ctx.getImageData(0, 0, width, height).data;
-            let hasTransparency = false;
-            for (let i = 3; i < imageData.length; i += 4) {
-                if (imageData[i] < 255) { hasTransparency = true; break; }
-            }
-
-            resolve(hasTransparency
-                ? canvas.toDataURL('image/png')
-                : canvas.toDataURL('image/jpeg', JPEG_QUALITY)
-            );
+            resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
         };
         img.src = dataUrl;
     });

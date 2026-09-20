@@ -78,7 +78,7 @@ export const PasteImageInput = ({
                         gap: '6px',
                         padding: '0.75rem',
                         textAlign: 'center',
-                        background: 'var(--mantine-color-gray-0)',
+                        background: value ? 'var(--mantine-color-white)' : 'var(--mantine-color-gray-0)',
                         border: '1px solid var(--mantine-color-gray-3)',
                         borderRadius: roundSection ? '50%' : 'var(--mantine-radius-md)',
                         ...(value ? { overflow: 'hidden' } : {}),

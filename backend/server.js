@@ -33,9 +33,10 @@ const app = express();
 app.set('trust proxy', 1);
 
 // --- 1. THE "BIG BITES" FIX ---
-// Increase the limit to 50mb so large Base64 strings can pass through
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// 15mb covers every upload path (the frontend compresses images to ≤1024px
+// JPEG/PNG client-side before sending). 50mb only invited R14 memory spikes.
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
 // --- 2. THE CORS "HALL PASS" ---
 app.use(cors({
