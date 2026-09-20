@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { findConcordance } = require('./wildwindsConcordance');
 
 /**
  * Parse a Nomisma URI to a human-readable label.
@@ -192,8 +193,22 @@ async function getOcreDetailsJSON(ocreId) {
             source: 'OCRE',
         };
 
-        console.log('OCRE features extracted:', features.title);
-        return features;
+            console.log('OCRE features extracted:', features.title);
+
+            // Enrich with RSC/BMC cross-references from the local WildWinds
+            // concordance (swept into the `concordances` collection). Label
+            // convention: RSC line, BMC line, then the RIC citation. Cohen
+            // numbers render as RSC (same corpus/numbering, matches existing
+            // labels). Missing concordance leaves the reference unchanged.
+            const concordance = await findConcordance(id, features.issuer || features.authority);
+            if (concordance) {
+                const lines = [];
+                if (concordance.rsc.length) lines.push(`RSC ${concordance.rsc[0]}`);
+                if (concordance.bmc.length) lines.push(`BMC ${concordance.bmc[0]}`);
+                if (lines.length) features.reference = [...lines, reference].join('\n');
+            }
+
+            return features;
 
     } catch (err) {
         if (err.response) {
