@@ -24,15 +24,13 @@ const stripImages = (doc) => {
 };
 
 const getCoins = async (req, res) => {
-  const coins = await Coin.find({ userId: req.session.userId }).lean();
-  // Strip base64 collection photos by default to keep the response small.
-  // Frontend passes ?includeCollectionImages=1 for the My Collection view.
-  if (req.query.includeCollectionImages !== '1') {
-    for (const c of coins) {
-      delete c.collectionObvImage;
-      delete c.collectionRevImage;
-    }
-  }
+  // List view: never transfer the base64 collection photos over the wire —
+  // pulling every stored photo (~2MB per side) into the dyno on every list
+  // load blew Heroku's 30s router limit (H12). Photos are served per-coin
+  // (and cacheably) from /coin/:id/image/:side; detail pages use /coin/:id.
+  const coins = await Coin.find({ userId: req.session.userId })
+    .select("-collectionObvImage -collectionRevImage")
+    .lean();
   res.json(coins);
 };
 
@@ -123,14 +121,24 @@ exports.bulkSetCached = bulkSetCached;
 exports.getNumistaDetails = getNumistaDetails;
 
 const getCollectionItems = async (req, res) => {
-  const coins = await Coin.find({ userId: req.session.userId, isCollectionItem: true }).lean();
-  // Serve image presence as booleans — the photos themselves come from
-  // /coin/:id/image/:side so the browser can cache them individually.
-  const stripped = coins.map(c => {
-    const { collectionObvImage, collectionRevImage, ...rest } = c;
-    return { ...rest, hasObvImage: !!collectionObvImage, hasRevImage: !!collectionRevImage };
-  });
-  res.json(stripped);
+  // Compute photo presence server-side and exclude the base64 payloads from
+  // the response — same H12 protection as getCoins. $strLenCP evaluates
+  // inside MongoDB, so the multi-megabyte strings never reach the dyno.
+  // (Raw aggregation needs an explicit ObjectId cast — no mongoose coercion.)
+  const userId = mongoose.isValidObjectId(req.session.userId)
+    ? new mongoose.Types.ObjectId(req.session.userId)
+    : req.session.userId;
+  const coins = await Coin.aggregate([
+    { $match: { userId, isCollectionItem: true } },
+    {
+      $addFields: {
+        hasObvImage: { $gt: [{ $strLenCP: { $ifNull: ["$collectionObvImage", ""] } }, 0] },
+        hasRevImage: { $gt: [{ $strLenCP: { $ifNull: ["$collectionRevImage", ""] } }, 0] },
+      },
+    },
+    { $project: { collectionObvImage: 0, collectionRevImage: 0 } },
+  ]);
+  res.json(coins);
 };
 
 exports.getCollectionItems = getCollectionItems;
