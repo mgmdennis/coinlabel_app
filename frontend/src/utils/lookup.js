@@ -11,8 +11,16 @@ export const extractLookupValue = (raw) => {
   if (val.includes('numismatics.org/ocre/id/')) {
     val = val.split('numismatics.org/ocre/id/').pop().split(/[?#]/)[0];
     val = val.replace(/[/\s]+$/, '').replace(/\.(html|jsonld)$/i, '');
-  } else if (val.includes('en.numista.com/catalogue/pieces')) {
+  } else if (val.includes('numista.com/catalogue/pieces')) {
+    // Long form: https://en.numista.com/catalogue/pieces247381.html
     val = val.split('pieces').pop().replace(/[^0-9]/g, '');
+  } else {
+    // Short permalink: https://en.numista.com/2323 — a bare number after the
+    // numista.com root (optional scheme/subdomain, optional trailing path or
+    // query). These never matched the long-form pattern, which is why pasted
+    // short links used to sit in the field as full URLs.
+    const short = /^(?:https?:\/\/)?(?:[a-z]{2}\.)?numista\.com\/(\d+)(?:[\/?#].*)?$/i.exec(val);
+    if (short) val = short[1];
   }
   return val;
 };

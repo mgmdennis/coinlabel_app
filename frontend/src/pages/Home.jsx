@@ -18,7 +18,7 @@ import {
 } from '@mantine/core';
 import {
   Search, PenLine, Pencil, Copy, ChevronDown, ChevronUp, ChevronsUpDown,
-  Archive, ArchiveRestore, Printer, Trash2, X, ScrollText, Sparkles, Check,
+  Archive, ArchiveRestore, Printer, Trash2, X, Check, Coins,
 } from 'lucide-react';
 
 import { BASE_URL } from '../config';
@@ -289,19 +289,16 @@ const visibleCoins = q && viewCoins
         <Group align="center" gap="md" wrap="wrap">
           <form onSubmit={handleFormSubmit} style={{ flex: '1 1 auto', minWidth: 0 }}>
             <Group gap={0} wrap="nowrap" align="stretch">
-              {/* Generic icon on the left (auto-detect affordance); the
-                  confirmation lives in the input's rightSection — a green
-                  badge appears once the input unambiguously identifies a
-                  catalogue, so the user sees the system detected it correctly. */}
+              {/* Neutral coin icon on the left; the confirmation lives in the
+                  input's rightSection — a self-contained green pill that
+                  appears once the input unambiguously identifies a catalogue. */}
               <TextInput
                 value={lookupValue}
-                leftSection={<Sparkles size={14} />}
+                leftSection={<Coins size={15} />}
                 rightSection={detectedKind ? (
-                  <Group gap={3} wrap="nowrap">
-                    {detectedKind === 'ocre' && <ScrollText size={13} />}
-                    <Text size="xs" fw={700} c="green.7">{detectedKind === 'ocre' ? 'OCRE' : 'N#'}</Text>
-                    <Check size={12} color="var(--mantine-color-green-7)" />
-                  </Group>
+                  <Badge size="xs" variant="light" color="green" mr={6} style={{ pointerEvents: 'none' }} leftSection={<Check size={10} />}>
+                    {detectedKind === 'ocre' ? 'OCRE' : 'N#'}
+                  </Badge>
                 ) : undefined}
                 onChange={(e) => {
                     // Belt-and-suspenders with onPaste: if a URL reaches the
