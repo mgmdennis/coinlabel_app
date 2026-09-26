@@ -295,6 +295,9 @@ const visibleCoins = q && viewCoins
               <TextInput
                 value={lookupValue}
                 leftSection={<Coins size={15} />}
+                // Reserve real width for the pill — the default right-section
+                // width (~28px) clips it down to just the checkmark.
+                rightSectionWidth={detectedKind ? 88 : undefined}
                 rightSection={detectedKind ? (
                   <Badge size="xs" variant="light" color="green" mr={6} style={{ pointerEvents: 'none' }} leftSection={<Check size={10} />}>
                     {detectedKind === 'ocre' ? 'OCRE' : 'N#'}
