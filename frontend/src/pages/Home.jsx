@@ -289,51 +289,20 @@ const visibleCoins = q && viewCoins
         <Group align="center" gap="md" wrap="wrap">
           <form onSubmit={handleFormSubmit} style={{ flex: '1 1 auto', minWidth: 0 }}>
             <Group gap={0} wrap="nowrap" align="stretch">
-              {/* Prefix indicator: generic until the input unambiguously
-                  identifies a catalogue, then flips to a green "confirmed"
-                  state so the user can see the system detected it correctly. */}
-              <Box
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '0 10px',
-                  background: detectedKind
-                    ? 'var(--mantine-color-green-1)'
-                    : 'var(--mantine-color-blue-1)',
-                  borderTopLeftRadius: 'var(--mantine-radius-default)',
-                  borderBottomLeftRadius: 'var(--mantine-radius-default)',
-                  border: `1px solid ${detectedKind
-                    ? 'var(--mantine-color-green-3)'
-                    : 'var(--mantine-color-blue-3)'}`,
-                  borderRight: 'none',
-                  flexShrink: 0,
-                  transition: 'background 120ms ease, border-color 120ms ease',
-                }}
-                title={detectedKind
-                  ? `Detected: ${detectedKind === 'ocre' ? 'OCRE type id' : 'Numista number'}`
-                  : 'Auto-detects Numista numbers and RIC ids — no need to pick a source'}
-              >
-                {detectedKind === 'numista' ? (
-                  <Group gap={4} wrap="nowrap">
-                    <Text size="sm" fw={700} c="green.8">N#</Text>
-                    <Check size={12} color="var(--mantine-color-green-7)" />
-                  </Group>
-                ) : detectedKind === 'ocre' ? (
-                  <Group gap={4} wrap="nowrap">
-                    <ScrollText size={14} />
-                    <Text size="sm" fw={700} c="green.8">OCRE</Text>
-                    <Check size={12} color="var(--mantine-color-green-7)" />
-                  </Group>
-                ) : (
-                  <Group gap={4} wrap="nowrap">
-                    <Sparkles size={13} />
-                    <Text size="sm" fw={700} c="blue.8">Auto</Text>
-                  </Group>
-                )}
-              </Box>
+              {/* Generic icon on the left (auto-detect affordance); the
+                  confirmation lives in the input's rightSection — a green
+                  badge appears once the input unambiguously identifies a
+                  catalogue, so the user sees the system detected it correctly. */}
               <TextInput
                 value={lookupValue}
+                leftSection={<Sparkles size={14} />}
+                rightSection={detectedKind ? (
+                  <Group gap={3} wrap="nowrap">
+                    {detectedKind === 'ocre' && <ScrollText size={13} />}
+                    <Text size="xs" fw={700} c="green.7">{detectedKind === 'ocre' ? 'OCRE' : 'N#'}</Text>
+                    <Check size={12} color="var(--mantine-color-green-7)" />
+                  </Group>
+                ) : undefined}
                 onChange={(e) => {
                     // Belt-and-suspenders with onPaste: if a URL reaches the
                     // field by any other path (autofill, drag-drop), strip it
@@ -356,7 +325,7 @@ const visibleCoins = q && viewCoins
                 }}
                 placeholder="Numista number or RIC id (e.g. 247381 or ric.4.ss.118)…"
                 style={{ flex: 1, minWidth: 0 }}
-                styles={{ input: { borderRadius: 0 } }}
+                styles={{ input: { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
               />
               <Button type="submit" px="md" style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
                 Go
