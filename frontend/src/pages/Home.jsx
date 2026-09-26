@@ -18,10 +18,11 @@ import {
 } from '@mantine/core';
 import {
   Search, PenLine, Pencil, Copy, ChevronDown, ChevronUp, ChevronsUpDown,
-  Archive, ArchiveRestore, Printer, Trash2, X, ScrollText,
+  Archive, ArchiveRestore, Printer, Trash2, X, ScrollText, Sparkles, Check,
 } from 'lucide-react';
 
 import { BASE_URL } from '../config';
+import { extractLookupValue, detectLookupKind } from '../utils/lookup';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
 
 // Collection photos are served as separately-cacheable binaries. The cache-bust
@@ -35,8 +36,8 @@ const coinImageUrl = (coin, side) => {
 const Home = () => {
   const [coins, setCoins] = useState(null);
   const [collectionItems, setCollectionItems] = useState(null);
-  const [lookupMode, setLookupMode] = useState('numista'); // 'numista' | 'ocre'
   const [lookupValue, setLookupValue] = useState("");
+  const [lookupError, setLookupError] = useState(null);
   const location = useLocation();
   const [view, setView] = useState(location?.state?.view || 'labels');
 
@@ -234,18 +235,26 @@ const visibleCoins = q && viewCoins
 
   const handleFormSubmit = (e) => {
     if (e) e.preventDefault();
-    let val = lookupValue.trim();
+    // Pastes were already stripped to the bare id by onPaste; running the
+    // extractor again also covers typed/pasted URLs that landed via other means.
+    const val = extractLookupValue(lookupValue);
     if (!val) return;
-    // Strip URLs: extract the OCRE/Numista ID from a pasted URL
-    if (val.includes('numismatics.org/ocre/id/')) {
-      val = val.split('numismatics.org/ocre/id/').pop().split(/[?#]/)[0];
-    } else if (val.includes('en.numista.com/catalogue/pieces')) {
-      val = val.split('pieces').pop().replace(/[^0-9]/g, '');
-    }
-    if (lookupMode === 'numista') {
-      navigate('/create/' + val.replace(/\D+/g, ''));
-    } else {
+    setLookupError(null);
+    // The bar figures out the catalogue itself: OCRE ids start with "ric.",
+    // Numista numbers are pure digits — the two never overlap.
+    const kind = detectLookupKind(val);
+    if (kind === 'ocre') {
       navigate('/create', { state: { ocreId: val, manualMode: true } });
+    } else if (kind === 'numista') {
+      navigate('/create/' + val);
+    } else {
+      // Lenient fallback for "N# 123"-style input — pull the digits.
+      const digits = val.replace(/\D+/g, '');
+      if (digits) {
+        navigate('/create/' + digits);
+      } else {
+        setLookupError('Enter a Numista number, a RIC id (e.g. ric.4.ss.118), or paste a catalogue link.');
+      }
     }
   };
 
@@ -253,6 +262,10 @@ const visibleCoins = q && viewCoins
   const hasVisible = visibleCoins && visibleCoins.length > 0;
   const allSelected = hasVisible && selectedIds.length === visibleCoins.length;
   const someSelected = selectedIds.length > 0 && !allSelected;
+
+  // Live detection for the lookup bar's prefix indicator: null (generic) until
+  // the input unambiguously identifies a catalogue, then a green confirmed state.
+  const detectedKind = lookupValue.trim() ? detectLookupKind(extractLookupValue(lookupValue)) : null;
 
   const selectAllLabel = allSelected
     ? 'All selected'
@@ -276,49 +289,72 @@ const visibleCoins = q && viewCoins
         <Group align="center" gap="md" wrap="wrap">
           <form onSubmit={handleFormSubmit} style={{ flex: '1 1 auto', minWidth: 0 }}>
             <Group gap={0} wrap="nowrap" align="stretch">
+              {/* Prefix indicator: generic until the input unambiguously
+                  identifies a catalogue, then flips to a green "confirmed"
+                  state so the user can see the system detected it correctly. */}
               <Box
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
                   padding: '0 10px',
-                  background: 'var(--mantine-color-blue-1)',
+                  background: detectedKind
+                    ? 'var(--mantine-color-green-1)'
+                    : 'var(--mantine-color-blue-1)',
                   borderTopLeftRadius: 'var(--mantine-radius-default)',
                   borderBottomLeftRadius: 'var(--mantine-radius-default)',
-                  border: '1px solid var(--mantine-color-blue-3)',
+                  border: `1px solid ${detectedKind
+                    ? 'var(--mantine-color-green-3)'
+                    : 'var(--mantine-color-blue-3)'}`,
                   borderRight: 'none',
-                  cursor: 'pointer',
                   flexShrink: 0,
+                  transition: 'background 120ms ease, border-color 120ms ease',
                 }}
-                onClick={() => setLookupMode(lookupMode === 'numista' ? 'ocre' : 'numista')}
-                title={`Switch to ${lookupMode === 'numista' ? 'OCRE' : 'Numista'} lookup`}
+                title={detectedKind
+                  ? `Detected: ${detectedKind === 'ocre' ? 'OCRE type id' : 'Numista number'}`
+                  : 'Auto-detects Numista numbers and RIC ids — no need to pick a source'}
               >
-                {lookupMode === 'numista' ? (
-                  <Text size="sm" fw={700} c="blue.8">N#</Text>
-                ) : (
+                {detectedKind === 'numista' ? (
+                  <Group gap={4} wrap="nowrap">
+                    <Text size="sm" fw={700} c="green.8">N#</Text>
+                    <Check size={12} color="var(--mantine-color-green-7)" />
+                  </Group>
+                ) : detectedKind === 'ocre' ? (
                   <Group gap={4} wrap="nowrap">
                     <ScrollText size={14} />
-                    <Text size="sm" fw={700} c="blue.8">OCRE</Text>
+                    <Text size="sm" fw={700} c="green.8">OCRE</Text>
+                    <Check size={12} color="var(--mantine-color-green-7)" />
+                  </Group>
+                ) : (
+                  <Group gap={4} wrap="nowrap">
+                    <Sparkles size={13} />
+                    <Text size="sm" fw={700} c="blue.8">Auto</Text>
                   </Group>
                 )}
               </Box>
               <TextInput
                 value={lookupValue}
-                onChange={(e) => setLookupValue(e.target.value)}
+                onChange={(e) => {
+                    // Belt-and-suspenders with onPaste: if a URL reaches the
+                    // field by any other path (autofill, drag-drop), strip it
+                    // to the bare id immediately — the URL is never visible.
+                    const v = e.target.value;
+                    const cleaned = extractLookupValue(v);
+                    setLookupValue(cleaned !== v ? cleaned : v);
+                    if (lookupError) setLookupError(null);
+                }}
                 onPaste={(e) => {
+                    // Strip the URL so the user never even sees it — the field
+                    // fills with just the extracted id/number.
                     const pasted = e.clipboardData.getData('text');
-                    let val = pasted.trim();
-                    if (val.includes('numismatics.org/ocre/id/')) {
-                        val = val.split('numismatics.org/ocre/id/').pop().split(/[?#]/)[0];
-                    } else if (val.includes('en.numista.com/catalogue/pieces')) {
-                        val = val.split('pieces').pop().replace(/[^0-9]/g, '');
-                    }
+                    const val = extractLookupValue(pasted);
                     if (val !== pasted.trim()) {
                         e.preventDefault();
                         setLookupValue(val);
+                        setLookupError(null);
                     }
                 }}
-                placeholder={lookupMode === 'numista' ? 'Numista number...' : 'e.g. ric.2_3(2).hdn.1907'}
+                placeholder="Numista number or RIC id (e.g. 247381 or ric.4.ss.118)…"
                 style={{ flex: 1, minWidth: 0 }}
                 styles={{ input: { borderRadius: 0 } }}
               />
@@ -339,6 +375,11 @@ const visibleCoins = q && viewCoins
             Manual Entry
           </Button>
         </Group>
+        {lookupError && (
+          <Text size="sm" c="red.7" mt="xs">
+            {lookupError}
+          </Text>
+        )}
       </Paper>
 
       {/* View toggle */}

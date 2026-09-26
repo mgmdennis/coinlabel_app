@@ -8,6 +8,7 @@ import { BASE_URL } from '../config';
 
 // Utilities
 import { parseNumistaText } from "../utils/parseNumistaText";
+import { extractLookupValue } from "../utils/lookup";
 
 // Components
 import { AIConfirmModal } from "../components/AIConfirmModal";
@@ -741,7 +742,23 @@ const handleDiameterChange = (e) => {
                     inputMode="numeric"
                     placeholder="Numista Number"
                     value={numistaNumber}
-                    onChange={(e) => setNumistaNumber(e.target.value)}
+                    onChange={(e) => {
+                        const v = e.target.value;
+                        const cleaned = extractLookupValue(v);
+                        // Only rewrite when a URL got stripped to digits —
+                        // plain typing passes through untouched.
+                        setNumistaNumber(cleaned !== v && /^\d+$/.test(cleaned) ? cleaned : v);
+                    }}
+                    onPaste={(e) => {
+                        // Pasting a catalogue link fills just the number —
+                        // the URL itself never appears in the field.
+                        const pasted = e.clipboardData.getData('text');
+                        const val = extractLookupValue(pasted);
+                        if (val !== pasted.trim() && /^\d+$/.test(val)) {
+                            e.preventDefault();
+                            setNumistaNumber(val);
+                        }
+                    }}
                     style={{ flex: 1 }}
                     styles={!isManualMode && numistaNumber && numistaNumber !== paramNumistaNumber
                         ? { input: { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }
