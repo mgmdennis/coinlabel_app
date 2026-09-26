@@ -204,7 +204,10 @@ async function getOcreDetailsJSON(ocreId) {
             if (concordance) {
                 const lines = [];
                 if (concordance.rsc.length) lines.push(`RSC ${concordance.rsc[0]}`);
+                // Sear is a fallback when BMC is missing (Sear's numbering
+                // lumps RIC variants, so BMC/RSC stay preferred).
                 if (concordance.bmc.length) lines.push(`BMC ${concordance.bmc[0]}`);
+                else if (concordance.sear.length) lines.push(`Sear ${concordance.sear[0]}`);
                 if (lines.length) {
                     features.reference = [...lines, reference].join('\n');
                     // Provenance for the frontend — lets the user one-click the
@@ -212,6 +215,7 @@ async function getOcreDetailsJSON(ocreId) {
                     features.concordance = {
                         rsc: concordance.rsc[0] || null,
                         bmc: concordance.bmc[0] || null,
+                        sear: concordance.sear[0] || null,
                         sourceUrl: concordance.sourceUrl,
                     };
                 }

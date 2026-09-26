@@ -104,9 +104,9 @@ export const PreviewCard = ({
                                 rel="noreferrer"
                                 size="xs"
                                 c="gray.7"
-                                title="WildWinds entry the RSC/BMC lines came from — verify before printing"
+                                title="WildWinds entry the RSC/BMC/Sear lines came from — verify before printing"
                             >
-                                RSC/BMC via WildWinds ↗
+                                RSC/BMC/Sear via WildWinds ↗
                             </Anchor>
                         )}
                         {saveStatus === "saving" && <Text size="sm" c="yellow.7">● Saving...</Text>}

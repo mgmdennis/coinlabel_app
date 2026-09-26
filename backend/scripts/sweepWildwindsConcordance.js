@@ -59,10 +59,14 @@ const REF_PATTERNS = [
     // BMCRR (Roman Republic) still can't match: "RR" fails the number pattern.
     { key: 'rsc', re: /\b(?:RSC|Cohen)\s*([A-Za-z]?\d+(?:[A-Za-z]+)?(?:-[A-Za-z]?\d+(?:[A-Za-z]+)?)?)/g },
     { key: 'bmc', re: /\bBMC(?:RE)?\s*([A-Za-z]?\d+(?:[A-Za-z]+)?(?:-[A-Za-z]?\d+(?:[A-Za-z]+)?)?)/g },
+    // Sear is a fallback reference when BMC is missing. Edition-tagged
+    // citations ("Sear'88 #484" — 1988 edition, different numbering) don't
+    // match: the apostrophe fails \s*[#,]?\s* before the digits.
+    { key: 'sear', re: /\bSear\s*[#,]?\s*(\d+[a-z]?)/g },
 ];
 
 function extractRefs(text) {
-    const out = { rsc: [], bmc: [] };
+    const out = { rsc: [], bmc: [], sear: [] };
     for (const { key, re } of REF_PATTERNS) {
         const seen = new Set();
         re.lastIndex = 0;
@@ -103,8 +107,12 @@ function parseEmperorPage(html, emperor, sourceUrl) {
         const number = normalizeRicNumber(hm[2]);
         if (!number) return;
 
-        const refs = extractRefs(description);
-        if (refs.rsc.length === 0 && refs.bmc.length === 0) return; // nothing to offer lookups
+        // Headings often cross-list the Sear number ("RIC 1a  Sear 1642"),
+        // so extract from heading + description combined.
+        const refs = extractRefs(`${heading} ${description}`);
+        if (refs.rsc.length === 0 && refs.bmc.length === 0 && refs.sear.length === 0) {
+            return; // nothing to offer lookups
+        }
 
         rows.push({
             emperor,
@@ -113,6 +121,7 @@ function parseEmperorPage(html, emperor, sourceUrl) {
             rowIndex: rowIndex++,
             rsc: refs.rsc,
             bmc: refs.bmc,
+            sear: refs.sear,
             heading,
             sourceUrl,
             fetchedAt: new Date(),

@@ -26,12 +26,17 @@ const ConcordanceSchema = new Schema({
         default: 0,
     },
     // Cross-reference numbers as shown on WildWinds ("405", "43a", "534-40",
-    // "M766"). Empty when the entry lists none.
+    // "M766"). Empty when the entry lists none. Sear is a fallback reference
+    // used only when BMC is missing.
     rsc: {
         type: [String],
         default: [],
     },
     bmc: {
+        type: [String],
+        default: [],
+    },
+    sear: {
         type: [String],
         default: [],
     },

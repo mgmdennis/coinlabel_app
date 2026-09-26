@@ -67,7 +67,13 @@ async function findConcordance(ocreId, issuerLabel) {
         // like the aureus listing sometimes have none).
         const preferred = rows.find(r => (r.rsc && r.rsc.length) || (r.bmc && r.bmc.length));
         if (!preferred) return null;
-        return { rsc: preferred.rsc, bmc: preferred.bmc, heading: preferred.heading, sourceUrl: preferred.sourceUrl };
+        return {
+            rsc: preferred.rsc,
+            bmc: preferred.bmc,
+            sear: preferred.sear,
+            heading: preferred.heading,
+            sourceUrl: preferred.sourceUrl,
+        };
     } catch (err) {
         console.error('Concordance lookup failed (ignored):', err.message);
         return null;
