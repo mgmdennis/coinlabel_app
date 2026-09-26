@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { findConcordance } = require('./wildwindsConcordance');
+const { findConcordance, parsePrefLabel } = require('./wildwindsConcordance');
 
 /**
  * Parse a Nomisma URI to a human-readable label.
@@ -151,18 +151,31 @@ async function getOcreDetailsJSON(ocreId) {
             const materialAbbr = uriToMaterialAbbr(getUri(typeNode['nmo:hasMaterial']));
             const denomination = materialAbbr && denomLabel ? `${materialAbbr} ${denomLabel}` : denomLabel;
 
-            // The authority belongs in the notes, not the citation — strip it
-            // from the reference (e.g. "RIC II, Part 3 (second edition) Hadrian
-            // 1907" -> "RIC II, Part 3 (second edition) 1907").
-            const authority = getLabel(typeNode['nmo:hasAuthority']);
-            let reference = prefLabel;
-            if (authority) {
-                const escaped = authority.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                reference = prefLabel
-                    .replace(new RegExp(`\\s*${escaped}\\s*`, 'gi'), ' ')
-                    .replace(/\s{2,}/g, ' ')
-                    .trim();
-            }
+        // The emperor belongs in the notes, not the citation — strip it from
+        // the reference (e.g. "RIC V Saloninus 36" -> "RIC V 36", "RIC IV
+        // Philip I 53" -> "RIC IV 53"). Sources of the name to strip:
+        //   1. EVERY authority label (joint reigns list several), and
+        //   2. the prefLabel's own emperor segment (junior emperors carry
+        //      their senior co-rulers as authorities — Saloninus's are
+        //      Valerian and Gallienus — so the prefLabel is the only place
+        //      his name actually appears).
+        const authorities = typeNode['nmo:hasAuthority'] || [];
+        const authorityLabels = (Array.isArray(authorities) ? authorities : [authorities])
+            .map((a) => (a && typeof a === 'object' ? (a['@value'] || uriToLabel(a['@id'])) : a))
+            .filter(Boolean);
+        const parsedLabel = parsePrefLabel(prefLabel);
+        let reference = prefLabel;
+        for (const name of new Set([...authorityLabels, ...((parsedLabel && parsedLabel.names) || [])])) {
+            const escaped = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            reference = reference.replace(new RegExp(`\\s*${escaped}\\s*`, 'gi'), ' ');
+        }
+        // Orphaned conjunctions/punctuation left by the stripped names
+        // ("Valerian and Gallienus" -> " and "), then tidy whitespace.
+        reference = reference
+            .replace(/\s*\b(?:and|&)\b\s*/gi, ' ')
+            .replace(/\s+,/g, ',')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
             reference = abbreviateEditions(reference);
 
             const features = {
@@ -200,7 +213,7 @@ async function getOcreDetailsJSON(ocreId) {
             // convention: RSC line, BMC line, then the RIC citation. Cohen
             // numbers render as RSC (same corpus/numbering, matches existing
             // labels). Missing concordance leaves the reference unchanged.
-            const concordance = await findConcordance(id, features.issuer || features.authority);
+            const concordance = await findConcordance(id, prefLabel);
             if (concordance) {
                 const lines = [];
                 if (concordance.rsc.length) lines.push(`RSC ${concordance.rsc[0]}`);
