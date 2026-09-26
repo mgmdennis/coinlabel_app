@@ -12,7 +12,8 @@ const EMPEROR_MAP = {
     m_aur: 'marcus_aurelius', mar: 'marcus_aurelius',
     l_ver: 'lucius_verus', ver: 'lucius_verus',
     com: 'commodus',
-    sev: 'septimius_severus', iul: 'julia_domna', car: 'caracalla', get: 'geta',
+    sev: 'septimius_severus', ss: 'septimius_severus',
+    iul: 'julia_domna', car: 'caracalla', get: 'geta',
     ela: 'elagabalus', s_alex: 'severus_alexander', saxa: 'severus_alexander',
 };
 
