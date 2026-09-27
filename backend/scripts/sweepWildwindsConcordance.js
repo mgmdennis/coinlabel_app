@@ -158,15 +158,19 @@ async function main() {
     console.log(`Fetching emperor index: ${INDEX_URL}`);
     const indexHtml = await fetchPage(INDEX_URL);
     const $ = cheerio.load(indexHtml);
+    // Slugs are kept exactly as listed: WildWinds URLs are case-sensitive and
+    // their roman numerals are uppercase (philip_I, valerian_I, claudius_II) —
+    // lowercasing the slug 404s the page.
     const allEmperors = [];
     $('a[href]').each((_, a) => {
-        const m = /^([a-z_0-9]+)\/i\.html$/i.exec($(a).attr('href') || '');
-        if (m) allEmperors.push(m[1].toLowerCase());
+        const m = /^([a-zA-Z_0-9]+)\/i\.html$/.exec($(a).attr('href') || '');
+        if (m) allEmperors.push(m[1]);
     });
+    const lower = (s) => s.toLowerCase();
     const emperors = wanted
-        ? wanted.filter((e) => allEmperors.includes(e.toLowerCase()))
+        ? allEmperors.filter((e) => wanted.map(lower).includes(lower(e)))
         : allEmperors;
-    const skippedArg = wanted ? wanted.filter((e) => !allEmperors.includes(e.toLowerCase())) : [];
+    const skippedArg = wanted ? wanted.filter((e) => !allEmperors.map(lower).includes(lower(e))) : [];
     if (skippedArg.length) console.log(`(not in index, ignored: ${skippedArg.join(', ')})`);
 
     const client = new MongoClient(uri);
@@ -182,7 +186,7 @@ async function main() {
 
     let totalRows = 0, totalPages = 0, first = true;
     for (const emperor of emperors) {
-        if (!force && swept.has(emperor)) {
+        if (!force && swept.has(emperor.toLowerCase())) {
             console.log(`· ${emperor}: already swept (use --force to refresh) — skipped`);
             continue;
         }
