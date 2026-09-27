@@ -15,11 +15,14 @@ const EMPEROR_MAP = {
     l_ver: 'lucius_verus', ver: 'lucius_verus',
     com: 'commodus',
     sev: 'septimius_severus', ss: 'septimius_severus',
-    iul: 'julia_domna', get: 'geta',
+    iul: 'julia_domna',
     // NOTE: 'car' is deliberately unmapped — Caracalla in ric.4 but the
     // Carus/Carinus/Numerian series in ric.5. The prefLabel's emperor name
     // disambiguates ("Caracalla" vs "Carus"), so it picks the page instead.
-    ela: 'elagabalus', s_alex: 'severus_alexander', saxa: 'severus_alexander',
+    // Elagabalus' OCRE slug is 'el' (verified via OCRE search) — deliberately
+    // NOT mapped here: his series also carries Julia Soaemias, and the
+    // prefLabel path picks the right page per coin (elagabalus vs
+    // julia_soaemias). Same for 'tr' (Trajan) and 'ge' (Geta).
     gor_iii: 'gordian_III',
     sals: 'saloninus', 'sala(1)': 'salonina',
     post: 'postumus', vict: 'victorinus', aur: 'aurelian', tac: 'tacitus',
