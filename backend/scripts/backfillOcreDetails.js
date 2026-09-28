@@ -37,7 +37,7 @@ function formatObverse(desc) {
         .filter((p) => !/^(?:sometimes)?\s*$/.test(p));
 
     const body = [head[2][0].toUpperCase() + head[2].slice(1).toLowerCase(), ...modifiers].filter(Boolean).join(', ');
-    return `(${ruler})\nObv: ${body ? body + '.' : ''}`.trim();
+    return `Ruler: ${ruler}\nObv: ${body ? body + '.' : ''}`.trim();
 }
 
 
@@ -96,7 +96,7 @@ async function main() {
         }
         // Preserve hand-added extra lines ("Contemporary Forgery", etc.) —
         // anything that isn't a machine-format line keeps its position.
-        const machineRe = /^\((?:[^)]+)\)$|^Obv:|^Rev:|^Mint:/i;
+        const machineRe = /^(?:\([^)]+\)|Ruler:)$|^Obv:|^Rev:|^Mint:/i;
         const extras = String(coin.details || '').split('\n').filter((l) => l.trim() && !machineRe.test(l.trim()));
         const parts = [
             formatObverse(f.obvDesc),

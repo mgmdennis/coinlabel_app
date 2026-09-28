@@ -62,5 +62,5 @@ export const formatObverse = (desc) => {
     .filter((p) => !/^(?:sometimes)?\s*$/.test(p));
 
   const body = [head[2][0].toUpperCase() + head[2].slice(1).toLowerCase(), ...modifiers].filter(Boolean).join(', ');
-  return `(${ruler})\nObv: ${body ? body + '.' : ''}`.trim();
+  return `Ruler: ${ruler}\nObv: ${body ? body + '.' : ''}`.trim();
 };

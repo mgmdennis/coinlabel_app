@@ -31,7 +31,7 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
         return (
             <p className={`${className} static-label`} style={style}>
                 {lines.map((line, i) => {
-                    const m = /^(Obv:|Rev:|Mint:)\s*(.*)$/i.exec(line);
+                    const m = /^(Obv:|Rev:|Mint:|Ruler:)\s*(.*)$/i.exec(line);
                     return (
                         <span key={i}>
                             {m ? <><strong>{m[1]}</strong>{m[2] ? ' ' + m[2] : ''}</> : line}
