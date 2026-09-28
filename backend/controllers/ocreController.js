@@ -92,10 +92,18 @@ const ORDINAL_ABBR = {
 
 function abbreviateEditions(text) {
     if (!text) return text;
-    return text.replace(
-        /\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+edition\b/gi,
-        (match, word) => ORDINAL_ABBR[word.toLowerCase()] || match
-    );
+    return text
+        .replace(
+            /\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+edition\b/gi,
+            (match, word) => ORDINAL_ABBR[word.toLowerCase()] || match
+        )
+        // Mark's label convention: drop Part/edition markers entirely —
+        // "RIC II, Part 1 (2nd) 689" -> "RIC II 689", "RIC I (2nd) 7A" ->
+        // "RIC I 7A". The ocreId keeps the full precision.
+        .replace(/,\s*Part\s*\d+(\s*\(\d+(?:st|nd|rd|th)\))?/gi, '')
+        .replace(/\s*\(\d+(?:st|nd|rd|th)\)\s+([IVX]+\b)?/gi, ' $1')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
 }
 
 /**
