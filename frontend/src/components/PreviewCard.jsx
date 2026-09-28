@@ -71,6 +71,7 @@ export const PreviewCard = ({
                                 marks={marks}
                                 details={details} setDetails={setDetails}
                                 detailsWidth={detailsWidth} setDetailsWidth={setDetailsWidth}
+                                ocreId={ocreId}
                             />
                         </div>
                     </Stack>
