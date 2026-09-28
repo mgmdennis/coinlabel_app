@@ -399,6 +399,11 @@ body {
   field-sizing: content;
 }
 
+/* Obv:/Rev: prefixes render bold+underlined on static labels. */
+.static-label strong {
+  text-decoration: underline;
+}
+
 .legends-block .legend.static-label {
   display: block;
 }
