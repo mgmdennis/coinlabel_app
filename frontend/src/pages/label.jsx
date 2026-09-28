@@ -25,9 +25,20 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
     }, [value, autoGrow]);
 
     if (!isEditable) {
+        // Static labels render as plain DOM, so the Obv:/Rev: line prefixes get
+        // bolded for the printed label (textareas can't style substrings).
+        const lines = String(value || '').split('\n');
         return (
             <p className={`${className} static-label`} style={style}>
-                {value}
+                {lines.map((line, i) => {
+                    const m = /^(Obv:|Rev:)\s*(.*)$/i.exec(line);
+                    return (
+                        <span key={i}>
+                            {m ? <><strong>{m[1]}</strong>{m[2] ? ' ' + m[2] : ''}</> : line}
+                            {i < lines.length - 1 ? '\n' : ''}
+                        </span>
+                    );
+                })}
             </p>
         );
     }
