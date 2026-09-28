@@ -164,8 +164,15 @@ async function getOcreDetailsJSON(ocreId) {
             .map((a) => (a && typeof a === 'object' ? (a['@value'] || uriToLabel(a['@id'])) : a))
             .filter(Boolean);
         const parsedLabel = parsePrefLabel(prefLabel);
+        const mintLabel = getLabel(typeNode['nmo:hasMint']);
+        // RIC VI-style prefLabels carry a MINT in the emperor segment
+        // ("RIC VI Siscia 146") — the mint belongs on the citation, so
+        // never strip a segment that names the record's mint.
+        const mintName = String(mintLabel || '').toLowerCase().replace(/[^a-z]/g, '');
+        const namesToStrip = [...((parsedLabel && parsedLabel.names) || [])]
+            .filter((name) => !mintName || name.toLowerCase().replace(/[^a-z]/g, '') !== mintName);
         let reference = prefLabel;
-        for (const name of new Set([...authorityLabels, ...((parsedLabel && parsedLabel.names) || [])])) {
+        for (const name of new Set([...authorityLabels, ...namesToStrip])) {
             const escaped = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             reference = reference.replace(new RegExp(`\\s*${escaped}\\s*`, 'gi'), ' ');
         }
