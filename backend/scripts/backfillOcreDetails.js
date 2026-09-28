@@ -50,8 +50,11 @@ async function fetchOcreFacts(ocreId) {
         const g = res.data['@graph'];
         const obv = g.find((n) => n['@id'] && n['@id'].includes('#obverse')) || {};
         const rev = g.find((n) => n['@id'] && n['@id'].includes('#reverse')) || {};
+        const typeNode = g.find((n) => n['@id'] && !n['@id'].includes('#')) || {};
         const one = (v) => (Array.isArray(v) ? v[0]?.['@value'] || '' : v?.['@value'] || '');
-        return { obvDesc: one(obv['dcterms:description']), revDesc: one(rev['dcterms:description']) };
+        const mintUri = (Array.isArray(typeNode['nmo:hasMint']) ? typeNode['nmo:hasMint'][0] : typeNode['nmo:hasMint']) || {};
+        const mint = String(mintUri['@id'] || '').split('/').pop().split(/[_-]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        return { obvDesc: one(obv['dcterms:description']), revDesc: one(rev['dcterms:description']), mint };
     } catch {
         return null;
     }
@@ -77,9 +80,11 @@ async function main() {
 
     let updated = 0, skippedLegacy = 0, failed = 0;
     for (const coin of roman) {
-        // Only rewrite the legacy terse convention — a stored "Obv:" line
-        // means the details already follow the new format (or were hand-tuned).
-        if (/\bObv:/i.test(coin.details || '')) {
+        // Rewrites the machine-generated details (yesterday's backfill format)
+        // to add the Mint line — coins without an "Obv:" line are legacy terse
+        // and get the full format. Hand-tuned details would be clobbered only
+        // if they still differ from the recomposition — review the dry run.
+        if (/\bObv:/i.test(coin.details || '') && /\bMint:/i.test(coin.details || '')) {
             skippedLegacy++;
             continue;
         }
@@ -89,7 +94,16 @@ async function main() {
             console.log(`✖ ${coin._id} ${coin.ocreId} — OCRE record unusable`);
             continue;
         }
-        const parts = [formatObverse(f.obvDesc), f.revDesc ? `Rev: ${f.revDesc}` : ''].filter(Boolean);
+        // Preserve hand-added extra lines ("Contemporary Forgery", etc.) —
+        // anything that isn't a machine-format line keeps its position.
+        const machineRe = /^\((?:[^)]+)\)$|^Obv:|^Rev:|^Mint:/i;
+        const extras = String(coin.details || '').split('\n').filter((l) => l.trim() && !machineRe.test(l.trim()));
+        const parts = [
+            formatObverse(f.obvDesc),
+            f.revDesc ? `Rev: ${f.revDesc}` : '',
+            ...extras,
+            f.mint ? `Mint: ${f.mint}` : '',
+        ].filter(Boolean);
         const details = parts.join('\n');
         if (details === (coin.details || '')) {
             skippedLegacy++;

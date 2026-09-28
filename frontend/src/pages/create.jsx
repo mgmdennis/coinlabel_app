@@ -445,7 +445,8 @@ const handleDiameterChange = (e) => {
                 // time only when the text won't fit or grade notes are set.
                 const obv = formatObverse(d.obverseDescription);
                 const rev = d.reverseDescription ? `Rev: ${d.reverseDescription}` : "";
-                setDetails([obv, rev].filter(Boolean).join('\n'));
+                const mint = d.mint ? `Mint: ${d.mint}` : "";
+                setDetails([obv, rev, mint].filter(Boolean).join('\n'));
                 setLegendObv(d.obverseLegend || "");
                 setLegendRev(d.reverseLegend || "");
                 if (visualTarget === 'QR' && (d.obverseLegend || d.reverseLegend)) {
