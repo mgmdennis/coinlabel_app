@@ -93,7 +93,7 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
     // Avoid a scrollbar on the details field: re-derive the width from
     // scratch on every change — try 45%, and if the real textarea would
     // overflow its 7-row box at that width, step up by 8% and re-check, up
-    // to a 80% cap. Recomputing from 45% each time (rather than only ever
+    // to a 90% cap. Recomputing from 45% each time (rather than only ever
     // growing from the last value) means it shrinks back down naturally when
     // text is edited shorter, not just grows. useLayoutEffect runs the probe
     // synchronously before paint, so the intermediate widths it tries are
@@ -108,8 +108,8 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
 
         let width = 45;
         field.style.width = `${width}%`;
-        while (field.scrollHeight > field.clientHeight + 1 && width < 80) {
-            width = Math.min(width + 8, 80);
+        while (field.scrollHeight > field.clientHeight + 1 && width < 90) {
+            width = Math.min(width + 8, 90);
             field.style.width = `${width}%`;
         }
         if (width !== detailsWidth) setDetailsWidth(width);
