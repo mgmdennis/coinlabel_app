@@ -76,7 +76,7 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
  */
 import { abbreviate, DETAILS_ABBREV_THRESHOLD, DETAILS_COMPACT_THRESHOLD } from '../utils/condenseDetails';
 
-const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks, detailsWidth = 45, setDetailsWidth }) => {
+const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks, detailsWidth = 45, setDetailsWidth, ocreId = "" }) => {
     const labelRef = useRef(null);
 
     // Presentation-only adaptation of the details text: full words by
@@ -103,6 +103,13 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
     // print/collection labels just read it with zero computation.
     useLayoutEffect(() => {
         if (!isEditable || !setDetailsWidth) return;
+        // Ancients always use the full 90% details width — the format's Obv/
+        // Rev/Mint lines need the room, and the abbreviation ladder sizes the
+        // text instead. No width probe for those coins.
+        if (ocreId) {
+            if (detailsWidth !== 90) setDetailsWidth(90);
+            return;
+        }
         const field = labelRef.current && labelRef.current.querySelector('.details');
         if (!field) return;
 

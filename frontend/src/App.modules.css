@@ -173,6 +173,9 @@ body {
   right: 2cqw;
   width: 30%;
   resize: none;
+  /* Sit above the details stack where they overlap (90% details width),
+     so condition details stays visible and selectable. */
+  z-index: 2;
 }
 
 .issuer {
