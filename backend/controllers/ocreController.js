@@ -253,7 +253,10 @@ async function getOcreDetailsJSON(ocreId) {
             denomination: denomination,
             issuer: getLabel(typeNode['nmo:hasIssuer']),
             authority: getLabel(typeNode['nmo:hasAuthority']),
-            mint: getLabel(typeNode['nmo:hasMint']),
+            mint: (() => {
+                const m = getLabel(typeNode['nmo:hasMint']);
+                return /^uncertain/i.test(m) ? 'Unknown' : m;
+            })(),
             material: getLabel(typeNode['nmo:hasMaterial']),
             manufacture: getLabel(typeNode['nmo:hasManufacture']),
             dateRange: formatDateRange(

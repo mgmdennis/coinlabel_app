@@ -89,6 +89,9 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
         ? abbreviate(details)
         : details;
     const detailsCompact = displayDetails.length > DETAILS_COMPACT_THRESHOLD;
+    // Ancients are always laid out at 90% — independent of the persisted
+    // detailsWidth, so static labels honor it without needing a re-edit.
+    const effectiveDetailsWidth = ocreId ? 90 : detailsWidth;
 
     // Avoid a scrollbar on the details field: re-derive the width from
     // scratch on every change — try 45%, and if the real textarea would
@@ -200,12 +203,12 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
                 <LabelField
                     isEditable={isEditable}
                     placeholder="Details"
-                    value={displayDetails}
+                    value={isEditable ? details : displayDetails}
                     className={`label details${detailsCompact ? ' compact' : ''}`}
                     as="textarea"
                     rows={7}
                     onChange={(e) => setDetails(e.target.value)}
-                    style={{ width: `${detailsWidth}%` }}
+                    style={{ width: `${effectiveDetailsWidth}%` }}
                 />
             </div>
         </div>

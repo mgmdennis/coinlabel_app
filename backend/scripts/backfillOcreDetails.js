@@ -53,7 +53,8 @@ async function fetchOcreFacts(ocreId) {
         const typeNode = g.find((n) => n['@id'] && !n['@id'].includes('#')) || {};
         const one = (v) => (Array.isArray(v) ? v[0]?.['@value'] || '' : v?.['@value'] || '');
         const mintUri = (Array.isArray(typeNode['nmo:hasMint']) ? typeNode['nmo:hasMint'][0] : typeNode['nmo:hasMint']) || {};
-        const mint = String(mintUri['@id'] || '').split('/').pop().split(/[_-]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const mintSlug = String(mintUri['@id'] || '').split('/').pop();
+        const mint = /^uncertain/i.test(mintSlug) ? 'Unknown' : mintSlug.split(/[_-]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         const { composeObverseDescription } = require('../controllers/ocreController');
         const prefLabel = one(typeNode['skos:prefLabel']);
         return { obvDesc: one(obv['dcterms:description']), revDesc: one(rev['dcterms:description']), mint, obverseText: composeObverseDescription(one(obv['dcterms:description']), prefLabel) };
