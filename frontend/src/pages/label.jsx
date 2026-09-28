@@ -84,8 +84,9 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
     // space on the label; a slightly smaller font when even the abbreviated
     // text is too long. The stored value always keeps the full wording —
     // only this render adapts.
-    const gradeNotes = String(gradeDetails || '').trim().length > 0;
-    const displayDetails = (gradeNotes || details.length > DETAILS_ABBREV_THRESHOLD)
+    // Abbreviation is purely length-based now — at the fixed 90% width there's
+    // no space pressure from grade notes (they occupy the top-right corner).
+    const displayDetails = (details.length > DETAILS_ABBREV_THRESHOLD)
         ? abbreviate(details)
         : details;
     const detailsCompact = displayDetails.length > DETAILS_COMPACT_THRESHOLD;
