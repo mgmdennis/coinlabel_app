@@ -63,8 +63,21 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
 /**
  * FrontLabelContainer Component
  */
+import { abbreviate, DETAILS_ABBREV_THRESHOLD, DETAILS_COMPACT_THRESHOLD } from '../utils/condenseDetails';
+
 const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks, detailsWidth = 45, setDetailsWidth }) => {
     const labelRef = useRef(null);
+
+    // Presentation-only adaptation of the details text: full words by
+    // default; abbreviations when the text won't fit or grade notes take
+    // space on the label; a slightly smaller font when even the abbreviated
+    // text is too long. The stored value always keeps the full wording —
+    // only this render adapts.
+    const gradeNotes = String(gradeDetails || '').trim().length > 0;
+    const displayDetails = (gradeNotes || details.length > DETAILS_ABBREV_THRESHOLD)
+        ? abbreviate(details)
+        : details;
+    const detailsCompact = displayDetails.length > DETAILS_COMPACT_THRESHOLD;
 
     // Avoid a scrollbar on the details field: re-derive the width from
     // scratch on every change — try 45%, and if the real textarea would
@@ -169,8 +182,8 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
                 <LabelField
                     isEditable={isEditable}
                     placeholder="Details"
-                    value={details}
-                    className="label details"
+                    value={displayDetails}
+                    className={`label details${detailsCompact ? ' compact' : ''}`}
                     as="textarea"
                     rows={7}
                     onChange={(e) => setDetails(e.target.value)}

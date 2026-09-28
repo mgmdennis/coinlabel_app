@@ -9,6 +9,7 @@ import { BASE_URL } from '../config';
 // Utilities
 import { parseNumistaText } from "../utils/parseNumistaText";
 import { extractLookupValue } from "../utils/lookup";
+import { formatObverse } from "../utils/condenseDetails";
 
 // Components
 import { AIConfirmModal } from "../components/AIConfirmModal";
@@ -426,38 +427,6 @@ const handleDiameterChange = (e) => {
     };
     const mapMaterial = (m) => MATERIAL_MAP[m?.toLowerCase()] || m || "";
 
-    // Condense obv/rev descriptions: "Head of Augustus, bare, left" → "(Augustus)"
-    const condenseDescription = (desc) => {
-        if (!desc) return "";
-        const m = desc.match(/^(?:Bust of|Head of|Portrait of|Laureate (?:head|bust) of|Radiate (?:head|bust) of|Draped bust of)\s+([A-Z][A-Za-z]+(?:\s+[IVXLCDM]+)?)/i);
-        if (m) return `(${m[1]})`;
-        return desc;
-    };
-
-    const condenseRevDescription = (desc) => {
-        if (!desc) return "";
-        return desc
-            .replace(/\bstanding\b/gi, 'stg.')
-            .replace(/\bseated\b/gi, 'seat.')
-            .replace(/\bwalking\b/gi, 'walk.')
-            .replace(/\brunning\b/gi, 'run.')
-            .replace(/\bkneeling\b/gi, 'kneel.')
-            .replace(/\bright\b/gi, 'r.')
-            .replace(/\bleft\b/gi, 'l.')
-            .replace(/\bholding\b/gi, 'hold.')
-            .replace(/\bwearing\b/gi, 'wear.')
-            .replace(/\bcrowned\b/gi, 'crown.')
-            .replace(/\bdraped\b/gi, 'drap.')
-            .replace(/\bradiate\b/gi, 'rad.')
-            .replace(/\blaureate\b/gi, 'laur.')
-            .replace(/\bnaked\b/gi, 'nak.')
-            .replace(/\bcuirassed\b/gi, 'cuir.')
-            .replace(/\badvancing\b/gi, 'adv.')
-            .replace(/\bpresenting\b/gi, 'pres.')
-            .replace(/\bplacing\b/gi, 'plac.')
-            .replace(/\bresting\b/gi, 'rest.')
-            .replace(/\bextending\b/gi, 'ext.');
-    };
     const handleOcreLookup = (idArg) => {
         const id = (idArg || ocreId).trim();
         if (!id) return;
@@ -472,8 +441,10 @@ const handleDiameterChange = (e) => {
                 setComposition(mapMaterial(d.material));
                 setReference(d.reference || "");
                 setYear(d.year || "");
-                const obv = condenseDescription(d.obverseDescription);
-                const rev = d.reverseDescription ? `Rev: ${condenseRevDescription(d.reverseDescription)}` : "";
+                // Full words by default — the label abbreviates at display
+                // time only when the text won't fit or grade notes are set.
+                const obv = formatObverse(d.obverseDescription);
+                const rev = d.reverseDescription ? `Rev: ${d.reverseDescription}` : "";
                 setDetails([obv, rev].filter(Boolean).join('\n'));
                 setLegendObv(d.obverseLegend || "");
                 setLegendRev(d.reverseLegend || "");

@@ -260,6 +260,12 @@ body {
   width: 45%;
 }
 
+/* Slightly smaller details font — applied by the label when even the
+   abbreviated text is too long for the label (see label.jsx). */
+.details.compact {
+  font-size: 5cqw;
+}
+
 .composition {
   position: absolute;
   text-align: right;
