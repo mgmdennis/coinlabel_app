@@ -54,7 +54,9 @@ async function fetchOcreFacts(ocreId) {
         const one = (v) => (Array.isArray(v) ? v[0]?.['@value'] || '' : v?.['@value'] || '');
         const mintUri = (Array.isArray(typeNode['nmo:hasMint']) ? typeNode['nmo:hasMint'][0] : typeNode['nmo:hasMint']) || {};
         const mint = String(mintUri['@id'] || '').split('/').pop().split(/[_-]/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        return { obvDesc: one(obv['dcterms:description']), revDesc: one(rev['dcterms:description']), mint };
+        const { composeObverseDescription } = require('../controllers/ocreController');
+        const prefLabel = one(typeNode['skos:prefLabel']);
+        return { obvDesc: one(obv['dcterms:description']), revDesc: one(rev['dcterms:description']), mint, obverseText: composeObverseDescription(one(obv['dcterms:description']), prefLabel) };
     } catch {
         return null;
     }
@@ -84,10 +86,9 @@ async function main() {
         // to add the Mint line — coins without an "Obv:" line are legacy terse
         // and get the full format. Hand-tuned details would be clobbered only
         // if they still differ from the recomposition — review the dry run.
-        if (/\bObv:/i.test(coin.details || '') && /\bMint:/i.test(coin.details || '')) {
-            skippedLegacy++;
-            continue;
-        }
+        // One-off full recompute — skip detection disabled so prod gets the
+        // ruler/effigy-aware Obv lines everywhere (this script now diffs
+        // before writing, so machines-only coins stay idempotent).
         const f = await fetchOcreFacts(coin.ocreId);
         if (!f || (!f.obvDesc && !f.revDesc)) {
             failed++;
@@ -96,10 +97,10 @@ async function main() {
         }
         // Preserve hand-added extra lines ("Contemporary Forgery", etc.) —
         // anything that isn't a machine-format line keeps its position.
-        const machineRe = /^(?:\([^)]+\)|Ruler:)$|^Obv:|^Rev:|^Mint:/i;
+        const machineRe = /^Ruler:|^\((?:[^)]+)\)$|^Obv:|^Rev:|^Mint:/i;
         const extras = String(coin.details || '').split('\n').filter((l) => l.trim() && !machineRe.test(l.trim()));
         const parts = [
-            formatObverse(f.obvDesc),
+            f.obverseText || formatObverse(f.obvDesc),
             f.revDesc ? `Rev: ${f.revDesc}` : '',
             ...extras,
             f.mint ? `Mint: ${f.mint}` : '',

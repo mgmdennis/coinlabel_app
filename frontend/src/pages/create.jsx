@@ -443,7 +443,8 @@ const handleDiameterChange = (e) => {
                 setYear(d.year || "");
                 // Full words by default — the label abbreviates at display
                 // time only when the text won't fit or grade notes are set.
-                const obv = formatObverse(d.obverseDescription);
+                // Backend delivers the ruler/effigy-aware obverse block.
+                const obv = d.obverseText || formatObverse(d.obverseDescription);
                 const rev = d.reverseDescription ? `Rev: ${d.reverseDescription}` : "";
                 const mint = d.mint ? `Mint: ${d.mint}` : "";
                 setDetails([obv, rev, mint].filter(Boolean).join('\n'));

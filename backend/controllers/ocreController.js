@@ -110,6 +110,59 @@ function abbreviateEditions(text) {
  * Fetch an OCRE coin type by its identifier (e.g. "ric.2_3(2).hdn.1907")
  * and parse the JSON-LD response into a flat object suitable for the frontend.
  */
+
+// Compose the label's obverse block ("Ruler: X\nObv: ...") — the Ruler is
+// OCRE's filing emperor (prefLabel), NOT necessarily the effigy: consecration
+// and family coinage ("RIC III Marcus Aurelius 441" = DIVVS ANTONINVS) show
+// someone else's portrait. When the effigy matches the ruler, the Obv line
+// stays short ("Bust, laureate, draped, right."); when it differs the line
+// keeps the name ("Obv: Head of Antoninus Pius, bare, right.").
+const normName = (s) => String(s || '').toUpperCase().replace(/[^A-Z]/g, '');
+
+function composeObverseDescription(obvDesc, prefLabel) {
+    const parsed = parsePrefLabel(prefLabel);
+    const rulerNames = (parsed && parsed.names && parsed.names.length) ? parsed.names : [];
+    const text = String(obvDesc || '').trim().replace(/\.$/, '');
+    const head = /^(?:(Laureate|Radiate|Draped|Cuirassed)\s+)?([Bb]ust|[Hh]ead|[Pp]ortrait)\s+of\s+([^.]+)$/.exec(text);
+    if (!head) {
+        return [rulerNames.length ? `Ruler: ${rulerNames[0]}` : '', text].filter(Boolean).join('\n');
+    }
+
+    const parts = head[3].split(',').map((s) => s.trim()).filter(Boolean);
+    let effigy = parts.shift() || '';
+    effigy = effigy.replace(/\s+(the\s+[A-Za-z]+)$/i, '').replace(/\s+[IVX]+$/, '').trim();
+
+    const mods = [];
+    if (head[1]) mods.push(head[1].toLowerCase());
+    for (const p of parts) {
+        const m = p.replace(/,?\s*viewed from.*$/i, '').trim();
+        if (m) mods.push(m);
+    }
+
+    // Effigy matches the ruler when the normalized names overlap.
+    // The prefLabel can drag edition fragments in ("(second edition)
+    // Hadrian") — clean them before comparing with the effigy name.
+    const cleanLabelName = (rn) => normName(String(rn).replace(/\([^)]*\)/g, '').replace(/^\s*\S+\s+/, '').trim());
+    const effigyNorm = normName(effigy);
+    const same = effigyNorm && rulerNames.some((rn) => {
+        const r = normName(String(rn).replace(/\([^)]*\)/g, '').trim());
+        const r2 = normName(String(rn).replace(/\([^)]*\)/g, '').replace(/^\s*\S+\s+/, '').trim());
+        return r === effigyNorm || r2 === effigyNorm || (r2.length > 3 && effigyNorm.includes(r2)) || (r.length > 3 && effigyNorm.includes(r));
+    });
+
+    const noun = head[2][0].toUpperCase() + head[2].slice(1).toLowerCase();
+    const cleanRuler = rulerNames
+        .map((rn) => String(rn).replace(/\([^)]*\)/g, '').trim())
+        .filter(Boolean)
+        .sort((a, b) => a.length - b.length)[0];
+    if (same) {
+        const plain = [noun, ...mods].filter(Boolean).join(', ');
+        return `Ruler: ${cleanRuler || effigy}\nObv: ${plain ? plain + '.' : ''}`.trim();
+    }
+    const obvBody = `${noun} of ${effigy}${mods.length ? ', ' + mods.join(', ') : ''}`;
+    return `Ruler: ${cleanRuler || effigy}\nObv: ${obvBody}.`.trim();
+}
+
 async function getOcreDetailsJSON(ocreId) {
     const id = String(ocreId).trim();
 
@@ -211,9 +264,10 @@ async function getOcreDetailsJSON(ocreId) {
                 getFirst(typeNode['nmo:hasStartDate'])?.['@value'],
                 getFirst(typeNode['nmo:hasEndDate'])?.['@value']
             ),
-            // Obverse
+            // Obverse (with ruler/effigy-aware label composition)
             obverseLegend: getLabel(obvNode?.['nmo:hasLegend']),
             obverseDescription: getLabel(obvNode?.['dcterms:description']),
+            obverseText: composeObverseDescription(getLabel(obvNode?.['dcterms:description']), prefLabel),
             // Reverse
             reverseLegend: getLabel(revNode?.['nmo:hasLegend']),
             reverseDescription: getLabel(revNode?.['dcterms:description']),
@@ -266,3 +320,4 @@ async function getOcreDetailsJSON(ocreId) {
 }
 
 module.exports.getOcreDetailsJSON = getOcreDetailsJSON;
+module.exports.composeObverseDescription = composeObverseDescription;
