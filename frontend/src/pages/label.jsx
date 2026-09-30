@@ -14,7 +14,7 @@ import { BASE_URL } from '../config';
  * replicates Bootstrap's old `.form-control-plaintext` reset so the on-screen
  * editing preview stays visually identical to the printed static labels.
  */
-const LabelField = ({ isEditable, value, placeholder, className, as, rows, onChange, autoGrow, style }) => {
+const LabelField = ({ isEditable, value, placeholder, className, as, rows, onChange, autoGrow, style, onFocus, onBlur }) => {
     const autoResize = useCallback((node) => {
         if (node && autoGrow) {
             node.style.height = 'auto';
@@ -54,6 +54,8 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
                 rows={autoGrow ? 1 : rows}
                 className={fieldClassName}
                 onChange={onChange}
+                onFocus={onFocus}
+                onBlur={onBlur}
                 style={style}
             />
         );
@@ -78,6 +80,7 @@ import { abbreviate, DETAILS_ABBREV_THRESHOLD, DETAILS_COMPACT_THRESHOLD } from 
 
 const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks, detailsWidth = 45, setDetailsWidth, ocreId = "" }) => {
     const labelRef = useRef(null);
+    const [detailsFocused, setDetailsFocused] = useState(false);
 
     // Presentation-only adaptation of the details text: full words by
     // default; abbreviations when the text won't fit or grade notes take
@@ -204,11 +207,13 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
                 <LabelField
                     isEditable={isEditable}
                     placeholder="Details"
-                    value={isEditable ? details : displayDetails}
+                    value={isEditable && detailsFocused ? details : displayDetails}
                     className={`label details${detailsCompact ? ' compact' : ''}`}
                     as="textarea"
                     rows={7}
                     onChange={(e) => setDetails(e.target.value)}
+                    onFocus={() => setDetailsFocused(true)}
+                    onBlur={() => setDetailsFocused(false)}
                     style={{ width: `${effectiveDetailsWidth}%` }}
                 />
             </div>
