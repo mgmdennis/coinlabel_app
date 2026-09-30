@@ -91,6 +91,8 @@ const CollectionItem = () => {
         { key: 'issuer', label: 'Issuer', type: 'text' },
         { key: 'denomination', label: 'Denomination', type: 'text' },
         { key: 'year', label: 'Year', type: 'text' },
+        { key: 'legendObv', label: 'Obverse Legend', type: 'text' },
+        { key: 'legendRev', label: 'Reverse Legend', type: 'text' },
         { key: 'gradeDetails', label: 'Grade Details', type: 'text' },
         { key: 'composition', label: 'Composition', type: 'text' },
         { key: 'physicalDetails', label: 'Physical Details', type: 'textarea', rows: 3 },
