@@ -6,7 +6,7 @@
 
 // Character budgets for the details area on a 44mm label. Tunable — measured
 // against the default 45% details width at the 6cqw font.
-export const DETAILS_ABBREV_THRESHOLD = 150;
+export const DETAILS_ABBREV_THRESHOLD = 200;
 export const DETAILS_COMPACT_THRESHOLD = 210;
 
 const ABBREVIATIONS = [
