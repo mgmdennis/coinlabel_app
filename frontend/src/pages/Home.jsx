@@ -28,6 +28,13 @@ import { FrontLabelContainer, BackLabelContainer } from "./label";
 // Collection photos are served as separately-cacheable binaries. The cache-bust
 // key is the image's own version hash (changed only when the photo changes) so
 // unrelated field edits don't evict the cache; legacy docs fall back to updatedAt.
+// Collection cards surface the ruler for ancient coins — the details text
+// carries a "Ruler: <name>" line from the OCRE composition.
+const rulerFromDetails = (details) => {
+  const m = /^Ruler:\s*(.+)$/mi.exec(String(details || ''));
+  return m ? m[1].trim() : '';
+};
+
 const coinImageUrl = (coin, side) => {
   const version = (side === 'obv' ? coin.obvImageVersion : coin.revImageVersion) || coin.updatedAt || '';
   return `${BASE_URL}/coin/${coin._id}/image/${side}?v=${encodeURIComponent(version)}`;
@@ -571,7 +578,7 @@ const visibleCoins = q && viewCoins
 
                     <Box p="sm">
                       <Text fw={700} size="xs" lineClamp={1}>
-                        {coin.issuer} {coin.denomination}
+                        {rulerFromDetails(coin.details) || coin.issuer} {coin.denomination}
                       </Text>
                       <Text size="xs" c="dimmed" lineClamp={1}>
                         {coin.year || '—'}{coin.reference ? ` · ${coin.reference}` : ''}
@@ -623,7 +630,7 @@ const visibleCoins = q && viewCoins
                                 }
                             }}
                         >
-                            {coin.issuer} — {coin.denomination}, {coin.year}
+                            {rulerFromDetails(coin.details) || coin.issuer} — {coin.denomination}, {coin.year}
                         </Text>
                       {isCollapsed
                         ? <ChevronDown size={16} style={{ opacity: isSelected ? 1 : 0.6 }} />
