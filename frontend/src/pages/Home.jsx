@@ -365,7 +365,7 @@ const visibleCoins = q && viewCoins
           size="xs"
           onClick={() => { setView('labels'); setSelectedCoins({}); }}
         >
-          My Labels {activeCoins ? `(${activeCoins.length})` : ''}
+          Labels {activeCoins ? `(${activeCoins.length})` : ''}
         </Button>
         <Button
           variant={view === 'cached' ? 'filled' : 'default'}

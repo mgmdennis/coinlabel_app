@@ -71,7 +71,7 @@ const Layout = ({ user, setUser }) => {
         size="sm"
         underline="never"
       >
-        Home
+        Labels
       </Anchor>
       <Anchor
         component={Link}
@@ -84,7 +84,7 @@ const Layout = ({ user, setUser }) => {
         size="sm"
         underline="never"
       >
-        My Collection
+        Collection
       </Anchor>
       <Button
         component={Link}
