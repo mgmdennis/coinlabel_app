@@ -574,6 +574,21 @@ const visibleCoins = q && viewCoins
                           {coin.grade}
                         </Badge>
                       )}
+                      {coin.hasLabel === false && (
+                        <Button
+                          variant="filled"
+                          color="blue"
+                          size="xs"
+                          style={{ position: 'absolute', bottom: 6, left: 6 }}
+                          leftSection={<Printer size={11} />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCoins(prev => ({ ...prev, [coin._id]: true }));
+                          }}
+                        >
+                          Add to Print List
+                        </Button>
+                      )}
                     </Box>
 
                     <Box p="sm">
