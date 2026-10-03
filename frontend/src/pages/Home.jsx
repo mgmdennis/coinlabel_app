@@ -684,17 +684,6 @@ const visibleCoins = q && viewCoins
                           >
                             Duplicate
                           </Button>
-                          {coin.hasLabel === false && (
-                            <Button
-                              variant="light"
-                              color="blue"
-                              size="xs"
-                              leftSection={<Printer size={13} />}
-                              onClick={() => setSelectedCoins(prev => ({ ...prev, [coin._id]: true }))}
-                            >
-                              Add to Print List
-                            </Button>
-                          )}
                         </Button.Group>
                       </Group>
                     </Box>
