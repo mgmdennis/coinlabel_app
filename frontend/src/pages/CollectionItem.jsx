@@ -5,7 +5,7 @@ import {
     Box, Button, Card, Container, Group, Stack, Text, TextInput, Textarea,
     FileInput, SimpleGrid, Title, Badge, Skeleton,
 } from '@mantine/core';
-import { Pencil, Upload, X, Trash2 } from 'lucide-react';
+import { Pencil, Upload, X, Trash2, Printer } from 'lucide-react';
 import { BASE_URL } from '../config';
 import { GradeSelect } from '../components/GradeSelect';
 import { compressImage } from '../utils/compressImage';
@@ -128,6 +128,20 @@ const CollectionItem = () => {
                     </Group>
                 </Stack>
                 <Group gap="xs" wrap="nowrap">
+                    {item.hasLabel === false && (
+                        <Button
+                            variant="light" color="blue" size="xs"
+                            leftSection={<Printer size={13} />}
+                            onClick={() => {
+                                const saved = JSON.parse(localStorage.getItem('selected_coins') || '{}');
+                                saved[item._id] = true;
+                                localStorage.setItem('selected_coins', JSON.stringify(saved));
+                                navigate('/', { state: { view: 'collection' } });
+                            }}
+                        >
+                            Add to Print List
+                        </Button>
+                    )}
                     <Button
                         component={Link}
                         to={item.numistaNumber ? `/create/${item.numistaNumber}` : '/create'}
