@@ -86,18 +86,6 @@ const Layout = ({ user, setUser }) => {
       >
         Collection
       </Anchor>
-      <Button
-        component={Link}
-        to="/print"
-        onClick={close}
-        variant="outline"
-        color="cyan"
-        size="xs"
-        radius="xl"
-        fw={700}
-      >
-        PRINT 2×2 LABELS
-      </Button>
       <Anchor
         component={Link}
         to="/settings"
