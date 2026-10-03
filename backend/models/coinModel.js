@@ -121,6 +121,10 @@ const CoinSchema = new Schema({
         type: Boolean,
         default: true,
     },
+    printListed: {
+        type: Boolean,
+        default: false,
+    },
     cached: {
         type: Boolean,
         default: false,

@@ -133,10 +133,13 @@ const CollectionItem = () => {
                             variant="light" color="blue" size="xs"
                             leftSection={<Printer size={13} />}
                             onClick={() => {
-                                const saved = JSON.parse(localStorage.getItem('selected_coins') || '{}');
-                                saved[item._id] = true;
-                                localStorage.setItem('selected_coins', JSON.stringify(saved));
-                                navigate('/', { state: { view: 'collection' } });
+                                axios.put(`${BASE_URL}/coin/update/${item._id}`, { printListed: true })
+                                    .then(() => {
+                                        const saved = JSON.parse(localStorage.getItem('selected_coins') || '{}');
+                                        saved[item._id] = true;
+                                        localStorage.setItem('selected_coins', JSON.stringify(saved));
+                                        navigate('/', { state: { view: 'labels' } });
+                                    });
                             }}
                         >
                             Add to Print List

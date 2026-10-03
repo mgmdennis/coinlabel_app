@@ -181,7 +181,7 @@ const Home = () => {
     setSelectedCoins(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-const activeCoins = coins ? coins.filter(c => !c.cached && c.hasLabel !== false) : null;
+const activeCoins = coins ? coins.filter(c => !c.cached && (c.hasLabel !== false || c.printListed)) : null;
     const cachedCoins = coins ? coins.filter(c => c.cached && c.hasLabel !== false) : null;
     // For the collection view, use collectionItems (lazy-loaded).
     // But use the lightweight `coins` to check if any collection items exist,
