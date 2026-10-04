@@ -4,10 +4,12 @@
 // smaller font are presentation-only (see label.jsx), applied when the text
 // won't fit or grade notes take space on the label.
 
-// Character budgets for the details area on a 44mm label. Tunable — measured
-// against the default 45% details width at the 6cqw font.
-export const DETAILS_ABBREV_THRESHOLD = 200;
-export const DETAILS_COMPACT_THRESHOLD = 210;
+// Triggering is LINE-based, measured from the rendered text (wrapping is
+// what eats label space — characters were only a proxy). Abbreviations kick
+// in at 8+ rendered lines; the smaller font when abbreviation alone still
+// leaves it at 9+ lines.
+export const DETAILS_ABBREV_LINES = 8;
+export const DETAILS_COMPACT_LINES = 9;
 
 const ABBREVIATIONS = [
   [/\bstanding\b/gi, 'stg.'],

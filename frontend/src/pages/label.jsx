@@ -76,26 +76,44 @@ const LabelField = ({ isEditable, value, placeholder, className, as, rows, onCha
 /**
  * FrontLabelContainer Component
  */
-import { abbreviate, DETAILS_ABBREV_THRESHOLD, DETAILS_COMPACT_THRESHOLD } from '../utils/condenseDetails';
+import { abbreviate, DETAILS_ABBREV_LINES, DETAILS_COMPACT_LINES } from '../utils/condenseDetails';
 
 const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, denomination, setDenomination, grade, setGrade, gradeDetails, setGradeDetails, mintage, setMintage, reference, setReference, details, setDetails, marksPicture, marks, detailsWidth = 45, setDetailsWidth, ocreId = "" }) => {
     const labelRef = useRef(null);
     const [detailsFocused, setDetailsFocused] = useState(false);
 
-    // Presentation-only adaptation of the details text: full words by
-    // default; abbreviations when the text won't fit or grade notes take
-    // space on the label; a slightly smaller font when even the abbreviated
-    // text is too long. The stored value always keeps the full wording —
-    // only this render adapts.
-    // Abbreviation is purely length-based now — at the fixed 90% width there's
-    // no space pressure from grade notes (they occupy the top-right corner).
-    const displayDetails = (details.length > DETAILS_ABBREV_THRESHOLD)
-        ? abbreviate(details)
-        : details;
-    const detailsCompact = displayDetails.length > DETAILS_COMPACT_THRESHOLD;
+    // Presentation-only adaptation of the details text, LINE-based: a hidden
+    // probe with identical typography measures the FULL text, then the
+    // abbreviated text. Ladder: full words if under 8 lines -> abbreviated
+    // words if that drops below 9 lines -> abbreviated + compact (5cqw) font
+    // otherwise. The stored value always keeps the full wording — only this
+    // render adapts.
+    const [detailsMode, setDetailsMode] = useState('full');
+    const probeRef = useRef(null);
     // Ancients are always laid out at 90% — independent of the persisted
     // detailsWidth, so static labels honor it without needing a re-edit.
     const effectiveDetailsWidth = ocreId ? 90 : detailsWidth;
+
+    useLayoutEffect(() => {
+        const probe = probeRef.current;
+        if (!probe) return;
+        probe.classList.remove('compact');
+        const measure = (text) => {
+            probe.textContent = text;
+            const lh = parseFloat(window.getComputedStyle(probe).lineHeight) || 1;
+            return Math.max(1, Math.round(probe.scrollHeight / lh));
+        };
+        let next = 'full';
+        if (measure(details) >= DETAILS_ABBREV_LINES) {
+            next = 'abbrev';
+            if (measure(abbreviate(details)) >= DETAILS_COMPACT_LINES) next = 'compact';
+        }
+        probe.textContent = details;
+        setDetailsMode(next);
+    }, [details, effectiveDetailsWidth, ocreId, isEditable]);
+
+    const displayDetails = detailsMode === 'full' ? details : abbreviate(details);
+    const detailsCompact = detailsMode === 'compact';
 
     // Avoid a scrollbar on the details field: re-derive the width from
     // scratch on every change — try 45%, and if the real textarea would
@@ -131,6 +149,14 @@ const FrontLabelContainer = ({ isEditable, year, setYear, issuer, setIssuer, den
 
     return (
         <div ref={labelRef} className={isEditable ? "parent-label-for-edit" : "parent-label-for-print"}>
+            <span
+                ref={probeRef}
+                aria-hidden="true"
+                className={`label details static-label${detailsMode === 'compact' ? ' compact' : ''}`}
+                style={{ position: 'absolute', visibility: 'hidden', left: -9999, width: `${effectiveDetailsWidth}%` }}
+            >
+                {details}
+            </span>
             <LabelField
                 isEditable={isEditable}
                 placeholder="Year"
