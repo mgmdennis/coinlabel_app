@@ -48,7 +48,7 @@ export const formatObverse = (desc) => {
   if (!desc) return '';
   const text = String(desc).trim().replace(/\.$/, '');
   const head = /^(?:(Laureate|Radiate|Draped|Cuirassed)\s+)?([Bb]ust|[Hh]ead|[Pp]ortrait)\s+of\s+([^.]+)$/.exec(text);
-  if (!head) return text;
+  if (!head) return text ? `Obv: ${text}.` : '';
 
   // Split modifiers at commas; they never carry commas inside.
   const parts = head[3].split(',').map((s) => s.trim()).filter(Boolean);

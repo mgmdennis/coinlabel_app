@@ -11,7 +11,7 @@ function uriToLabel(uri) {
     const parts = uri.split('/').pop();
     return parts
         .split(/[_-]/)
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .map(w => /^[ivxlc]+$/.test(w) ? w.toUpperCase() : (w.charAt(0).toUpperCase() + w.slice(1)))
         .join(' ');
 }
 
@@ -106,6 +106,23 @@ function abbreviateEditions(text) {
         .trim();
 }
 
+// HRC label references run long in Numishare prefLabel form ("Seleucid Coins
+// (part 2) 2257.2") — collapse the series name to its corpus abbreviation for
+// the label line. The number disambiguates the part, so it drops too.
+// Unmatched prefLabels pass through unchanged.
+const REF_SIMPLIFY = {
+    sco: [/^Seleucid\s+Coins(?:\s*\(part\s*\d+\))?\s+(.+)$/i, 'SC $1'],
+    pella: [/^Price.*?([0-9]+[A-Za-z]*)$/i, 'Price $1'],
+    pco: [/^(?:Ptolemaic\s+Coins\s+Online|CPE)\s+?(.+)$/i, 'CPE $1'],
+};
+
+function simplifyReference(datasetName, reference) {
+    const rule = REF_SIMPLIFY[datasetName];
+    if (!rule) return reference;
+    const m = rule[0].exec(String(reference || '').trim());
+    return m ? rule[1].replace('$1', m[1]) : reference;
+}
+
 /**
  * Fetch an OCRE coin type by its identifier (e.g. "ric.2_3(2).hdn.1907")
  * and parse the JSON-LD response into a flat object suitable for the frontend.
@@ -125,7 +142,7 @@ function composeObverseDescription(obvDesc, prefLabel) {
     const text = String(obvDesc || '').trim().replace(/\.$/, '');
     const head = /^(?:(Laureate|Radiate|Draped|Cuirassed)\s+)?([Bb]ust|[Hh]ead|[Pp]ortrait)\s+of\s+([^.]+)$/.exec(text);
     if (!head) {
-        return [rulerNames.length ? `Ruler: ${rulerNames[0]}` : '', text].filter(Boolean).join('\n');
+        return [rulerNames.length ? `Ruler: ${rulerNames[0]}` : '', text && `Obv: ${text}.`].filter(Boolean).join('\n');
     }
 
     const parts = head[3].split(',').map((s) => s.trim()).filter(Boolean);
@@ -163,13 +180,76 @@ function composeObverseDescription(obvDesc, prefLabel) {
     return `Ruler: ${cleanRuler || effigy}\nObv: ${obvBody}.`.trim();
 }
 
-async function getOcreDetailsJSON(ocreId) {
+// Dataset configs — OCRE and CRRO are sibling numismatics.org
+// TypeSeries products with identical JSON-LD shapes; only the base URL,
+// source tag and date range differ (CRRO covers the Roman Republic).
+const DATASETS = {
+    ocre: {
+        idPath: 'ocre/id',
+        source: 'OCRE',
+        label: 'OCRE',
+    },
+    crro: {
+        idPath: 'crro/id',
+        source: 'CRRO',
+        label: 'CRRO',
+    },
+    // HRC family (Seleucids / Ptolemies / Macedon / Antigonids) — same
+    // Numishare TypeSeries shape as OCRE/CRRO, one row per sub-dataset.
+    sco: {
+        idPath: 'sco/id',
+        source: 'SCO',
+        label: 'SCO',
+    },
+    pella: {
+        idPath: 'pella/id',
+        source: 'PELLA',
+        label: 'PELLA',
+    },
+    pco: {
+        idPath: 'pco/id',
+        source: 'PCO',
+        label: 'PCO',
+    },
+    agco: {
+        idPath: 'agco/id',
+        source: 'AGCO',
+        label: 'AGCO',
+    },
+};
+
+// Republic types are filed by moneyer, not emperor — the obverse block leads
+// with the Issuer line ("Issuer: Sulla") followed by the raw CRRO obverse
+// description under "Obv:". No Ruler line: republic portraits are deities
+// (Roma, Janus) and would read as wrong rulers.
+function composeRepublicObverse(issuerLabel, obvDesc) {
+    const text = String(obvDesc || '').trim();
+    return [
+        issuerLabel ? `Issuer: ${issuerLabel}` : '',
+        text ? `Obv: ${text}` : '',
+    ].filter(Boolean).join('\n');
+}
+
+// HRC royal coinage: the king is the ruler (nmo:hasAuthority — the record has
+// no moneyer), falling back to issuer when a dataset files one. Obverse
+// description rides under "Obv:" like the other datasets.
+function composeRoyalObverse(authorityLabel, issuerLabel, obvDesc) {
+    const ruler = String(authorityLabel || issuerLabel || '').trim();
+    const text = String(obvDesc || '').trim();
+    return [
+        ruler ? `Ruler: ${ruler}` : '',
+        text ? `Obv: ${text}` : '',
+    ].filter(Boolean).join('\n');
+}
+
+async function getOcreDetailsJSON(ocreId, datasetName = 'ocre') {
     const id = String(ocreId).trim();
+    const dataset = DATASETS[datasetName] || DATASETS.ocre;
 
     try {
-        console.log('Fetching OCRE data for ID:', id);
+        console.log(`Fetching ${dataset.label} data for ID:`, id);
 
-        const url = `https://numismatics.org/ocre/id/${encodeURIComponent(id)}.jsonld`;
+        const url = `https://numismatics.org/${dataset.idPath}/${encodeURIComponent(id)}.jsonld`;
         const res = await axios.get(url, {
             headers: { 'Accept': 'application/ld+json' },
             timeout: 10000,
@@ -208,9 +288,15 @@ async function getOcreDetailsJSON(ocreId) {
             return '';
         };
 
+        const denomUri = getUri(typeNode['nmo:hasDenomination']);
         const denomLabel = getLabel(typeNode['nmo:hasDenomination']);
             const materialAbbr = uriToMaterialAbbr(getUri(typeNode['nmo:hasMaterial']));
-            const denomination = materialAbbr && denomLabel ? `${materialAbbr} ${denomLabel}` : denomLabel;
+            // Non-committal denomination slugs (nomisma "uncertain_value" & co.)
+            // contribute nothing after the material symbol — "Æ Uncertain Value"
+            // reads worse than the plain Æ. Bare symbol (or nothing) it is.
+            const denomination = /^uncertain/.test(String(denomUri).split('/').pop())
+                ? materialAbbr
+                : (materialAbbr && denomLabel ? `${materialAbbr} ${denomLabel}` : denomLabel);
 
         // The emperor belongs in the notes, not the citation — strip it from
         // the reference (e.g. "RIC V Saloninus 36" -> "RIC V 36", "RIC IV
@@ -226,6 +312,7 @@ async function getOcreDetailsJSON(ocreId) {
             .filter(Boolean);
         const parsedLabel = parsePrefLabel(prefLabel);
         const mintLabel = getLabel(typeNode['nmo:hasMint']);
+        const issuerLabel = getLabel(typeNode['nmo:hasIssuer']);
         // RIC VI-style prefLabels carry a MINT in the emperor segment
         // ("RIC VI Siscia 146") — the mint belongs on the citation, so
         // never strip a segment that names the record's mint.
@@ -245,13 +332,14 @@ async function getOcreDetailsJSON(ocreId) {
             .replace(/\s{2,}/g, ' ')
             .trim();
             reference = abbreviateEditions(reference);
+            reference = simplifyReference(datasetName, reference);
 
             const features = {
             ocreId: id,
             title: prefLabel,
             reference,
             denomination: denomination,
-            issuer: getLabel(typeNode['nmo:hasIssuer']),
+            issuer: issuerLabel,
             authority: getLabel(typeNode['nmo:hasAuthority']),
             mint: (() => {
                 const m = getLabel(typeNode['nmo:hasMint']);
@@ -267,42 +355,58 @@ async function getOcreDetailsJSON(ocreId) {
                 getFirst(typeNode['nmo:hasStartDate'])?.['@value'],
                 getFirst(typeNode['nmo:hasEndDate'])?.['@value']
             ),
-            // Obverse (with ruler/effigy-aware label composition)
+            // Obverse composition per dataset family: ruler/effigy-aware for
+            // OCRE, moneyer-led for CRRO, king-led for the HRC datasets.
             obverseLegend: getLabel(obvNode?.['nmo:hasLegend']),
             obverseDescription: getLabel(obvNode?.['dcterms:description']),
-            obverseText: composeObverseDescription(getLabel(obvNode?.['dcterms:description']), prefLabel),
+            obverseText: (() => {
+                const obvDesc = getLabel(obvNode?.['dcterms:description']);
+                if (datasetName === 'crro') {
+                    return composeRepublicObverse(issuerLabel, obvDesc);
+                }
+                if (['sco', 'pella', 'pco', 'agco'].includes(datasetName)) {
+                    return composeRoyalObverse(
+                        getLabel(typeNode['nmo:hasAuthority']),
+                        issuerLabel,
+                        obvDesc
+                    );
+                }
+                return composeObverseDescription(obvDesc, prefLabel);
+            })(),
             // Reverse
             reverseLegend: getLabel(revNode?.['nmo:hasLegend']),
             reverseDescription: getLabel(revNode?.['dcterms:description']),
             // Source
-            source: 'OCRE',
+            source: dataset.source,
         };
 
-            console.log('OCRE features extracted:', features.title);
+            console.log(`${dataset.label} features extracted:`, features.title);
 
             // Enrich with RSC/BMC cross-references from the local WildWinds
-            // concordance (swept into the `concordances` collection). Label
-            // convention: RSC line, BMC line, then the RIC citation. Cohen
-            // numbers render as RSC (same corpus/numbering, matches existing
-            // labels). Missing concordance leaves the reference unchanged.
-            const concordance = await findConcordance(id, prefLabel);
-            if (concordance) {
-                const lines = [];
-                if (concordance.rsc.length) lines.push(`RSC ${concordance.rsc[0]}`);
-                // Sear is a fallback when BMC is missing (Sear's numbering
-                // lumps RIC variants, so BMC/RSC stay preferred).
-                if (concordance.bmc.length) lines.push(`BMC ${concordance.bmc[0]}`);
-                else if (concordance.sear.length) lines.push(`Sear ${concordance.sear[0]}`);
-                if (lines.length) {
-                    features.reference = [...lines, reference].join('\n');
-                    // Provenance for the frontend — lets the user one-click the
-                    // WildWinds entry and verify the cross-references.
-                    features.concordance = {
-                        rsc: concordance.rsc[0] || null,
-                        bmc: concordance.bmc[0] || null,
-                        sear: concordance.sear[0] || null,
-                        sourceUrl: concordance.sourceUrl,
-                    };
+            // concordance (swept into the `concordances` collection) — OCRE
+            // only; the concordance is RIC-era and never has RRC entries.
+            // Label convention: RSC line, BMC line, then the RIC citation.
+            // Missing concordance leaves the reference unchanged.
+            if (datasetName === 'ocre') {
+                const concordance = await findConcordance(id, prefLabel);
+                if (concordance) {
+                    const lines = [];
+                    if (concordance.rsc.length) lines.push(`RSC ${concordance.rsc[0]}`);
+                    // Sear is a fallback when BMC is missing (Sear's numbering
+                    // lumps RIC variants, so BMC/RSC stay preferred).
+                    if (concordance.bmc.length) lines.push(`BMC ${concordance.bmc[0]}`);
+                    else if (concordance.sear.length) lines.push(`Sear ${concordance.sear[0]}`);
+                    if (lines.length) {
+                        features.reference = [...lines, reference].join('\n');
+                        // Provenance for the frontend — lets the user one-click the
+                        // WildWinds entry and verify the cross-references.
+                        features.concordance = {
+                            rsc: concordance.rsc[0] || null,
+                            bmc: concordance.bmc[0] || null,
+                            sear: concordance.sear[0] || null,
+                            sourceUrl: concordance.sourceUrl,
+                        };
+                    }
                 }
             }
 
@@ -311,14 +415,14 @@ async function getOcreDetailsJSON(ocreId) {
     } catch (err) {
         if (err.response) {
             const status = err.response.status;
-            console.error(`OCRE API Error: ${status}`);
+            console.error(`${dataset.label} API Error: ${status}`);
             if (status === 404) {
-                return { error: `OCRE record "${id}" was not found. Check the identifier and try again.`, status: 404 };
+                return { error: `${dataset.label} record "${id}" was not found. Check the identifier and try again.`, status: 404 };
             }
-            return { error: `OCRE API returned an error (${status}).`, status };
+            return { error: `${dataset.label} API returned an error (${status}).`, status };
         }
-        console.error('OCRE API Connection Error:', err.message);
-        return { error: 'Failed to connect to OCRE. Please check your connection and try again.' };
+        console.error(`${dataset.label} API Connection Error:`, err.message);
+        return { error: `Failed to connect to ${dataset.label}. Please check your connection and try again.` };
     }
 }
 

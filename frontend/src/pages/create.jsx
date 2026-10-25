@@ -420,23 +420,51 @@ const handleDiameterChange = (e) => {
         };
     }, [isManualMode, visualTarget]); // Rerun if isManualMode or visualTarget changes
 
-    // --- OCRE Lookup ---
+    // --- Catalogue Lookup (OCRE / CRRO / HRC family) ---
     const MATERIAL_MAP = {
         'ar': 'Silver', 'av': 'Gold', 'ae': 'Bronze', 'orichalcum': 'Brass',
         'cu': 'Copper', 'billon': 'Billon', 'lead': 'Lead', 'electrum': 'Electrum',
     };
     const mapMaterial = (m) => MATERIAL_MAP[m?.toLowerCase()] || m || "";
 
+    // Id prefixes are disjoint per catalogue, so the id routes the fetch,
+    // the form's issuer value, and the "View on …" link. API paths:
+    // OCRE/CRRO are flat routes, the HRC family goes through /hrc/:dataset.
+    const CATALOGS = {
+        ocre: { apiPath: 'ocre', label: 'OCRE', issuer: 'Roman Empire',
+            url: (id) => `https://numismatics.org/ocre/id/${id}` },
+        crro: { apiPath: 'crro', label: 'CRRO', issuer: 'Roman Republic',
+            url: (id) => `https://numismatics.org/crro/id/${id}` },
+        sco: { apiPath: 'hrc/sco', label: 'SCO', issuer: 'Seleucid Kingdom',
+            url: (id) => `https://numismatics.org/sco/id/${id}` },
+        pella: { apiPath: 'hrc/pella', label: 'PELLA', issuer: 'Macedonian Kingdom',
+            url: (id) => `https://numismatics.org/pella/id/${id}` },
+        pco: { apiPath: 'hrc/pco', label: 'PCO', issuer: 'Ptolemaic Kingdom',
+            url: (id) => `https://numismatics.org/pco/id/${id}` },
+        agco: { apiPath: 'hrc/agco', label: 'AGCO', issuer: 'Antigonid Kingdom',
+            url: (id) => `https://numismatics.org/agco/id/${id}` },
+    };
+
+    const datasetFor = (id) => {
+        if (/^rrc-/i.test(id)) return 'crro';
+        if (/^sc\./i.test(id)) return 'sco';
+        if (/^price\./i.test(id)) return 'pella';
+        if (/^cpe\./i.test(id)) return 'pco';
+        if (/^newell\./i.test(id)) return 'agco';
+        return 'ocre';
+    };
+
     const handleOcreLookup = (idArg) => {
         const id = (idArg || ocreId).trim();
         if (!id) return;
         setOcreId(id);
         setOcreError("");
-        axios.get(`${BASE_URL}/ocre/${encodeURIComponent(id)}`)
+        const cat = CATALOGS[datasetFor(id)];
+        axios.get(`${BASE_URL}/${cat.apiPath}/${encodeURIComponent(id)}`)
             .then((res) => {
                 const d = res.data;
                 setTitle(d.title || "");
-                setIssuer("Roman Empire");
+                setIssuer(cat.issuer);
                 setDenomination(d.denomination || "");
                 setComposition(mapMaterial(d.material));
                 setReference(d.reference || "");
@@ -463,7 +491,7 @@ const handleDiameterChange = (e) => {
                 setConcordanceSource(d.concordance?.sourceUrl || null);
             })
             .catch((err) => {
-                const message = err.response?.data?.error || "Failed to fetch OCRE data.";
+                const message = err.response?.data?.error || `Failed to fetch ${cat.label} data.`;
                 setOcreError(message);
                 setConcordanceSource(null);
             });
@@ -756,13 +784,13 @@ const handleDiameterChange = (e) => {
                 <Group mb="lg" maw={300}>
                     <Button
                         component="a"
-                        href={`https://numismatics.org/ocre/id/${encodeURIComponent(ocreId)}`}
+                        href={CATALOGS[datasetFor(ocreId)].url(ocreId)}
                         target="_blank"
                         rel="noreferrer"
                         variant="light"
                         size="xs"
                     >
-                        View on OCRE ↗
+                        View on {CATALOGS[datasetFor(ocreId)].label} ↗
                     </Button>
                 </Group>
             )}

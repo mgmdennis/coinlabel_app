@@ -8,8 +8,11 @@
  */
 export const extractLookupValue = (raw) => {
   let val = String(raw || '').trim();
-  if (val.includes('numismatics.org/ocre/id/')) {
-    val = val.split('numismatics.org/ocre/id/').pop().split(/[?#]/)[0];
+  if (/numismatics\.org\/(ocr[oe]{1,2}|crro|sco|pella|pco|agco)\/id\//i.test(val)) {
+    // All the numismatics.org TypeSeries datasets share the URL shape:
+    // OCRE (…/ocre/id/…), CRRO (…/crro/id/…) and the HRC family
+    // (SCO/PELLA/PCO/AGCO under their own path segments).
+    val = val.split('/id/').pop().split(/[?#]/)[0];
     val = val.replace(/[/\s]+$/, '').replace(/\.(html|jsonld)$/i, '');
   } else if (val.includes('numista.com/catalogue/pieces')) {
     // Long form: https://en.numista.com/catalogue/pieces247381.html
@@ -26,13 +29,22 @@ export const extractLookupValue = (raw) => {
 };
 
 /**
- * Auto-detect which catalogue a lookup value targets. OCRE ids always start
- * with "ric." and Numista numbers are pure digits, so the two patterns never
- * overlap — detection is deterministic. Returns 'ocre' | 'numista' | null.
+ * Auto-detect which catalogue a lookup value targets. Id prefixes are
+ * disjoint across every supported dataset — OCRE ids start with "ric.",
+ * CRRO with "rrc-", and the HRC family by series (sc. = Seleucid Coins,
+ * price. = Price/Macedon, cpe. = CPE/Ptolemies, newell. = AGCO's Newell
+ * numbering; other AGCO series ids may exist — extend here when seen); Numista numbers are pure
+ * digits. AGCO (Antigonid) has no id pattern on record yet — add it here
+ * once discovered. Returns the detected dataset kind or null.
  */
 export const detectLookupKind = (raw) => {
   const val = String(raw || '').trim();
   if (/^ric\./i.test(val)) return 'ocre';
+  if (/^rrc-/i.test(val)) return 'crro';
+  if (/^sc\./i.test(val)) return 'sco';
+  if (/^price\./i.test(val)) return 'pella';
+  if (/^cpe\./i.test(val)) return 'pco';
+  if (/^newell\./i.test(val)) return 'agco';
   if (/^\d+$/.test(val)) return 'numista';
   return null;
 };

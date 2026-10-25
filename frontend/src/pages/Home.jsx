@@ -247,20 +247,21 @@ const visibleCoins = q && viewCoins
     const val = extractLookupValue(lookupValue);
     if (!val) return;
     setLookupError(null);
-    // The bar figures out the catalogue itself: OCRE ids start with "ric.",
-    // Numista numbers are pure digits — the two never overlap.
+    // The bar figures out the catalogue itself: every id scheme has a
+    // disjoint prefix (ric. / rrc- / sc. / price. / cpe.), Numista numbers
+    // are pure digits — detection never overlaps.
     const kind = detectLookupKind(val);
-    if (kind === 'ocre') {
-      navigate('/create', { state: { ocreId: val, manualMode: true } });
-    } else if (kind === 'numista') {
+    if (kind === 'numista') {
       navigate('/create/' + val);
+    } else if (kind) {
+      navigate('/create', { state: { ocreId: val, manualMode: true } });
     } else {
       // Lenient fallback for "N# 123"-style input — pull the digits.
       const digits = val.replace(/\D+/g, '');
       if (digits) {
         navigate('/create/' + digits);
       } else {
-        setLookupError('Enter a Numista number, a RIC id (e.g. ric.4.ss.118), or paste a catalogue link.');
+        setLookupError('Enter a Numista number, a RIC id (e.g. ric.4.ss.118), an RRC id (e.g. rrc-44.5), a SC/Price/CPE id (e.g. sc.1.2257.2), or paste a catalogue link.');
       }
     }
   };
@@ -307,7 +308,7 @@ const visibleCoins = q && viewCoins
                 rightSectionWidth={detectedKind ? 88 : undefined}
                 rightSection={detectedKind ? (
                   <Badge size="xs" variant="light" color="green" mr={6} style={{ pointerEvents: 'none' }} leftSection={<Check size={10} />}>
-                    {detectedKind === 'ocre' ? 'OCRE' : 'N#'}
+                    {({ ocre: 'OCRE', crro: 'CRRO', sco: 'SCO', pella: 'PELLA', pco: 'PCO', agco: 'AGCO' }[detectedKind] || 'N#')}
                   </Badge>
                 ) : undefined}
                 onChange={(e) => {
@@ -330,7 +331,7 @@ const visibleCoins = q && viewCoins
                         setLookupError(null);
                     }
                 }}
-                placeholder="Numista number or RIC id (e.g. 247381 or ric.4.ss.118)…"
+                placeholder="Numista number or catalogue id (247381, ric.4.ss.118, rrc-44.5, sc.1.2257.2, price.4069)…"
                 style={{ flex: 1, minWidth: 0 }}
                 styles={{ input: { borderTopRightRadius: 0, borderBottomRightRadius: 0 } }}
               />

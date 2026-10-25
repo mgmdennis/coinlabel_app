@@ -383,7 +383,10 @@ const BackLabelContainer = ({
                 )}
                 {visualTarget === "LEGENDS" ? (
                     <div className="legends-block">
-                        <div className="legend-caption">Obverse</div>
+                        {/* Side captions only render when that legend has
+                            content — an empty side is just omitted, and the
+                            divider only separates two populated sides. */}
+                        {legendObv && <div className="legend-caption">Obverse</div>}
                         <LabelField
                             isEditable={isEditable}
                             placeholder="Obverse legend"
@@ -394,8 +397,8 @@ const BackLabelContainer = ({
                             className="label legend legend-obv"
                             onChange={(e) => setLegendObv?.(e.target.value)}
                         />
-                        {(legendObv || legendRev) && <hr className="legend-divider" />}
-                        <div className="legend-caption legend-caption-reverse">Reverse</div>
+                        {(legendObv && legendRev) && <hr className="legend-divider" />}
+                        {legendRev && <div className="legend-caption legend-caption-reverse">Reverse</div>}
                         <LabelField
                             isEditable={isEditable}
                             placeholder="Reverse legend"
