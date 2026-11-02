@@ -18,6 +18,11 @@ const imageVersion = (value) =>
  */
 const stripImages = (doc) => {
   const o = doc.toObject ? doc.toObject() : { ...doc };
+  // Presence flags the list endpoints compute in aggregation; the raw doc
+  // responses need them spelled out or clients can't tell a photo exists
+  // without fetching the payload (the coin popup relies on this).
+  o.hasObvImage = !!o.collectionObvImage;
+  o.hasRevImage = !!o.collectionRevImage;
   delete o.collectionObvImage;
   delete o.collectionRevImage;
   return o;
@@ -37,6 +42,9 @@ const getCoins = async (req, res) => {
 const getCoin = async (req, res) => {
   const coin = await Coin.findOne({ _id: req.params.id, userId: req.session.userId });
   if (!coin) return res.status(404).json({ error: 'Not found' });
+  // Dialogue view: the popup fetches facts on open — the full edit page still
+  // needs the payloads, so only ?view=summary skips echoing the base64 photos.
+  if (req.query.view === 'summary') return res.json(stripImages(coin));
   res.json(coin);
 };
 

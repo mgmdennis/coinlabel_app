@@ -1,0 +1,492 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import axios from 'axios';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Text } from '@mantine/core';
+
+import { BASE_URL } from '../config';
+import CoinDialog from '../components/CoinDialog';
+import '../quests.css';
+import { QuestLoading } from '../quests-ui-loading';
+import {
+  Bar, Chip, Icon, Seal, ProgressRing, badgeNameFor, coinPlaceholder, statusLabel,
+} from '../quests-ui';
+
+// Roman Imperial Quests — quest detail. Concept structure: detail copy +
+// dark Quest Progress card, complete banner (opens the award dialog), then
+// a two-column body — a sticky "How this quest is checked" rules rail and
+// one bordered Requirements card (pills in its header) whose rows are
+// number-circle · main · action. Every Emperor renders its eight dynastic
+// sections as details/summary groups.
+
+const percentOf = (quest) =>
+  quest.progress.total ? Math.round((quest.progress.collected / quest.progress.total) * 100) : 0;
+
+const coinImageUrl = (coin, side) => {
+  const version = (side === 'obv' ? coin.obvImageVersion : coin.revImageVersion) || '';
+  return `${BASE_URL}/coin/${coin._id}/image/${side}?v=${encodeURIComponent(version)}`;
+};
+
+const coinSummary = (coin) =>
+  [coin.denomination, coin.year].filter(Boolean).join(' · ');
+
+const CoinFace = ({ coin, side }) => (
+  <span className="q-coin-face">
+    <img
+      className="q-coin-img"
+      src={coin[side === 'obv' ? 'hasObvImage' : 'hasRevImage'] ? coinImageUrl(coin, side) : coinPlaceholder(coin, side)}
+      alt={`${side === 'obv' ? 'Obverse' : 'Reverse'} photo`}
+      onError={(e) => { e.currentTarget.src = coinPlaceholder(coin, side); }}
+      title={side === 'obv' ? 'Obverse' : 'Reverse'}
+      loading="lazy"
+    />
+    <span className="q-coin-face-label">{side === 'obv' ? 'Obverse' : 'Reverse'}</span>
+  </span>
+);
+
+const CoinFaces = ({ coin }) => (
+  <span className="q-coin-faces">
+    <CoinFace coin={coin} side="obv" />
+    <CoinFace coin={coin} side="rev" />
+  </span>
+);
+
+const CHIP_BY_STATUS = {
+  collected: { label: 'Collected', icon: 'circle-check', chip: 'q-chip-complete' },
+  review: { label: 'Needs review', icon: 'alert', chip: 'q-chip-review' },
+  needed: { label: 'Still needed', icon: 'circle', chip: 'q-chip-missing' },
+};
+
+const reqFilterButton = (kind, label, count, current, setFilter) => (
+  <button
+    className="q-filter-btn"
+    type="button"
+    aria-pressed={current === kind}
+    onClick={() => setFilter(kind)}
+  >
+    <span>{label}</span><span className="q-filter-count">{count}</span>
+  </button>
+);
+
+const ReqRow = ({ req, index, total, onOpenCoin }) => {
+  const meta = CHIP_BY_STATUS[req.status];
+  return (
+    <article className={`q-req-row q-req-row--${req.status}`} id={`req-${req.name}`}>
+      <div className="q-req-marker" aria-hidden="true">
+        <span className="q-req-num">{String(index + 1).padStart(2, '0')}</span>
+      </div>
+      <div className="q-req-main">
+        <div className="q-req-topline">
+          <div className="q-req-title-group">
+            <h3>{req.name}</h3>
+            {req.reign && <span className="q-reign">{req.reign}</span>}
+          </div>
+          <span className={`q-chip ${meta.chip}`}>
+            <Icon name={meta.icon} size={13} />
+            {meta.label}
+          </span>
+        </div>
+
+        {req.status === 'collected' && req.coin && (
+          <div className="q-req-coin">
+            <CoinFaces coin={req.coin} />
+            <div style={{ minWidth: 0 }}>
+              <p className="q-match-line"><Icon name="circle-check" size={17} /><span>{[req.coin.issuer, coinSummary(req.coin)].filter(Boolean).join(' — ')}</span></p>
+              <p className="q-reason"><Icon name="info" size={14} /><span>{req.matchReason}</span></p>
+              {req.alternates > 0 && (
+                <p className="q-alternate">{req.alternates} other {req.alternates === 1 ? 'coin also matches' : 'coins also match'} this requirement; only one can count.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {req.status === 'review' && req.coin && (
+          <div className="q-req-coin">
+            <CoinFaces coin={req.coin} />
+            <div className="q-review-box" style={{ flex: 1, minWidth: 0 }}>
+              <p className="q-review-label"><Icon name="alert" size={14} />Possible match — not counted</p>
+              <p className="q-review-coin">{[req.coin.issuer, coinSummary(req.coin)].filter(Boolean).join(' · ')}</p>
+              <p className="q-reason"><Icon name="info" size={14} /><span>{req.matchReason}</span></p>
+            </div>
+          </div>
+        )}
+
+        {req.status === 'needed' && (
+          <>
+            <p className="q-missing-lead">No matching coin in your cabinet yet.</p>
+            <p className="q-qualify">{req.explanation}</p>
+          </>
+        )}
+      </div>
+      <div className="q-req-action">
+        {(req.status === 'collected' || req.status === 'review') && req.coin && (
+          <button
+            className={`q-btn-outline${req.status === 'review' ? '-blue' : ''}`}
+            type="button"
+            onClick={() => onOpenCoin(req.coin._id)}
+          >
+            {req.status === 'review' ? 'Review coin' : 'View coin'}
+          </button>
+        )}
+        {req.status === 'needed' && (
+          <Link className="q-btn-outline" to="/create">Record a coin</Link>
+        )}
+      </div>
+    </article>
+  );
+};
+
+const AwardDialog = ({ quest, quests, open, onClose }) => {
+  const ref = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return undefined;
+    if (open) {
+      dialog.showModal();
+      dialog.addEventListener('cancel', (e) => e.preventDefault());
+    }
+    return () => { if (dialog.open) dialog.close(); };
+  }, [open]);
+
+  if (!open || !quest) return null;
+  const questsComplete = (quests ?? []).filter((q) => q.progress.complete).length;
+  const coins = quest.requirements
+    .filter((r) => r.status === 'collected' && r.coin && r.coin.hasObvImage)
+    .slice(0, 10)
+    .map((r) => r.coin);
+
+  return (
+    <dialog className="q-dialog q-award-dialog" ref={ref} aria-labelledby="q-award-title">
+      <div className="q-dialog-head">
+        <div>
+          <p className="q-eyebrow">Quest complete</p>
+          <h2 id="q-award-title" tabIndex={-1}>{quest.title}</h2>
+        </div>
+        <button className="q-icon-btn" type="button" onClick={onClose} aria-label="Close award">✕</button>
+      </div>
+      <div className="q-dialog-scroll q-award-body">
+        <Seal badge={quest.badge} earned size={132} />
+        <p className="q-award-badge-name">{badgeNameFor(quest)} badge</p>
+        <p className="q-award-copy">
+          Every requirement is now represented in your cabinet. The badge stays
+          with the quest while it remains complete.
+        </p>
+        {coins.length > 0 && (
+          <div className="q-award-coins">
+            {coins.map((coin) => (
+              <img
+                key={coin._id}
+                className="q-coin-img"
+                src={coinImageUrl(coin, 'obv')}
+                alt=""
+                loading="lazy"
+                width={44}
+                height={44}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ))}
+          </div>
+        )}
+        <div className="q-award-stats">
+          <div className="q-award-stat">
+            <strong>{quest.progress.collected}</strong>
+            <span>{quest.unit} collected</span>
+          </div>
+          <div className="q-award-stat">
+            <strong>{questsComplete}</strong>
+            <span>quests complete</span>
+          </div>
+        </div>
+      </div>
+      <div className="q-dialog-foot q-dialog-foot-split">
+        <button className="q-btn-outline" type="button" onClick={() => { onClose(); navigate('/quests'); }}>
+          Back to quests
+        </button>
+        <button className="q-btn-outline-blue" type="button" onClick={onClose}>View quest</button>
+      </div>
+    </dialog>
+  );
+};
+
+const QuestDetail = () => {
+  const { questId } = useParams();
+  const [quests, setQuests] = useState(null);
+  const [coinsCount, setCoinsCount] = useState(null);
+  const [error, setError] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [openCoinId, setOpenCoinId] = useState(null);
+  const [awardQuestId, setAwardQuestId] = useState(null);
+  const prevCompleteRef = useRef({});
+  const initializedRef = useRef(false);
+
+  const refresh = useCallback(() => {
+    axios.get(`${BASE_URL}/quests`)
+      .then((res) => {
+        const next = res.data;
+        if (initializedRef.current) {
+          const newly = next.filter((q) => q.progress.complete && !prevCompleteRef.current[q.id]);
+          if (newly.length > 0) setAwardQuestId(newly[0].id);
+        }
+        next.forEach((q) => { prevCompleteRef.current[q.id] = q.progress.complete; });
+        initializedRef.current = true;
+        setQuests(next);
+      })
+      .catch(() => setError('Could not load quests. Try again.'));
+  }, []);
+
+  useEffect(() => {
+    axios.get(`${BASE_URL}/coins/collection`).catch(() => null)
+      .then((c) => { if (c) setCoinsCount(Array.isArray(c.data) ? c.data.length : null); });
+    refresh();
+  }, [refresh]);
+
+  if (error) {
+    return <div className="q-root"><div className="q-container"><Text c="red.7">{error}</Text></div></div>;
+  }
+
+  if (quests === null) {
+    return <QuestLoading hint="Reading the quest…" />;
+  }
+
+  const quest = quests.find((q) => q.id === questId);
+  if (!quest) {
+    return (
+      <div className="q-root q-detail-page">
+        <div className="q-container">
+          <Text c="dimmed" my="xl">No such quest.</Text>
+          <Link className="q-back-link" to="/quests"><Icon name="arrow-left" size={18} />All quests</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const percent = percentOf(quest);
+  const badge = badgeNameFor(quest);
+  const counts = {
+    collected: quest.requirements.filter((r) => r.status === 'collected').length,
+    review: quest.requirements.filter((r) => r.status === 'review').length,
+    needed: quest.requirements.filter((r) => r.status === 'needed').length,
+  };
+  const next = quest.requirements.find((r) => r.status !== 'collected');
+  const visible = quest.requirements
+    .map((req, index) => ({ req, index }))
+    .filter(({ req }) => filter === 'all' || req.status === filter);
+
+  const scrollToNext = () => {
+    if (!next) return;
+    const el = document.getElementById(`req-${next.name}`);
+    if (!el) return;
+    const parent = el.closest('details');
+    if (parent) parent.open = true;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const detailEyebrow = [quest.family, quest.dates, `${quest.progress.total} ${quest.unit}`].filter(Boolean).join(' · ');
+
+
+  // Rules rail copy — ruler quests get the exact-name/OCCCDE blurb; typed
+  // quests describe their field matchers. The last two lines are constant.
+  const kinds = [...new Set(quest.requirements.map((r) => r.matchType))];
+  const isTyped = kinds.every((k) => ['metal', 'denomination', 'reverseType', 'mint', 'moneyer'].includes(k));
+  const hasOcre = quest.requirements.some((r) => r.matchType === 'ocre' || r.id === 'five-good');
+
+  return (
+    <div className="q-root q-detail-page">
+      <div className="q-shell">
+      <div className="q-container">
+        <Link className="q-back-link" to="/quests"><Icon name="arrow-left" size={18} />All quests</Link>
+
+        <div className="q-detail-head">
+          <div className="q-detail-copy">
+            <p className="q-eyebrow">{detailEyebrow}</p>
+            <h1 className="q-detail-title" tabIndex={-1}>{quest.title}</h1>
+            <p className="q-lede">{quest.intro || quest.blurb}</p>
+            <div className="q-meta-row">
+              <span className="q-meta">{quest.progress.total} {quest.unit !== 'requirements' ? quest.unit : 'requirements'}</span>
+              <span className="q-meta">{quest.dates}</span>
+              <span className="q-meta">Badge · {badge}</span>
+            </div>
+            {quest.historicalNote && (
+              <div className="q-note">
+                <Icon name="info" size={16} />
+                <p>{quest.historicalNote}</p>
+              </div>
+            )}
+          </div>
+
+          <aside className="q-progress-card" aria-label="Quest progress">
+            <div className="q-progress-head">
+              <p className="q-eyebrow">Quest progress</p>
+              <Chip complete={quest.progress.complete}>{statusLabel(quest.progress.complete)}</Chip>
+            </div>
+            <div className="q-progress-visual">
+              <ProgressRing percent={percent} collected={quest.progress.collected} total={quest.progress.total} />
+              <div className="q-progress-copy">
+                <strong>{quest.progress.collected} of {quest.progress.total}</strong>
+                <span>requirements met</span>
+                <span className="q-progress-remaining">{quest.progress.total - quest.progress.collected} remaining</span>
+              </div>
+            </div>
+            <div className="q-badge-row">
+              <Seal badge={quest.badge} earned={quest.progress.complete} size={80} />
+              <div>
+                <p className="q-badge-label">Badge</p>
+                <p className="q-badge-name">{badge}</p>
+                <p className="q-badge-state">
+                  <Icon name={quest.progress.complete ? 'check' : 'lock'} size={13} />
+                  {quest.progress.complete ? 'Earned' : 'Not yet earned'}
+                </p>
+              </div>
+            </div>
+            {quest.progress.complete
+              ? <p className="q-progress-copy" style={{ marginTop: 20 }}><span style={{ color: '#d3f0d9' }}>All requirements secured — the badge is yours.</span></p>
+              : next
+                ? (
+                  <button className="q-progress-btn" type="button" onClick={scrollToNext}>
+                    <span>{next.status === 'review' ? 'Review' : 'Find'}: {next.name}</span>
+                    <Icon name="arrow-right" size={16} />
+                  </button>
+                )
+                : null}
+          </aside>
+        </div>
+
+        {quest.progress.complete && (
+          <button
+            className="q-complete-banner q-complete-banner-btn"
+            type="button"
+            onClick={() => setAwardQuestId(quest.id)}
+          >
+            <Seal badge={quest.badge} earned size={52} />
+            <div>
+              <p className="q-eyebrow">Quest complete</p>
+              <h2>{badge} badge earned</h2>
+              <p>All {quest.progress.total} requirements are represented in your cabinet.</p>
+            </div>
+          </button>
+        )}
+
+        <div className="q-detail-body">
+          <aside className="q-rules" aria-labelledby="rules-heading">
+            <h2 id="rules-heading">How this quest is checked</h2>
+            <ul className="q-rule-list">
+              {isTyped
+                ? (
+                  <li>
+                    <Icon name="check" size={16} />
+                    <span>Slots are matched from the recorded denomination, metal, reverse type, mint, or moneyer — ruler names don't matter here.</span>
+                  </li>
+                )
+                : (
+                  <>
+                    <li>
+                      <Icon name="check" size={16} />
+                      <span>Issuer names and curated aliases are matched exactly. "Trajan Decius" does not match "Trajan".</span>
+                    </li>
+                    <li>
+                      <Icon name="check" size={16} />
+                      <span>OCRE IDs inside the quest's accepted RIC ranges also satisfy a requirement.</span>
+                    </li>
+                  </>
+                )}
+              <li>
+                <Icon name="check" size={16} />
+                <span>One coin can satisfy one requirement in this quest. The same coin may count in another quest.</span>
+              </li>
+              <li>
+                <Icon name="alert" size={16} />
+                <span>An uncertain attribution is a possible match. It never counts until you confirm it.</span>
+              </li>
+            </ul>
+            <p className="q-rules-note">
+              Only the slot's identity is checked. Year and denomination are shown for context.
+              Mint, deity, legend text, and reverse type beyond the slot value are not evaluated.
+            </p>
+            {coinsCount !== null && (
+              <div className="q-cabinet-line">
+                <Icon name="info" size={16} />
+                <span>{coinsCount} coins in your cabinet</span>
+              </div>
+            )}
+          </aside>
+
+          <section className="q-req-card" aria-labelledby="requirements-heading">
+            <div className="q-req-head">
+              <div className="q-req-head-row">
+                <h2 id="requirements-heading" tabIndex={-1}>Requirements</h2>
+                <span className="q-req-count">{quest.progress.collected} of {quest.progress.total} collected</span>
+              </div>
+              <div className="q-filter-row q-req-filters" role="group" aria-label="Filter requirements by status">
+                {reqFilterButton('all', 'All', quest.progress.total, filter, setFilter)}
+                {reqFilterButton('collected', 'Collected', counts.collected, filter, setFilter)}
+                {reqFilterButton('review', 'Needs review', counts.review, filter, setFilter)}
+                {reqFilterButton('needed', 'Still needed', counts.needed, filter, setFilter)}
+              </div>
+            </div>
+
+            <div className="q-req-list">
+              {quest.sections && quest.sections.length > 0 ? (
+                quest.sections.map((section) => {
+                  const all = visible.filter(({ req }) => req.section === section.id);
+                  if (all.length === 0) return null;
+                  const sectionAll = quest.requirements.filter((r) => r.section === section.id);
+                  const sectionDone = sectionAll.filter((r) => r.status === 'collected').length;
+                  const sectionActive = sectionAll.some((r) => r.status !== 'needed');
+                  const shouldOpen = filter !== 'all' || sectionActive;
+                  return (
+                    <details key={section.id} className="q-req-section" open={shouldOpen}>
+                      <summary>
+                        <span className="q-req-section-title">
+                          <h3>{section.title}</h3>
+                          <span className="q-req-section-range">{section.range}</span>
+                        </span>
+                        <span className="q-req-section-meta">
+                          <span>{sectionDone} of {sectionAll.length}</span>
+                          <Icon name="chevron-right" size={16} />
+                        </span>
+                      </summary>
+                      <div className="q-req-section-rows">
+                        {all.map(({ req, index }) => <ReqRow key={req.name} req={req} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} />)}
+                      </div>
+                    </details>
+                  );
+                })
+              ) : (
+                visible.length === 0 ? (
+                  <div className="q-req-empty" role="status">
+                    {filter === 'review' && (
+                      <>
+                        <h3>No attributions need review</h3>
+                        <p>Every conflicting match in this quest has been resolved. Collected coins remain listed under All.</p>
+                        <button className="q-filter-btn" type="button" aria-pressed="false" onClick={() => setFilter('all')}>Show all requirements</button>
+                      </>
+                    )}
+                    {filter === 'needed' && (
+                      <>
+                        <h3>{quest.progress.complete ? 'Nothing is missing' : 'No ruler is missing outright'}</h3>
+                        {quest.progress.complete
+                          ? <p>Every ruler is represented in your cabinet, and the badge is earned.</p>
+                          : <p>{counts.review} {counts.review === 1 ? 'requirement still needs' : 'requirements still need'} an attribution review. Confirm a match to clear it.</p>}
+                        <button className="q-filter-btn" type="button" aria-pressed="false" onClick={() => setFilter(quest.progress.complete ? 'all' : 'review')}>
+                          {quest.progress.complete ? 'Show all requirements' : 'Review possible matches'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  visible.map(({ req, index }) => <ReqRow key={req.name} req={req} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} />)
+                )
+              )}
+            </div>
+          </section>
+        </div>
+      </div>
+      </div>
+      <CoinDialog coinId={openCoinId} onClose={() => setOpenCoinId(null)} onChanged={refresh} />
+      <AwardDialog quest={quests.find((q) => q.id === awardQuestId)} quests={quests} open={!!awardQuestId} onClose={() => setAwardQuestId(null)} />
+    </div>
+  );
+};
+
+export default QuestDetail;

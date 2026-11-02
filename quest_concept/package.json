@@ -1,0 +1,8 @@
+{
+  "name": "numistag-roman-quests-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test quest-engine.test.js"
+  }
+}

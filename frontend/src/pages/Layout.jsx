@@ -88,6 +88,18 @@ const Layout = ({ user, setUser }) => {
       </Anchor>
       <Anchor
         component={Link}
+        to="/quests"
+        onClick={close}
+        c="gray.4"
+        fw={700}
+        tt="uppercase"
+        size="sm"
+        underline="never"
+      >
+        Quests
+      </Anchor>
+      <Anchor
+        component={Link}
         to="/settings"
         onClick={close}
         c="gray.4"

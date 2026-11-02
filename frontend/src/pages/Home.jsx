@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 import { BASE_URL } from '../config';
+import CoinDialog from '../components/CoinDialog';
 import { extractLookupValue, detectLookupKind } from '../utils/lookup';
 import { FrontLabelContainer, BackLabelContainer } from "./label";
 
@@ -43,6 +44,7 @@ const coinImageUrl = (coin, side) => {
 const Home = () => {
   const [coins, setCoins] = useState(null);
   const [collectionItems, setCollectionItems] = useState(null);
+  const [openCoinId, setOpenCoinId] = useState(null);
   const [lookupValue, setLookupValue] = useState("");
   const [lookupError, setLookupError] = useState(null);
   const location = useLocation();
@@ -122,22 +124,45 @@ const Home = () => {
       .catch((err) => console.error(err));
   };
 
+  const hasCollectionItems = (ids) => ids.some(id => coins?.find(c => c._id === id)?.isCollectionItem);
+
   const handleDeleteSelected = async () => {
     const selectedIds = Object.keys(selectedCoins).filter(id => selectedCoins[id]);
     const count = selectedIds.length;
-    const hasCollectionItems = selectedIds.some(id => coins?.find(c => c._id === id)?.isCollectionItem);
-    const msg = hasCollectionItems
-      ? `Delete ${count} selected label(s)? Labels on collection items will be detached but the collection items kept.`
-      : `Are you sure you want to delete ${count} selected label(s)?`;
+    // In collection view the selected rows ARE the coins — delete them
+    // outright. In the labels views, a collection item keeps its record:
+    // only the label is detached.
+    const isCollectionView = view === 'collection';
+    const msg = isCollectionView
+      ? count === 1
+        ? 'Delete this coin from your collection? The coin and its label are removed permanently.'
+        : `Delete ${count} coins from your collection? The coins and their labels are removed permanently.`
+      : hasCollectionItems(selectedIds)
+        ? `Delete ${count} selected label(s)? Labels on collection items will be detached but the collection items kept.`
+        : `Are you sure you want to delete ${count} selected label(s)?`;
     if (window.confirm(msg)) {
       try {
         const results = await Promise.all(selectedIds.map(id => {
           const coin = coins?.find(c => c._id === id);
-          return coin?.isCollectionItem
+          return !isCollectionView && coin?.isCollectionItem
             ? axios.put(`${BASE_URL}/coin/detach-label/${id}`).then(r => ({ type: 'detach', data: r.data }))
             : axios.delete(`${BASE_URL}/coin/delete/${id}`).then(r => ({ type: 'delete', data: r.data }));
         }));
         setCoins(prev => {
+          let updated = [...prev];
+          results.forEach(r => {
+            if (r.type === 'detach') {
+              updated = updated.map(c => c._id === r.data._id ? r.data : c);
+            } else {
+              updated = updated.filter(c => c._id !== r.data._id);
+            }
+          });
+          return updated;
+        });
+        // The collection view renders from collectionItems — keep both
+        // lists in step so deleted coins disappear from any open view.
+        setCollectionItems(prev => {
+          if (!prev) return prev;
           let updated = [...prev];
           results.forEach(r => {
             if (r.type === 'detach') {
@@ -421,7 +446,7 @@ const visibleCoins = q && viewCoins
       )}
 
       <div className="coins-list">
-        {hasVisible && view !== 'collection' && (
+        {hasVisible && (
           <Group justify="space-between" mb="xs" pl="md">
             <Checkbox
               id="select-all-checkbox"
@@ -430,15 +455,17 @@ const visibleCoins = q && viewCoins
               onChange={handleSelectAllToggle}
               label={<Text size="sm" c="dimmed">{selectAllLabel}</Text>}
             />
-            <Button
-              variant="subtle"
-              color="gray"
-              size="compact-sm"
-              onClick={toggleCollapseAll}
-              leftSection={<ChevronsUpDown size={14} />}
-            >
-              <Text size="sm">{allCollapsed ? 'Expand all' : 'Collapse all'}</Text>
-            </Button>
+            {view !== 'collection' && (
+              <Button
+                variant="subtle"
+                color="gray"
+                size="compact-sm"
+                onClick={toggleCollapseAll}
+                leftSection={<ChevronsUpDown size={14} />}
+              >
+                <Text size="sm">{allCollapsed ? 'Expand all' : 'Collapse all'}</Text>
+              </Button>
+            )}
           </Group>
         )}
 
@@ -520,7 +547,7 @@ const visibleCoins = q && viewCoins
                       transition: 'box-shadow 0.15s, transform 0.15s, border-color 0.15s',
                       borderColor: isSelected ? 'var(--mantine-color-green-6)' : undefined,
                     }}
-                    onClick={() => navigate(`/item/${coin._id}`)}
+                    onClick={() => setOpenCoinId(coin._id)}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = 'var(--mantine-color-green-6)';
                       e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
@@ -543,6 +570,24 @@ const visibleCoins = q && viewCoins
                         boxSizing: 'border-box',
                       }}
                     >
+                      {/* Selection checkbox — sits over the image corner; clicking
+                          it toggles selection without triggering card navigation */}
+                      <Box
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          position: 'absolute', top: 6, left: 6, zIndex: 1,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 24, height: 24,
+                          background: 'rgba(255,255,255,0.85)',
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => toggleSelect(coin._id)}
+                          size="xs"
+                        />
+                      </Box>
                       {coin.hasObvImage || coin.hasRevImage ? (
                         <Group gap={6} wrap="nowrap" align="center" style={{ width: '100%', height: '100%' }}>
                           {coin.hasObvImage && (
@@ -627,7 +672,7 @@ const visibleCoins = q && viewCoins
                             onClick={(e) => {
                                 if (view === 'collection') {
                                     e.stopPropagation();
-                                    navigate(`/item/${coin._id}`);
+                                    setOpenCoinId(coin._id);
                                 }
                             }}
                         >
@@ -703,6 +748,7 @@ const visibleCoins = q && viewCoins
           </Group>
         )}
       </div>
+      <CoinDialog coinId={view === 'collection' ? openCoinId : null} onClose={() => setOpenCoinId(null)} onChanged={() => setCollectionItems(null)} />
     </Container>
   );
 };
