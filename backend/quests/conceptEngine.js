@@ -121,15 +121,18 @@ const coinPreference = (coin) =>
   (String(coin.ocreId ?? '').trim() ? 2 : 0) + (isUncertain(coin) ? 0 : 1);
 
 const metalOf = (coin) => {
-  const declared = normalizeName(coin.metal);
+  const declared = normalizeName(coin.metal ?? coin.composition);
   if (declared.includes('gold')) return 'gold';
   if (declared.includes('silver')) return 'silver';
   if (declared.includes('bronze')) return 'bronze';
+  if (declared.includes('copper')) return 'bronze';
+  if (declared.includes('orichalcum')) return 'bronze';
 
   const denomination = normalizeName(coin.denomination);
   if (/\b(aureus|solidus|gold|av)\b/.test(denomination)) return 'gold';
   if (/\b(denarius|antoninianus|quinarius|siliqua|miliarensis|argenteus|silver|ar)\b/.test(denomination)) return 'silver';
-  if (/\b(sestertius|dupondius|as|quadrans|follis|nummus|bronze|ae|aes)\b/.test(denomination)) return 'bronze';
+  if (/\b(sestertius|dupondius|as|quadrans|follis|nummus|bronze|aes)\b/.test(denomination)) return 'bronze';
+  if (/\bae[0-9]*\b/.test(denomination)) return 'bronze';
   return '';
 };
 

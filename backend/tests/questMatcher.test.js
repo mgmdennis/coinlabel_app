@@ -174,6 +174,13 @@ test('Four Metals is matched by denomination, names carry metal hints', () => {
   assert.equal(statusOf(quests, 'four-metals', 'Silver (AR)'), 'collected');
   assert.equal(statusOf(quests, 'four-metals', 'Bronze (Æ)'), 'collected');
 });
+test('Four Metals accepts Æ AeN-size denominations and composition hints', () => {
+  const quests = matchQuests([
+    baseCoin('c1', { denomination: 'Æ Ae3', composition: 'Bronze', details: 'Ruler: Gallienus' }),
+    baseCoin('c2', { denomination: 'Æ Ae1', composition: 'Bronze', details: 'Ruler: Aurelian' }),
+  ]);
+  assert.equal(statusOf(quests, 'four-metals', 'Bronze (Æ)'), 'collected');
+});
 
 test('The Twelve Powers reads the reverse-type claim', () => {
   const quests = matchQuests([
