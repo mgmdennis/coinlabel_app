@@ -158,7 +158,19 @@ function matchQuests(coins) {
         }
       }
     }
-    if (occre_check(ocEff, idOwners, normalizeName(issuerEff))) ocreEff = '';
+    // Only a DEFINITE resolved identity neutralizes the id — a vague issuer
+    // ("Roman Empire", "Uncertain?") has no conflict, and per the catalog's
+    // rules of the road the OCRE id is authoritative. An unresolved bare
+    // Faustina also blocks (a Faustina bust under Antoninus must not credit
+    // Antoninus until the empress is confirmed).
+    const resolvedKey = normalizeName(issuerEff);
+    const definite =
+      ROSTER_NAMES.has(resolvedKey) || resolvedKey === 'faustina ambiguous';
+    if (
+      definite &&
+      idOwners.length > 0 &&
+      !idOwners.some((owner) => normalizeName(owner) === resolvedKey)
+    ) ocreEff = '';
     // Engine's typed fields, derived from the composed label:
     const revLine = /^Rev:\s*([^\n]+)/m.exec(details)?.[1] ?? '';
     const revType = revLine.split(/[,.;:—-]/)[0]?.trim() ?? '';
