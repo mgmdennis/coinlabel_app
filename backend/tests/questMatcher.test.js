@@ -305,6 +305,17 @@ test('a depicted Licinius counts as Licinius even under another claim', () => {
   assert.equal(statusOf(quests, 'every-emperor', 'Constantine I'), 'needed');
   assert.equal(statusOf(quests, 'constantinians', 'Constantine I'), 'needed');
 });
+test('a "Head of ..." obverse names the portrait just like "Bust of ..." (2026-11-03 real coin)', () => {
+  const quests = matchQuests([
+    baseCoin('c1', {
+      issuer: 'Roman Empire',
+      ocreId: 'ric.3.m_aur.537',
+      details: 'Obv: Head of Lucius Verus, laureate, right.\nRev: Concordia standing left, Concord in field.',
+    }),
+  ]);
+  assert.equal(statusOf(quests, 'every-emperor', 'Lucius Verus'), 'collected');
+  assert.equal(statusOf(quests, 'five-good', 'Marcus Aurelius'), 'needed');
+});
 test('a bare-Faustina coin reviews on the wife slots only, nowhere else', () => {
   const quests = matchQuests([
     baseCoin('c1', {

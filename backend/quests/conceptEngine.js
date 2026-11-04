@@ -78,7 +78,7 @@ const bustNameOf = (coin) => {
   if (typeof (coin && coin.bustOverride) === 'string') return coin.bustOverride;
   const obv = /^Obv:\s*([^\n]+)/m.exec(String(coin.details || ''))?.[1];
   if (!obv) return '';
-  const m = /bust\s+of\s+([^,.]+)/i.exec(obv);
+  const m = /(?:bust|head)\s+of\s+([^,.]+)/i.exec(obv);
   if (!m) return '';
   return m[1]
     .replace(/\s+(right|left|facing|bareheaded|laureate|diademed|draped|cuirassed|veiled|helmeted)\b.*$/i, '')
