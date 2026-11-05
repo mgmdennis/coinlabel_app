@@ -136,9 +136,13 @@ function simplifyReference(datasetName, reference) {
 // keeps the name ("Obv: Head of Antoninus Pius, bare, right.").
 const normName = (s) => String(s || '').toUpperCase().replace(/[^A-Z]/g, '');
 
-function composeObverseDescription(obvDesc, prefLabel) {
+function composeObverseDescription(obvDesc, prefLabel, authorityNames = []) {
+    // Ruler names come from nmo:hasAuthority when the record carries any —
+    // RIC VI-style mint-filing prefLabels ("RIC VI Londinium 71") park the
+    // MINT in the ruler segment, and "Ruler: Londinium" is nonsense.
     const parsed = parsePrefLabel(prefLabel);
-    const rulerNames = (parsed && parsed.names && parsed.names.length) ? parsed.names : [];
+    const prefNames = (parsed && parsed.names && parsed.names.length) ? parsed.names : [];
+    const rulerNames = authorityNames.length ? authorityNames : prefNames;
     const text = String(obvDesc || '').trim().replace(/\.$/, '');
     const head = /^(?:(Laureate|Radiate|Draped|Cuirassed)\s+)?([Bb]ust|[Hh]ead|[Pp]ortrait)\s+of\s+([^.]+)$/.exec(text);
     if (!head) {
@@ -371,7 +375,7 @@ async function getOcreDetailsJSON(ocreId, datasetName = 'ocre') {
                         obvDesc
                     );
                 }
-                return composeObverseDescription(obvDesc, prefLabel);
+                return composeObverseDescription(obvDesc, prefLabel, authorityLabels);
             })(),
             // Reverse
             reverseLegend: getLabel(revNode?.['nmo:hasLegend']),
