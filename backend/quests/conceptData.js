@@ -727,6 +727,7 @@ module.exports.QUEST_CATALOG = [
           "Constantine I"
         ],
         "aliases": [
+          "Constantine",
           "Constantine the Great",
           "Flavius Valerius Constantinus"
         ],
@@ -1610,6 +1611,7 @@ module.exports.QUEST_CATALOG = [
           "Constantine I"
         ],
         "aliases": [
+          "Constantine",
           "Constantine the Great",
           "Flavius Valerius Constantinus"
         ],
