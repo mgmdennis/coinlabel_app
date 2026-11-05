@@ -376,13 +376,27 @@ async function getOcreDetailsJSON(ocreId, datasetName = 'ocre') {
                 // Description-less obverses fall back by data richness:
                 // many OCRE types (RIC V Lugdunum joint reigns) carry only
                 // the legend — nmo:hasPortrait records the DEPICTED person
-                // explicitly when description is absent, so prefer it over
-                // the raw legend line ("Portrait of Gallienus" beats
-                // "Obv: GALLIENVS P F AVG." for the card).
+                // explicitly when description is absent. The portrait line
+                // is composed directly (NOT through the head parser — its
+                // same-name branch would strip the effigy and leave a bare
+                // "Obv: Portrait.").
                 let obvDesc = getLabel(obvNode?.['dcterms:description']);
                 if (!obvDesc) {
                     const portrait = getLabel(obvNode?.['nmo:hasPortrait']);
-                    if (portrait) obvDesc = `Portrait of ${portrait}`;
+                    if (portrait) {
+                        const rulerClean = [prefLabel]
+                            .map((pl) => (parsePrefLabel(pl)?.names || []))
+                            .flat()
+                            .filter((n) => {
+                                const mn = String(mintLabel || '').toLowerCase().replace(/[^a-z]/g, '');
+                                return !mn || String(n).toLowerCase().replace(/[^a-z]/g, '') !== mn;
+                            })
+                            .map((n) => String(n).replace(/\([^)]*\)/g, '').trim())
+                            .filter(Boolean)
+                            .sort((a, b) => a.length - b.length)[0];
+                        return [rulerClean ? `Ruler: ${rulerClean}` : '', `Obv: Portrait of ${portrait}.`]
+                            .filter(Boolean).join('\n');
+                    }
                 }
                 if (!obvDesc) obvDesc = getLabel(obvNode?.['nmo:hasLegend']);
                 if (datasetName === 'crro') {
