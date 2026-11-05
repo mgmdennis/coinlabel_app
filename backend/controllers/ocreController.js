@@ -136,17 +136,26 @@ function simplifyReference(datasetName, reference) {
 // keeps the name ("Obv: Head of Antoninus Pius, bare, right.").
 const normName = (s) => String(s || '').toUpperCase().replace(/[^A-Z]/g, '');
 
-function composeObverseDescription(obvDesc, prefLabel, authorityNames = []) {
-    // Ruler names come from nmo:hasAuthority when the record carries any —
-    // RIC VI-style mint-filing prefLabels ("RIC VI Londinium 71") park the
-    // MINT in the ruler segment, and "Ruler: Londinium" is nonsense.
+function composeObverseDescription(obvDesc, prefLabel, authorityNames = [], mintName = '') {
+    // Ruler names come from the prefLabel's emperor segment (the RIC series
+    // ruler — for joint reigns that is the numbering emperor alone). The
+    // recorded authorities are only a FALLBACK for RIC VI-style mint-filing
+    // prefLabels, whose ruler segment is actually the mint ("RIC VI
+    // Londinium 71") — those can leave only "Ruler: Londinium".
     const parsed = parsePrefLabel(prefLabel);
     const prefNames = (parsed && parsed.names && parsed.names.length) ? parsed.names : [];
-    const rulerNames = authorityNames.length ? authorityNames : prefNames;
+    const mintNorm = String(mintName || '').toLowerCase().replace(/[^a-z]/g, '');
+    const prefRulerNames = prefNames.filter((n) => !mintNorm
+        || String(n).toLowerCase().replace(/[^a-z]/g, '') !== mintNorm);
+    const rulerNames = prefRulerNames.length ? prefRulerNames : authorityNames;
     const text = String(obvDesc || '').trim().replace(/\.$/, '');
     const head = /^(?:(Laureate|Radiate|Draped|Cuirassed)\s+)?([Bb]ust|[Hh]ead|[Pp]ortrait)\s+of\s+([^.]+)$/.exec(text);
     if (!head) {
-        return [rulerNames.length ? `Ruler: ${rulerNames[0]}` : '', text && `Obv: ${text}.`].filter(Boolean).join('\n');
+        const cleanF = rulerNames
+            .map((rn) => String(rn).replace(/\([^)]*\)/g, '').trim())
+            .filter(Boolean)
+            .sort((a, b) => a.length - b.length)[0];
+        return [cleanF ? `Ruler: ${cleanF}` : '', text && `Obv: ${text}.`].filter(Boolean).join('\n');
     }
 
     const parts = head[3].split(',').map((s) => s.trim()).filter(Boolean);
@@ -364,7 +373,11 @@ async function getOcreDetailsJSON(ocreId, datasetName = 'ocre') {
             obverseLegend: getLabel(obvNode?.['nmo:hasLegend']),
             obverseDescription: getLabel(obvNode?.['dcterms:description']),
             obverseText: (() => {
-                const obvDesc = getLabel(obvNode?.['dcterms:description']);
+                // Description-less obverses (RIC V Lugdunum joint-reign issues
+                // carry legend only) fall back to the legend so the label
+                // still gets an Obv line.
+                const obvDesc = getLabel(obvNode?.['dcterms:description'])
+                    || getLabel(obvNode?.['nmo:hasLegend']);
                 if (datasetName === 'crro') {
                     return composeRepublicObverse(issuerLabel, obvDesc);
                 }
@@ -375,7 +388,7 @@ async function getOcreDetailsJSON(ocreId, datasetName = 'ocre') {
                         obvDesc
                     );
                 }
-                return composeObverseDescription(obvDesc, prefLabel, authorityLabels);
+                return composeObverseDescription(obvDesc, prefLabel, authorityLabels, mintLabel);
             })(),
             // Reverse
             reverseLegend: getLabel(revNode?.['nmo:hasLegend']),
