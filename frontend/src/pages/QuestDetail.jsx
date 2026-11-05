@@ -205,7 +205,7 @@ const AwardDialog = ({ quest, quests, open, onClose }) => {
         </button>
         <button className="q-btn-outline-blue" type="button" onClick={onClose}>View quest</button>
       </div>
-    </article>
+    </dialog>
   );
 };
 
