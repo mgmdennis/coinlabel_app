@@ -1,7 +1,7 @@
 // Quest matcher unit tests — pure logic, no DB needed.
 // Run: node --test backend/tests/questMatcher.test.js
-// Contract: the Open Design engine rewrite (2026-10-31) — 15 quests, 177
-// requirements, families + sections + bad art keys. Ruler quests match the
+// Contract: the Open Design engine rewrite (2026-10-31) — 15 quests, 179
+// requirements (Postumus added 2026-11-03), families + sections + bad art keys. Ruler quests match the
 // effective issuer claim ("Ruler:/Issuer:/(X)" line or issuer field), OCRE
 // ranges, or the obverse portrait; theme quests match typed fields derived
 // from the composed details label.
@@ -37,7 +37,7 @@ test('the catalog exposes fifteen quests in order with families', () => {
   assert.deepEqual([...families], ['Imperial runs', 'Long runs', 'Collecting themes']);
   // The every-emperor quest carries its eight dynastic sections.
   const long = quests.find(q => q.id === 'every-emperor');
-  assert.equal(long.requirements.length, 79);
+  assert.equal(long.requirements.length, 80);
   assert.ok(long.sections.length === 8);
 });
 
@@ -322,6 +322,19 @@ test('a "Head of ..." obverse names the portrait just like "Bust of ..." (2026-1
   ]);
   assert.equal(statusOf(quests, 'every-emperor', 'Lucius Verus'), 'collected');
   assert.equal(statusOf(quests, 'five-good', 'Marcus Aurelius'), 'needed');
+});
+test('Postumus fills slots in Soldier Emperors and Every Emperor (added 2026-11-03)', () => {
+  const quests = matchQuests([
+    baseCoin('c1', {
+      ocreId: 'ric.5.post.59',
+      details: 'Ruler: Postumus\nObv: Bust, radiate, draped, right.\nRev: Fides, draped, standing left, holding two ensigns.',
+    }),
+  ]);
+  assert.equal(statusOf(quests, 'soldier-emperors', 'Postumus'), 'collected');
+  assert.equal(statusOf(quests, 'every-emperor', 'Postumus'), 'collected');
+  // The Gallic ruler is not confused with the canonical emperors around him.
+  assert.equal(statusOf(quests, 'every-emperor', 'Gallienus'), 'needed');
+  assert.equal(statusOf(quests, 'every-emperor', 'Claudius Gothicus'), 'needed');
 });
 test('a bare-Faustina coin reviews on the wife slots only, nowhere else', () => {
   const quests = matchQuests([

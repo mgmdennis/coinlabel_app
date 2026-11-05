@@ -606,12 +606,12 @@ module.exports.QUEST_CATALOG = [
   {
     "id": "soldier-emperors",
     "title": "The Soldier Emperors",
-    "dates": "AD 238–268",
+    "dates": "AD 235–269",
     "family": "Imperial runs",
     "unit": "rulers",
     "unitSingular": "ruler",
-    "summary": "Five emperors who ruled through the third-century crisis, when the army made and unmade emperors in quick succession.",
-    "intro": "Between 238 and 268 the empire was shaped by the field army. Maximinus Thrax, Gordian III, Philip I, Trajan Decius, and Valerian each reached the throne through military power — and most died by it.",
+    "summary": "Six rulers who held power through the third-century crisis, when the army made and unmade emperors in quick succession.",
+    "intro": "Between 235 and 269 the empire was shaped by the field army. Maximinus Thrax, Gordian III, Philip I, Trajan Decius, and Valerian each reached the throne through military power — and most died by it. Postumus, raised by the Rhine army after Valerian’s capture, broke away and ruled the Gallic West as an emperor in his own right.",
     "badge": {
       "name": "The Soldier Emperors",
       "art": "helmet"
@@ -686,6 +686,21 @@ module.exports.QUEST_CATALOG = [
           "Publius Licinius Valerianus"
         ],
         "ocrePrefixes": []
+      },
+      {
+        "id": "postumus",
+        "ruler": "Postumus",
+        "reign": "AD 260–269",
+        "qualifies": "Any coin issued in this ruler’s name — a coin of the Gallic Empire counts for the Soldier Emperors run.",
+        "issuers": [
+          "Postumus"
+        ],
+        "aliases": [
+          "Marcus Cassianus Latinius Postumus"
+        ],
+        "ocrePrefixes": [
+          "ric.5.post."
+        ]
       }
     ]
   },
@@ -765,8 +780,8 @@ module.exports.QUEST_CATALOG = [
     "family": "Long runs",
     "unit": "rulers",
     "unitSingular": "ruler",
-    "summary": "Seventy-nine rulers from Augustus to Zeno: the long march through the imperial succession, dynasty by dynasty.",
-    "intro": "A complete run from Augustus to Zeno, grouped by dynasty and crisis. Seventy-nine slots make this a lifetime quest rather than a weekend one; the cabinet recalculates it as the collection grows.",
+    "summary": "Eighty rulers from Augustus to Zeno: the long march through the imperial succession, dynasty by dynasty.",
+    "intro": "A complete run from Augustus to Zeno, grouped by dynasty and crisis. Eighty slots make this a lifetime quest rather than a weekend one; the cabinet recalculates it as the collection grows.",
     "badge": {
       "name": "The Long March",
       "art": "scroll"
@@ -1339,6 +1354,20 @@ module.exports.QUEST_CATALOG = [
         ],
         "aliases": [
           "Publius Licinius Egnatius Gallienus"
+        ],
+        "ocrePrefixes": [],
+        "section": "crisis"
+      },
+      {
+        "id": "postumus",
+        "ruler": "Postumus",
+        "reign": "AD 260–269",
+        "qualifies": "Any coin issued in this ruler’s name (Gallic Empire).",
+        "issuers": [
+          "Postumus"
+        ],
+        "aliases": [
+          "Marcus Cassianus Latinius Postumus"
         ],
         "ocrePrefixes": [],
         "section": "crisis"
