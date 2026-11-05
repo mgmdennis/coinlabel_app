@@ -373,11 +373,18 @@ async function getOcreDetailsJSON(ocreId, datasetName = 'ocre') {
             obverseLegend: getLabel(obvNode?.['nmo:hasLegend']),
             obverseDescription: getLabel(obvNode?.['dcterms:description']),
             obverseText: (() => {
-                // Description-less obverses (RIC V Lugdunum joint-reign issues
-                // carry legend only) fall back to the legend so the label
-                // still gets an Obv line.
-                const obvDesc = getLabel(obvNode?.['dcterms:description'])
-                    || getLabel(obvNode?.['nmo:hasLegend']);
+                // Description-less obverses fall back by data richness:
+                // many OCRE types (RIC V Lugdunum joint reigns) carry only
+                // the legend — nmo:hasPortrait records the DEPICTED person
+                // explicitly when description is absent, so prefer it over
+                // the raw legend line ("Portrait of Gallienus" beats
+                // "Obv: GALLIENVS P F AVG." for the card).
+                let obvDesc = getLabel(obvNode?.['dcterms:description']);
+                if (!obvDesc) {
+                    const portrait = getLabel(obvNode?.['nmo:hasPortrait']);
+                    if (portrait) obvDesc = `Portrait of ${portrait}`;
+                }
+                if (!obvDesc) obvDesc = getLabel(obvNode?.['nmo:hasLegend']);
                 if (datasetName === 'crro') {
                     return composeRepublicObverse(issuerLabel, obvDesc);
                 }
