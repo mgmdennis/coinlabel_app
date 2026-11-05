@@ -106,11 +106,19 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
   const [editName, setEditName] = useState('');
   const [editUncertain, setEditUncertain] = useState(false);
   const [flash, setFlash] = useState('');
+  // Same-coin refresh guard — a late save-refresh must never land on a
+  // dialog that has been re-opened for a different coin.
+  const coinIdRef = useRef(coinId);
+  coinIdRef.current = coinId;
 
   const fetchData = useCallback(() => {
     if (!coinId) return;
-    axios.get(`${BASE_URL}/coin/${coinId}?view=summary`).then((res) => setCoin(res.data)).catch(() => {});
-    axios.get(`${BASE_URL}/quests?coin=${coinId}`).then((res) => setMatches(res.data)).catch(() => setMatches([]));
+    axios.get(`${BASE_URL}/coin/${coinId}?view=summary`).then((res) => {
+      if (coinIdRef.current === coinId) setCoin(res.data);
+    }).catch(() => {});
+    axios.get(`${BASE_URL}/quests?coin=${coinId}`).then((res) => {
+      if (coinIdRef.current === coinId) setMatches(res.data);
+    }).catch(() => { if (coinIdRef.current === coinId) setMatches([]); });
   }, [coinId]);
 
   useEffect(() => {
@@ -121,7 +129,23 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
     return () => { if (dialog.open) dialog.close(); };
   }, [coinId]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  // Fresh view per coin — without this the dialog paints the PREVIOUS
+  // coin's data for a beat while the new fetch is in flight (its state
+  // persists because the dialog stays mounted when closed).
+  useEffect(() => {
+    let live = true;
+    setCoin(null);
+    setMatches(null);
+    if (coinId) {
+      axios.get(`${BASE_URL}/coin/${coinId}?view=summary`).then((res) => {
+        if (live) setCoin(res.data);
+      }).catch(() => {});
+      axios.get(`${BASE_URL}/quests?coin=${coinId}`).then((res) => {
+        if (live) setMatches(res.data);
+      }).catch(() => { if (live) setMatches([]); });
+    }
+    return () => { live = false; };
+  }, [coinId]);
 
   const reattribute = async (name, uncertain) => {
     setBusy(true);
