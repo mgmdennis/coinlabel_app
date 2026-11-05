@@ -8,7 +8,7 @@ import CoinDialog from '../components/CoinDialog';
 import '../quests.css';
 import { QuestLoading } from '../quests-ui-loading';
 import {
-  Bar, Chip, Icon, Seal, ProgressRing, badgeNameFor, coinPlaceholder, statusLabel,
+  Bar, Chip, Icon, QuestError, Seal, ProgressRing, badgeNameFor, coinPlaceholder, statusLabel,
 } from '../quests-ui';
 
 // Roman Imperial Quests — quest detail. Concept structure: detail copy +
@@ -205,8 +205,89 @@ const AwardDialog = ({ quest, quests, open, onClose }) => {
         </button>
         <button className="q-btn-outline-blue" type="button" onClick={onClose}>View quest</button>
       </div>
-    </dialog>
+    </article>
   );
+};
+
+// Per-quest rules copy — the rail speaks each quest's own checkers
+// (Mark 2026-11-03). Mirrors the engine contract in
+// backend/quests/conceptData.js + questMatcher.js — update both together.
+const RULES_RULER = [
+  'Issuer names and curated aliases are matched exactly. "Trajan Decius" does not match "Trajan".',
+  'The obverse portrait decides: a "Bust of / Head of <ruler>" line outranks the recorded claim.',
+  'OCRE IDs inside this quest’s accepted RIC ranges also satisfy a requirement.',
+];
+const RULES_TYPED = [
+  'Slots are matched from the recorded coin facts — not from ruler names.',
+];
+const RULES_BY_QUEST = {
+  'five-good': [
+    'Issuer names and curated aliases are matched exactly.',
+    'The obverse portrait decides: a "Bust of / Head of <ruler>" line outranks the recorded claim.',
+    'OCRE IDs inside each slot’s accepted RIC ranges (ric.2.ner., ric.2.tr., ric.2_3(2).hdn., ric.3.ant., ric.3.m_aur.) fill the slot even when the issuer line is vague.',
+  ],
+  'twelve-caesars': [
+    'Issuer names and curated aliases are matched exactly. "Trajan Decius" does not match "Trajan".',
+    'The obverse portrait outranks the recorded claim.',
+    'OCRE IDs are not evaluated here — the claim or the portrait must name the ruler.',
+  ],
+  'year-of-four': [
+    'Each slot reads the recorded claim (issuer, alias) or the obverse portrait.',
+    'One coin per man who was raised and discarded in a single year of civil war.',
+  ],
+  'julio-claudians': [
+    'Issuer names and curated aliases are matched exactly.',
+    'The obverse portrait outranks the recorded claim — an Augustus portrait under any issuing line stays an Augustus slot.',
+  ],
+  'flavians': [
+    'Issuer names and curated aliases are matched exactly.',
+    'The obverse portrait outranks the recorded claim.',
+  ],
+  'severans': [
+    'Issuer names and curated aliases are matched exactly.',
+    'The obverse portrait outranks the recorded claim.',
+    'Empresses inside their husbands’ series (Julia Domna under ric.4.ss) count for the women’s quest, never for the emperor here.',
+  ],
+  'soldier-emperors': [
+    'Issuer names and curated aliases are matched exactly.',
+    'The obverse portrait outranks the recorded claim.',
+    'Postumus also fills his slot from ric.5.post. OCRE IDs — a Gallic coin whose issuer line is vague still counts.',
+  ],
+  'constantinians': [
+    'Issuer names and curated aliases are matched exactly.',
+    'The obverse portrait outranks the recorded claim — a Crispus bust never credits Constantine.',
+  ],
+  'every-emperor': [
+    'Each of the eighty slots reads the recorded claim (issuer, alias) or the obverse portrait.',
+    'OCRE IDs are not used in this quest — the claim or the portrait must name the ruler.',
+    'The run is grouped into the dynasty sections shown below; a slot belongs to the section covering its reign.',
+  ],
+  'imperial-women': [
+    'The portrait owns the slot: the "Bust of <empress>" line decides which woman a coin counts for.',
+    'A bare "Faustina" / "Diva Faustina" bust reviews on both Faustina slots until you confirm which empress it is.',
+    'Confirm-as rewrites the bust phrase on the label itself, so the card says exactly who is depicted.',
+  ],
+  'four-metals': [
+    'Slots read the coin’s metal, derived from the recorded denomination: AV aureus and solidus are gold, AR denarius and antoninianus are silver, Æ Ae1–Ae4 and sestertius are bronze.',
+    'When the denomination is silent, the composition field decides — bronze, orichalcum, or copper all count as bronze.',
+    'Ruler names don’t matter: any era, any denomination of the right metal counts.',
+  ],
+  'big-denominations': [
+    'Each slot reads the recorded denomination as a whole word — e.g. "Sestertius" matches "Æ Sestertius".',
+    'The issuing ruler is irrelevant; a slot fills when a coin of that denomination exists in the cabinet.',
+  ],
+  'moneyers-republic': [
+    'Slots read the coin’s moneyer — the "Issuer:" line on Republican labels.',
+    'Names are matched as whole words; uncertain marks wait for your confirmation before counting.',
+  ],
+  'twelve-powers': [
+    'Each slot reads the first clause of the reverse description — "Rev: Jupiter seated left…" counts as Jupiter.',
+    'The obverse and the issuing claim are ignored here.',
+  ],
+  'mints-empire': [
+    'Each slot reads the Mint: line of the label; a coin with no recorded mint fills no slot.',
+    'Mints are matched as whole words — a mint recorded as "Londinium" never fills the Lugdunum slot.',
+  ],
 };
 
 const QuestDetail = () => {
@@ -242,7 +323,15 @@ const QuestDetail = () => {
   }, [refresh]);
 
   if (error) {
-    return <div className="q-root"><div className="q-container"><Text c="red.7">{error}</Text></div></div>;
+    return (
+      <div className="q-root">
+        <div className="q-shell">
+          <div className="q-container">
+            <QuestError onRetry={() => { setError(null); refresh(); }} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (quests === null) {
@@ -285,11 +374,13 @@ const QuestDetail = () => {
   const detailEyebrow = [quest.family, quest.dates, `${quest.progress.total} ${quest.unit}`].filter(Boolean).join(' · ');
 
 
-  // Rules rail copy — ruler quests get the exact-name/OCCCDE blurb; typed
-  // quests describe their field matchers. The last two lines are constant.
+  // Rules rail copy — spoken per quest (Mark 2026-11-03): every quest
+  // explains its own checkers. Mirrors the engine contract in
+  // backend/quests/conceptData.js + questMatcher.js — update both together.
   const kinds = [...new Set(quest.requirements.map((r) => r.matchType))];
   const isTyped = kinds.every((k) => ['metal', 'denomination', 'reverseType', 'mint', 'moneyer'].includes(k));
-  const hasOcre = quest.requirements.some((r) => r.matchType === 'ocre' || r.id === 'five-good');
+  const questRules = RULES_BY_QUEST[quest.id]
+    ?? (isTyped ? RULES_TYPED : RULES_RULER);
 
   return (
     <div className="q-root q-detail-page">
@@ -371,25 +462,12 @@ const QuestDetail = () => {
           <aside className="q-rules" aria-labelledby="rules-heading">
             <h2 id="rules-heading">How this quest is checked</h2>
             <ul className="q-rule-list">
-              {isTyped
-                ? (
-                  <li>
-                    <Icon name="check" size={16} />
-                    <span>Slots are matched from the recorded denomination, metal, reverse type, mint, or moneyer — ruler names don't matter here.</span>
-                  </li>
-                )
-                : (
-                  <>
-                    <li>
-                      <Icon name="check" size={16} />
-                      <span>Issuer names and curated aliases are matched exactly. "Trajan Decius" does not match "Trajan".</span>
-                    </li>
-                    <li>
-                      <Icon name="check" size={16} />
-                      <span>OCRE IDs inside the quest's accepted RIC ranges also satisfy a requirement.</span>
-                    </li>
-                  </>
-                )}
+              {questRules.map((rule) => (
+                <li key={rule}>
+                  <Icon name="check" size={16} />
+                  <span>{rule}</span>
+                </li>
+              ))}
               <li>
                 <Icon name="check" size={16} />
                 <span>One coin can satisfy one requirement in this quest. The same coin may count in another quest.</span>
