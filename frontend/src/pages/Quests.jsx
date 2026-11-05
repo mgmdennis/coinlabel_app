@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { Text } from '@mantine/core';
 
 import { BASE_URL } from '../config';
 import '../quests.css';
 import { QuestLoading } from '../quests-ui-loading';
 import {
-  Bar, Chip, Icon, Seal, badgeNameFor, statusLabel,
+  Bar, Chip, Icon, QuestError, Seal, badgeNameFor, statusLabel,
 } from '../quests-ui';
 
 // Roman Imperial Quests — the quest library overview. Progress is computed
@@ -16,6 +15,24 @@ import {
 // and an empty state with a reset.
 
 const FAMILIES_EXPECTED = 3;
+
+const SORT_KEY = 'numistag:quests-sort';
+const sortOptions = [
+  { value: 'library', label: 'Catalog order' },
+  { value: 'percent', label: 'Nearest to completion' },
+  { value: 'started', label: 'In progress first' },
+];
+const sortQuests = (list, sort) => {
+  if (sort === 'library') return list;
+  const percent = (q) => (q.progress.total ? q.progress.collected / q.progress.total : 0);
+  if (sort === 'started') {
+    return [...list].sort((a, b) =>
+      ((b.progress.collected > 0 ? 1 : 0) - (a.progress.collected > 0 ? 1 : 0))
+      || percent(b) - percent(a));
+  }
+  if (sort === 'percent') return [...list].sort((a, b) => percent(b) - percent(a));
+  return list;
+};
 
 const percentOf = (q) =>
   q.progress.total ? Math.round((q.progress.collected / q.progress.total) * 100) : 0;
@@ -125,7 +142,22 @@ const Quests = () => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
   const [family, setFamily] = useState('all');
+  const [sort, setSort] = useState(() => {
+    try {
+      return localStorage.getItem(SORT_KEY) || 'library';
+    } catch {
+      return 'library';
+    }
+  });
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SORT_KEY, sort);
+    } catch {
+      /* private mode — the choice just won't persist */
+    }
+  }, [sort]);
 
   const refresh = useCallback(() => {
     Promise.all([
@@ -185,8 +217,18 @@ const Quests = () => {
     return true;
   });
 
+  const sorted = sortQuests(filtered, sort);
+
   if (error) {
-    return <div className="q-root"><div className="q-container"><Text c="red.7">{error}</Text></div></div>;
+    return (
+      <div className="q-root">
+        <div className="q-shell">
+          <div className="q-container">
+            <QuestError onRetry={() => { setError(null); refresh(); }} />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (quests === null || summary === null) {
@@ -260,6 +302,18 @@ const Quests = () => {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
+          <div className="q-sort-field">
+            <label className="q-sort-label" htmlFor="quest-sort">Sort</label>
+            <select
+              id="quest-sort"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              {sortOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
           <div className="q-family-row" role="group" aria-label="Filter quests by era or theme">
             <button
               className="q-filter-btn"
@@ -284,10 +338,10 @@ const Quests = () => {
         </div>
 
         <p className="q-library-count" role="status">
-          Showing {filtered.length} of {quests.length} quests
+          Showing {sorted.length} of {quests.length} quests
         </p>
 
-        {filtered.length === 0 && (
+        {sorted.length === 0 && (
           <div className="q-library-empty" role="status">
             <h3>No quests match this view</h3>
             <p>Try a different search or clear the era and status filters to see the whole library.</p>
@@ -301,9 +355,9 @@ const Quests = () => {
           </div>
         )}
 
-        {filtered.length > 0 && (
+        {sorted.length > 0 && (
           <div className="q-grid">
-            {filtered.map((q) => <QuestCard key={q.id} quest={q} />)}
+            {sorted.map((q) => <QuestCard key={q.id} quest={q} />)}
           </div>
         )}
       </section>

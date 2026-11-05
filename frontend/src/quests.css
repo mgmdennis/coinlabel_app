@@ -1535,6 +1535,10 @@
 .q-search-input::placeholder { color: var(--q-muted); }
 .q-search-input:focus { outline: 2px solid var(--q-blue);  outline-offset: 1px;  border-color: var(--q-blue); }
 .q-library-count { font-size: 0.8rem;  color: var(--q-muted);  font-variant-numeric: tabular-nums; }
+.q-sort-field { display: flex;  align-items: center;  gap: 8px; }
+.q-sort-label { font-size: 0.75rem;  font-weight: 700;  letter-spacing: 0.06em;  text-transform: uppercase;  color: var(--q-muted); }
+.q-sort-field select { min-height: 44px;  padding: 9px 12px;  border: 1px solid var(--q-line-strong);  border-radius: 999px;  background: #ffffff;  color: var(--q-ink);  font: inherit;  font-size: 0.88rem; }
+.q-sort-field select:focus { outline: 2px solid var(--q-blue);  outline-offset: 1px;  border-color: var(--q-blue); }
 .q-family-row { display: flex;  gap: 4px;  flex-wrap: wrap; }
 .q-family-row .q-filter-btn { border-color: rgba(138, 98, 56, 0.14);  background: var(--q-bronze-soft);  color: var(--q-bronze-deep); }
 .q-family-row .q-filter-btn:hover { border-color: var(--q-bronze-line);  background: #f1e3d0;  color: var(--q-bronze-deep); }
@@ -1815,6 +1819,73 @@ dialog.q-award-dialog { width: min(100% - 32px, 500px); }
 .q-coin-flip-dark::after {
   background: radial-gradient(circle at 62% 36%, #35485c 0%, #24313e 55%, #1a232d 100%);
   border-color: #45596b;
+}
+
+/* ---------- error state ---------- */
+
+.q-error {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding-block: 96px;
+  text-align: center;
+}
+
+.q-shell .q-error {
+  padding-block: 120px;
+}
+
+.q-error-mark {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid var(--q-amber-line);
+  border-radius: 50%;
+  background: var(--q-amber-soft);
+  color: var(--q-amber);
+}
+
+.q-error-title {
+  font-family: 'Fira Sans Condensed', 'Fira Sans', system-ui, sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--q-ink);
+}
+
+.q-error-copy {
+  max-width: 46ch;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--q-body);
+}
+
+.q-error-retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin-top: 6px;
+  padding: 0 16px;
+  border: 1px solid var(--q-line-strong);
+  border-radius: 6px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--q-ink);
+  cursor: pointer;
+  transition: background-color 150ms var(--q-ease), border-color 150ms var(--q-ease);
+}
+
+.q-error-retry:hover {
+  background: var(--q-slate-0);
+  border-color: var(--q-slate-3);
+}
+
+.q-error-retry:focus-visible {
+  outline: 3px solid var(--q-blue);
+  outline-offset: 2px;
 }
 
 /* ---------- rounded content shell ---------- */
