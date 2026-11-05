@@ -302,18 +302,6 @@ const Quests = () => {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="q-sort-field">
-            <label className="q-sort-label" htmlFor="quest-sort">Sort</label>
-            <select
-              id="quest-sort"
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
-              {sortOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
           <div className="q-family-row" role="group" aria-label="Filter quests by era or theme">
             <button
               className="q-filter-btn"
@@ -337,9 +325,23 @@ const Quests = () => {
           </div>
         </div>
 
-        <p className="q-library-count" role="status">
-          Showing {sorted.length} of {quests.length} quests
-        </p>
+        <div className="q-library-meta">
+          <p className="q-library-count" role="status">
+            Showing {sorted.length} of {quests.length} quests
+          </p>
+          <div className="q-sort-field">
+            <select
+              id="quest-sort"
+              aria-label="Sort quests"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              {sortOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {sorted.length === 0 && (
           <div className="q-library-empty" role="status">
