@@ -18,9 +18,9 @@ const FAMILIES_EXPECTED = 3;
 
 const SORT_KEY = 'numistag:quests-sort';
 const sortOptions = [
-  { value: 'library', label: 'Catalog order' },
-  { value: 'percent', label: 'Nearest to completion' },
-  { value: 'started', label: 'In progress first' },
+  { value: 'library', label: 'Catalog' },
+  { value: 'percent', label: 'Progress' },
+  { value: 'started', label: 'Active first' },
 ];
 const sortQuests = (list, sort) => {
   if (sort === 'library') return list;

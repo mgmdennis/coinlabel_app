@@ -1,2 +1,2 @@
-const version = "4.19.7";
+const version = "4.19.8";
 export default version;
