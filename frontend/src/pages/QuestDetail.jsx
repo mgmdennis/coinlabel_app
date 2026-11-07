@@ -73,25 +73,23 @@ const reqFilterButton = (kind, label, count, current, setFilter) => (
 // pick and the engine resumes its own preference.
 // Pick affordance — deliberately one quiet line in the row (Mark): the
 // candidates themselves open in a picker modal instead of crowding the row.
-const PickLine = ({ req, questId, onOpenPick, onClearPick, busy }) => {
-  const others = (req.candidates ?? []).filter((c) => String(c.id) !== String(req.coin._id ?? req.coin.id));
+const PickLine = ({ req, questId, onOpenPick, busy }) => {
+  const chosenId = String(req.coin._id ?? req.coin.id);
+  const others = (req.candidates ?? []).filter((c) => String(c.id) !== chosenId);
   const n = others.length;
   if (n === 0 && !req.picked) return null;
-  if (req.picked) {
-    return (
-      <p className="q-alternate q-pick-line">
-        <Icon name="check" size={13} />
-        <span>Your picked coin counts here.</span>
-        <button className="q-pick-auto" type="button" disabled={busy} onClick={() => onClearPick(questId, req.id)}>
-          Return to auto
-        </button>
-      </p>
-    );
-  }
   return (
     <p className="q-alternate q-pick-line">
+      {req.picked ? (
+        <>
+          <Icon name="check" size={13} />
+          <span>Counts the coin you picked.</span>
+        </>
+      ) : (
+        <span>{n === 1 ? 'Another coin also qualifies.' : `${n} other coins also qualify.`}</span>
+      )}
       <button className="q-pick-open" type="button" disabled={busy} onClick={() => onOpenPick(questId, req)}>
-        {n} other {n === 1 ? 'coin also qualifies' : 'coins also qualify'} — choose the counting coin
+        {req.picked ? 'change which counts' : 'choose the counting coin'}
       </button>
     </p>
   );
@@ -125,7 +123,7 @@ const PickDialog = ({ pickTarget, onClose, onPick, onClearPick, busy }) => {
       </div>
       <div className="q-dialog-scroll">
         <p className="q-pick-counts">
-          {req.picked ? 'Counting your picked coin.' : 'Counting the auto pick.'} All coins below match this slot; only one can count.
+          {req.picked ? 'Counting the coin you picked.' : 'Counting the recommended coin.'} All coins below match this slot; only one can count.
         </p>
         <div className="q-pick-list">
           {[chosen, ...(req.candidates ?? []).filter((c) => String(c.id) !== chosenId)].map((c) => (
@@ -157,7 +155,7 @@ const PickDialog = ({ pickTarget, onClose, onPick, onClearPick, busy }) => {
         </div>
         {req.picked && (
           <button className="q-pick-auto" type="button" disabled={busy} onClick={() => onClearPick(questId, req.id)}>
-            Return to auto pick
+            Use the recommended coin instead
           </button>
         )}
       </div>

@@ -54,6 +54,12 @@ const paths = {
       <path d="M12 8h.01" />
     </>
   ),
+  refresh: (
+    <>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 3v6h-6" />
+    </>
+  ),
 };
 
 export const Icon = ({ name, size = 15, className = '' }) => (
@@ -347,6 +353,26 @@ export const Bar = ({ percent, collected, total, large = false, complete = false
 };
 
 export const statusLabel = (complete) => (complete ? 'Completed' : 'In progress');
+
+// Full-page load-failure state, mirroring the coin-flip loading layout:
+// amber alert mark, condensed title, short explanation, and a Try again
+// button the page wires back to its own refresh().
+export const QuestError = ({ onRetry }) => (
+  <div className="q-error" role="alert">
+    <div className="q-error-mark" aria-hidden="true"><Icon name="alert" size={24} /></div>
+    <h2 className="q-error-title">Could not load quests</h2>
+    <p className="q-error-copy">
+      The server didn&apos;t answer. Check your connection and try again —
+      progress is re-checked live on every load, so nothing is lost.
+    </p>
+    {onRetry && (
+      <button className="q-error-retry" type="button" onClick={onRetry}>
+        <Icon name="refresh" size={16} />
+        Try again
+      </button>
+    )}
+  </div>
+);
 
 export const Chip = ({ complete, children }) => (
   <span className={`q-chip ${complete ? 'q-chip-complete' : 'q-chip-progress'}`}>
