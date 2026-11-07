@@ -16,8 +16,32 @@ const isUncertain = (coin) =>
   /[?]/.test(String(coin.issuer ?? '')) ||
   /\b(uncertain|unattributed|possibly)\b/i.test(String(coin.issuer ?? ''));
 
-const chooseMatch = (exact, possible, usedCoinIds) => {
+// Lean candidate shape for the requirement's picker UI — no photo payloads
+// (same discipline as the list endpoints), tiny per-coin objects.
+const leanCandidate = (coin) => ({
+  id: String(coin.id ?? coin._id),
+  issuer: coin.issuer || '',
+  denomination: coin.denomination || '',
+  year: coin.year || '',
+  hasObvImage: !!coin.hasObvImage,
+  hasRevImage: !!coin.hasRevImage,
+});
+
+// Mark's "pick the piece for this collection" (2026-11-04): multiple coins
+// can satisfy a slot — the engine auto-picks the best one, but the user's
+// persisted pick (coin.questPicks['<questId>:<reqId>']) wins the slot when
+// the coin still matches. Hoist it to the front of the stable preference
+// sort; if the picked coin no longer matches, the pick degrades silently.
+const chooseMatch = (exact, possible, usedCoinIds, pickKey = '') => {
   if (exact.length > 0) {
+    const pickIdx = pickKey
+      ? exact.findIndex((c) => c.coin.questPicks && c.coin.questPicks[pickKey])
+      : -1;
+    const picked = pickIdx !== -1;
+    if (picked) {
+      const [chosenEntry] = exact.splice(pickIdx, 1);
+      exact.unshift(chosenEntry);
+    }
     exact.sort((a, b) => coinPreference(b.coin) - coinPreference(a.coin));
     const chosen = exact[0];
     usedCoinIds.add(chosen.coin.id);
@@ -27,6 +51,8 @@ const chooseMatch = (exact, possible, usedCoinIds) => {
       reason: chosen.reason,
       matchType: chosen.matchType,
       alternates: exact.length - 1,
+      picked,
+      candidates: exact.slice(0, 11).map((c) => leanCandidate(c.coin)),
       possibleMatches: [],
     };
   }
@@ -38,6 +64,8 @@ const chooseMatch = (exact, possible, usedCoinIds) => {
       reason: `${possible.length === 1 ? 'A possible match is' : `${possible.length} possible matches are`} waiting for attribution review.`,
       matchType: null,
       alternates: 0,
+      picked: false,
+      candidates: [],
       possibleMatches: possible,
     };
   }
@@ -48,6 +76,8 @@ const chooseMatch = (exact, possible, usedCoinIds) => {
     reason: '',
     matchType: null,
     alternates: 0,
+    picked: false,
+    candidates: [],
     possibleMatches: [],
   };
 };
@@ -218,7 +248,7 @@ const typedMatch = (requirement, coin) => {
   return null;
 };
 
-const matchRequirement = (requirement, collection, usedCoinIds) => {
+const matchRequirement = (requirement, collection, usedCoinIds, pickKey = '') => {
   if (requirement.kind && requirement.kind !== 'issuer') {
     const exact = [];
     const possible = [];
@@ -239,7 +269,7 @@ const matchRequirement = (requirement, collection, usedCoinIds) => {
       }
     }
 
-    return chooseMatch(exact, possible, usedCoinIds);
+    return chooseMatch(exact, possible, usedCoinIds, pickKey);
   }
 
   const exact = [];
@@ -292,7 +322,7 @@ const matchRequirement = (requirement, collection, usedCoinIds) => {
     }
   }
 
-  return chooseMatch(exact, possible, usedCoinIds);
+  return chooseMatch(exact, possible, usedCoinIds, pickKey);
 };
 
 function evaluateQuest(quest, collection) {
@@ -300,7 +330,7 @@ function evaluateQuest(quest, collection) {
   const requirements = quest.requirements.map((requirement, index) => ({
     ...requirement,
     position: index + 1,
-    ...matchRequirement(requirement, collection, usedCoinIds),
+    ...matchRequirement(requirement, collection, usedCoinIds, `${quest.id}:${requirement.id}`),
   }));
 
   const collected = requirements.filter((requirement) => requirement.status === 'collected').length;

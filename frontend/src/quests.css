@@ -1051,6 +1051,22 @@
   color: var(--q-muted);
 }
 
+/* Pick strip — "pick the piece for this collection" (Mark 2026-11-04) */
+.q-pick-strip { margin-top: 8px; }
+.q-pick-head { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--q-muted); flex-wrap: wrap; }
+.q-pick-head .q-icon { color: var(--q-bronze); }
+.q-pick-auto { border: none; background: none; padding: 0; font: inherit; font-size: 0.78rem; color: var(--q-blue); text-decoration: underline; cursor: pointer; }
+.q-pick-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.q-pick-chip { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px; border: 1px solid var(--q-line-strong); border-radius: 999px; background: #ffffff; font: inherit; font-size: 0.76rem; color: var(--q-body); cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease; }
+.q-pick-chip:hover:not(:disabled), .q-pick-chip:focus-visible:not(:disabled) { border-color: var(--q-bronze-deep); box-shadow: 0 1px 3px rgba(16, 26, 36, 0.12); color: var(--q-ink); }
+.q-pick-chip:disabled { opacity: 0.55; cursor: default; }
+.q-pick-thumb { width: 30px; height: 30px; border-radius: 50%; object-fit: contain; background: #f4ede1; }
+.q-pick-blank { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: #f4ede1; font-size: 12px; }
+.q-alternate { font-size: 0.78rem; color: var(--q-muted); }
+.q-pick-make { display: inline-block; margin-top: 6px; padding: 4px 10px; border: 1px solid var(--q-line-strong); border-radius: 999px; background: #ffffff; font: inherit; font-size: 0.76rem; color: var(--q-bronze-deep); cursor: pointer; }
+.q-pick-make:hover:not(:disabled), .q-pick-make:focus-visible:not(:disabled) { border-color: var(--q-bronze-deep); background: var(--q-bronze-soft); }
+.q-pick-make:disabled { opacity: 0.55; cursor: default; }
+
 .q-reason .q-icon {
   margin-top: 2px;
   flex: none;

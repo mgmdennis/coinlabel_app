@@ -125,6 +125,13 @@ const CoinSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    // Quest slot picks — "questId:requirementId" → true (Mark 2026-11-04).
+    // The engine hoists a picked coin into its slot when it still matches;
+    // stale picks degrade silently. Keys must never contain a dot.
+    questPicks: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {},
+    },
     cached: {
         type: Boolean,
         default: false,

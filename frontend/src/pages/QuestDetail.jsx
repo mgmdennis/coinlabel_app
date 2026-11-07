@@ -67,7 +67,61 @@ const reqFilterButton = (kind, label, count, current, setFilter) => (
   </button>
 );
 
-const ReqRow = ({ req, index, total, onOpenCoin }) => {
+// Pick strip — "pick the piece for this collection" (Mark 2026-11-04):
+// when several coins qualify for a slot, every one of the alternates is
+// offered; clicking makes it the counting coin, "Return to auto" clears the
+// pick and the engine resumes its own preference.
+const PickStrip = ({ req, questId, onPick, busy }) => {
+  const chosenId = String(req.coin._id ?? req.coin.id);
+  const others = (req.candidates ?? []).filter((c) => String(c.id) !== chosenId);
+  if (others.length === 0 && !req.picked) return null;
+  return (
+    <div className="q-pick-strip">
+      <div className="q-pick-head">
+        <Icon name="info" size={13} />
+        <span>
+          {others.length > 0
+            ? `${others.length} other ${others.length === 1 ? 'coin also qualifies' : 'coins also qualify'} — click one to make it the counting coin.`
+            : 'This slot counts your picked coin.'}
+        </span>
+        {req.picked && (
+          <button className="q-pick-auto" type="button" disabled={busy} onClick={() => onPick(null, questId, req.id)}>
+            Return to auto
+          </button>
+        )}
+      </div>
+      {others.length > 0 && (
+        <div className="q-pick-chips">
+          {others.map((c) => (
+            <button
+              key={c.id}
+              className="q-pick-chip"
+              type="button"
+              disabled={busy}
+              title={[c.issuer, c.denomination, c.year].filter(Boolean).join(' · ')}
+              onClick={() => onPick(c.id, questId, req.id)}
+            >
+              {c.hasObvImage ? (
+                <img
+                  className="q-pick-thumb"
+                  src={`${BASE_URL}/coin/${c.id}/image/obv`}
+                  alt=""
+                  loading="lazy"
+                  width={30}
+                  height={30}
+                  onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+                />
+              ) : <span className="q-pick-blank" aria-hidden="true">{String.fromCharCode(127942)}</span>}
+              <span className="q-pick-label">{[c.issuer, c.denomination, c.year].filter(Boolean).join(' · ')}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ReqRow = ({ req, questId, index, total, onOpenCoin, onPick, pickBusy }) => {
   const meta = CHIP_BY_STATUS[req.status];
   return (
     <article className={`q-req-row q-req-row--${req.status}`} id={`req-${req.name}`}>
@@ -92,9 +146,7 @@ const ReqRow = ({ req, index, total, onOpenCoin }) => {
             <div style={{ minWidth: 0 }}>
               <p className="q-match-line"><Icon name="circle-check" size={17} /><span>{[req.coin.issuer, coinSummary(req.coin)].filter(Boolean).join(' — ')}</span></p>
               <p className="q-reason"><Icon name="info" size={14} /><span>{req.matchReason}</span></p>
-              {req.alternates > 0 && (
-                <p className="q-alternate">{req.alternates} other {req.alternates === 1 ? 'coin also matches' : 'coins also match'} this requirement; only one can count.</p>
-              )}
+              <PickStrip req={req} questId={questId} onPick={onPick} busy={pickBusy} />
             </div>
           </div>
         )}
@@ -316,6 +368,24 @@ const QuestDetail = () => {
       .catch(() => setError('Could not load quests. Try again.'));
   }, []);
 
+  // "Pick the piece" — choose which qualifying coin counts for a slot
+  // (coinId null clears the pick; the engine auto-picks again).
+  const [pickBusy, setPickBusy] = useState(false);
+  const handlePick = useCallback((coinId, questId, requirementId) => {
+    setPickBusy(true);
+    axios.post(`${BASE_URL}/quests/pick`, {
+      coinId: coinId || null,
+      questId,
+      requirementId,
+      remove: !coinId,
+    })
+      .then(() => refresh())
+      .catch((err) => {
+        console.error('quest pick failed', err?.response?.status, err?.response?.data?.error || err.message);
+      })
+      .finally(() => setPickBusy(false));
+  }, [refresh]);
+
   useEffect(() => {
     axios.get(`${BASE_URL}/coins/collection`).catch(() => null)
       .then((c) => { if (c) setCoinsCount(Array.isArray(c.data) ? c.data.length : null); });
@@ -525,7 +595,7 @@ const QuestDetail = () => {
                         </span>
                       </summary>
                       <div className="q-req-section-rows">
-                        {all.map(({ req, index }) => <ReqRow key={req.name} req={req} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} />)}
+                        {all.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onPick={handlePick} pickBusy={pickBusy} />)}
                       </div>
                     </details>
                   );
@@ -553,7 +623,7 @@ const QuestDetail = () => {
                     )}
                   </div>
                 ) : (
-                  visible.map(({ req, index }) => <ReqRow key={req.name} req={req} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} />)
+                  visible.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onPick={handlePick} pickBusy={pickBusy} />)
                 )
               )}
             </div>

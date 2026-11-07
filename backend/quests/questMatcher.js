@@ -215,6 +215,8 @@ function matchQuests(coins) {
         position: req.position,
         kind: req.kind ?? 'issuer',
         alternates: req.alternates ?? 0,
+        picked: !!req.picked,
+        candidates: req.candidates ?? [],
         matchType: req.matchType ?? null,
         coin: null,
         matchReason: null,

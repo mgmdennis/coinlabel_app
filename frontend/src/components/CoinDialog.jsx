@@ -79,7 +79,7 @@ const writeClaim = (details, name, uncertain) => {
   return `Ruler: ${safeName}\n${rest}`.trim();
 };
 
-const MatchItem = ({ match, showReason }) => (
+const MatchItem = ({ match, showReason, onMakeCounting, busy }) => (
   <div className="q-match-item">
     <div className="q-match-top">
       <p className="q-match-quest">
@@ -93,6 +93,16 @@ const MatchItem = ({ match, showReason }) => (
     <p className="q-match-req">{match.name}</p>
     {showReason && match.matchReason && (
       <p className="q-reason"><Icon name="info" size={13} /><span>{match.matchReason}</span></p>
+    )}
+    {match.status === 'collected' && !match.counted && (
+      <button
+        className="q-pick-make"
+        type="button"
+        disabled={busy}
+        onClick={() => onMakeCounting?.(match.questId, match.requirementId)}
+      >
+        Make this the counting coin
+      </button>
     )}
   </div>
 );
@@ -198,6 +208,23 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
   // than "confirm as <someone else>".
   const currentClaim = coin ? claimOf(coin.details, coin.issuer) : '';
   const claimUncertain = /\?/.test(currentClaim);
+
+  // "Make this the counting coin" — hoist THIS coin into a quest slot it
+  // qualifies for but currently only alternates toward. The pick is stored
+  // server-side and recounted via onChanged.
+  const [pickBusy, setPickBusy] = useState(false);
+  const handleMakeCounting = (questId, requirementId) => {
+    setPickBusy(true);
+    axios.post(`${BASE_URL}/quests/pick`, { coinId, questId, requirementId, remove: false })
+      .then(() => {
+        fetchData();
+        onChanged?.();
+      })
+      .catch((err) => {
+        console.error('quest pick failed', err?.response?.status, err?.response?.data?.error || err.message);
+      })
+      .finally(() => setPickBusy(false));
+  };
 
   return (
     <dialog className="q-dialog" ref={ref} aria-labelledby="q-coin-dialog-title">
@@ -338,7 +365,7 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
               <section className="q-dialog-section">
                 <h3>Quest matches</h3>
                 <div className="q-match-list">
-                  {matches.map((m) => <MatchItem key={`${m.questId}-${m.name}`} match={m} showReason />)}
+                  {matches.map((m) => <MatchItem key={`${m.questId}-${m.name}`} match={m} showReason onMakeCounting={handleMakeCounting} busy={pickBusy} />)}
                 </div>
               </section>
             )}

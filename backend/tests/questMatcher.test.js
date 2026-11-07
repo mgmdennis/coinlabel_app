@@ -336,6 +336,34 @@ test('Postumus fills slots in Soldier Emperors and Every Emperor (added 2026-11-
   assert.equal(statusOf(quests, 'every-emperor', 'Gallienus'), 'needed');
   assert.equal(statusOf(quests, 'every-emperor', 'Claudius Gothicus'), 'needed');
 });
+test('a persisted pick hoists its coin into the slot, sets picked, and stales silently (2026-11-04)', () => {
+  const key = 'five-good:trajan';
+  const quests = matchQuests([
+    baseCoin('c1', { ocreId: 'ric.2.tr.128', questPicks: { [key]: true } }),
+    baseCoin('c2', { ocreId: 'ric.2.tr.200' }),
+  ]);
+  const trajan = quests.find(q => q.id === 'five-good').requirements.find(r => r.name === 'Trajan');
+  assert.equal(statusOf(quests, 'five-good', 'Trajan'), 'collected');
+  assert.equal(trajan.coin._id, "c1");
+  assert.equal(trajan.picked, true);
+  assert.ok(trajan.candidates.some((c) => c.id === 'c2'), 'alternates surface for the picker');
+  assert.equal(trajan.candidates[0].id, 'c1', 'the counting coin leads the candidate list');
+
+  // No auto pick — the default counting coin is flagged picked:false.
+  const auto = matchQuests([baseCoin('c1', { ocreId: 'ric.2.tr.128' })]);
+  const autoReq = auto.find(q => q.id === 'five-good').requirements.find(r => r.name === 'Trajan');
+  assert.equal(autoReq.picked, false);
+
+  // A pick on a coin that no longer matches degrades to the auto pick.
+  const stale = matchQuests([
+    baseCoin('c1', { issuer: 'Roman Empire', ocreId: 'ric.3.ant.700', questPicks: { [key]: true } }),
+    baseCoin('c2', { ocreId: 'ric.2.tr.200' }),
+  ]);
+  const staleReq = stale.find(q => q.id === 'five-good').requirements.find(r => r.name === 'Trajan');
+  assert.equal(statusOf(stale, 'five-good', 'Trajan'), 'collected');
+  assert.equal(staleReq.coin._id, "c2");
+  assert.equal(staleReq.picked, false);
+});
 test('a bare-Faustina coin reviews on the wife slots only, nowhere else', () => {
   const quests = matchQuests([
     baseCoin('c1', {
