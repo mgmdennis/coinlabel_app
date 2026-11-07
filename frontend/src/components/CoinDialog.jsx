@@ -120,6 +120,9 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
   // dialog that has been re-opened for a different coin.
   const coinIdRef = useRef(coinId);
   coinIdRef.current = coinId;
+  // Hooks MUST all come before the early `if (!coinId) return null` below —
+  // one after it makes React fail the render and kills the dialog open.
+  const [pickBusy, setPickBusy] = useState(false);
 
   const fetchData = useCallback(() => {
     if (!coinId) return;
@@ -212,7 +215,6 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
   // "Make this the counting coin" — hoist THIS coin into a quest slot it
   // qualifies for but currently only alternates toward. The pick is stored
   // server-side and recounted via onChanged.
-  const [pickBusy, setPickBusy] = useState(false);
   const handleMakeCounting = (questId, requirementId) => {
     setPickBusy(true);
     axios.post(`${BASE_URL}/quests/pick`, { coinId, questId, requirementId, remove: false })
