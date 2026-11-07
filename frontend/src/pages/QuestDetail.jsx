@@ -71,57 +71,104 @@ const reqFilterButton = (kind, label, count, current, setFilter) => (
 // when several coins qualify for a slot, every one of the alternates is
 // offered; clicking makes it the counting coin, "Return to auto" clears the
 // pick and the engine resumes its own preference.
-const PickStrip = ({ req, questId, onPick, busy }) => {
-  const chosenId = String(req.coin._id ?? req.coin.id);
-  const others = (req.candidates ?? []).filter((c) => String(c.id) !== chosenId);
-  if (others.length === 0 && !req.picked) return null;
+// Pick affordance — deliberately one quiet line in the row (Mark): the
+// candidates themselves open in a picker modal instead of crowding the row.
+const PickLine = ({ req, questId, onOpenPick, onClearPick, busy }) => {
+  const others = (req.candidates ?? []).filter((c) => String(c.id) !== String(req.coin._id ?? req.coin.id));
+  const n = others.length;
+  if (n === 0 && !req.picked) return null;
+  if (req.picked) {
+    return (
+      <p className="q-alternate q-pick-line">
+        <Icon name="check" size={13} />
+        <span>Your picked coin counts here.</span>
+        <button className="q-pick-auto" type="button" disabled={busy} onClick={() => onClearPick(questId, req.id)}>
+          Return to auto
+        </button>
+      </p>
+    );
+  }
   return (
-    <div className="q-pick-strip">
-      <div className="q-pick-head">
-        <Icon name="info" size={13} />
-        <span>
-          {others.length > 0
-            ? `${others.length} other ${others.length === 1 ? 'coin also qualifies' : 'coins also qualify'} — click one to make it the counting coin.`
-            : 'This slot counts your picked coin.'}
-        </span>
-        {req.picked && (
-          <button className="q-pick-auto" type="button" disabled={busy} onClick={() => onPick(null, questId, req.id)}>
-            Return to auto
-          </button>
-        )}
+    <p className="q-alternate q-pick-line">
+      <button className="q-pick-open" type="button" disabled={busy} onClick={() => onOpenPick(questId, req)}>
+        {n} other {n === 1 ? 'coin also qualifies' : 'coins also qualify'} — choose the counting coin
+      </button>
+    </p>
+  );
+};
+
+// The picker modal — one row per qualifying coin, the counting coin first.
+const PickDialog = ({ pickTarget, onClose, onPick, onClearPick, busy }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return undefined;
+    if (pickTarget) {
+      dialog.showModal();
+      dialog.addEventListener('cancel', (e) => e.preventDefault());
+    }
+    return () => { if (dialog.open) dialog.close(); };
+  }, [pickTarget]);
+
+  if (!pickTarget) return null;
+  const { questId, req } = pickTarget;
+  const chosenId = String(req.coin._id ?? req.coin.id);
+  const chosen = (req.candidates ?? []).find((c) => String(c.id) === chosenId);
+  return (
+    <dialog className="q-dialog q-pick-dialog" ref={ref} aria-labelledby="q-pick-title">
+      <div className="q-dialog-head">
+        <div>
+          <p className="q-eyebrow">Pick the piece</p>
+          <h2 id="q-pick-title" tabIndex={-1}>{req.name}</h2>
+        </div>
+        <button className="q-icon-btn" type="button" onClick={onClose} aria-label="Close picker">✕</button>
       </div>
-      {others.length > 0 && (
-        <div className="q-pick-chips">
-          {others.map((c) => (
-            <button
-              key={c.id}
-              className="q-pick-chip"
-              type="button"
-              disabled={busy}
-              title={[c.issuer, c.denomination, c.year].filter(Boolean).join(' · ')}
-              onClick={() => onPick(c.id, questId, req.id)}
-            >
+      <div className="q-dialog-scroll">
+        <p className="q-pick-counts">
+          {req.picked ? 'Counting your picked coin.' : 'Counting the auto pick.'} All coins below match this slot; only one can count.
+        </p>
+        <div className="q-pick-list">
+          {[chosen, ...(req.candidates ?? []).filter((c) => String(c.id) !== chosenId)].map((c) => (
+            <div key={c.id} className="q-pick-row">
               {c.hasObvImage ? (
                 <img
                   className="q-pick-thumb"
                   src={`${BASE_URL}/coin/${c.id}/image/obv`}
                   alt=""
                   loading="lazy"
-                  width={30}
-                  height={30}
+                  width={38}
+                  height={38}
                   onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
                 />
-              ) : <span className="q-pick-blank" aria-hidden="true">{String.fromCharCode(127942)}</span>}
-              <span className="q-pick-label">{[c.issuer, c.denomination, c.year].filter(Boolean).join(' · ')}</span>
-            </button>
+              ) : <span className="q-pick-blank" aria-hidden="true">·</span>}
+              <span className="q-pick-meta">
+                <strong>{[c.issuer, c.denomination].filter(Boolean).join(' · ')}</strong>
+                {c.year && <em>{String(c.year)}</em>}
+              </span>
+              {String(c.id) === chosenId ? (
+                <span className="q-chip q-chip-complete"><Icon name="check" size={13} />Counting</span>
+              ) : (
+                <button className="q-btn-outline" type="button" disabled={busy} onClick={() => onPick(c.id, questId, req.id)}>
+                  Count this
+                </button>
+              )}
+            </div>
           ))}
         </div>
-      )}
-    </div>
+        {req.picked && (
+          <button className="q-pick-auto" type="button" disabled={busy} onClick={() => onClearPick(questId, req.id)}>
+            Return to auto pick
+          </button>
+        )}
+      </div>
+      <div className="q-dialog-foot">
+        <button className="q-btn-outline-blue" type="button" onClick={onClose}>Done</button>
+      </div>
+    </dialog>
   );
 };
 
-const ReqRow = ({ req, questId, index, total, onOpenCoin, onPick, pickBusy }) => {
+const ReqRow = ({ req, questId, index, total, onOpenCoin, onOpenPick, onClearPick, pickBusy }) => {
   const meta = CHIP_BY_STATUS[req.status];
   return (
     <article className={`q-req-row q-req-row--${req.status}`} id={`req-${req.name}`}>
@@ -146,7 +193,7 @@ const ReqRow = ({ req, questId, index, total, onOpenCoin, onPick, pickBusy }) =>
             <div style={{ minWidth: 0 }}>
               <p className="q-match-line"><Icon name="circle-check" size={17} /><span>{[req.coin.issuer, coinSummary(req.coin)].filter(Boolean).join(' — ')}</span></p>
               <p className="q-reason"><Icon name="info" size={14} /><span>{req.matchReason}</span></p>
-              <PickStrip req={req} questId={questId} onPick={onPick} busy={pickBusy} />
+              <PickLine req={req} questId={questId} onOpenPick={onOpenPick} onClearPick={onClearPick} busy={pickBusy} />
             </div>
           </div>
         )}
@@ -368,9 +415,10 @@ const QuestDetail = () => {
       .catch(() => setError('Could not load quests. Try again.'));
   }, []);
 
-  // "Pick the piece" — choose which qualifying coin counts for a slot
-  // (coinId null clears the pick; the engine auto-picks again).
+  // "Pick the piece" — choose which qualifying coin counts for a slot.
+  // The row keeps a quiet line; the candidates open in a picker modal.
   const [pickBusy, setPickBusy] = useState(false);
+  const [pickTarget, setPickTarget] = useState(null);
   const handlePick = useCallback((coinId, questId, requirementId) => {
     setPickBusy(true);
     axios.post(`${BASE_URL}/quests/pick`, {
@@ -379,7 +427,7 @@ const QuestDetail = () => {
       requirementId,
       remove: !coinId,
     })
-      .then(() => refresh())
+      .then(() => { setPickTarget(null); refresh(); })
       .catch((err) => {
         console.error('quest pick failed', err?.response?.status, err?.response?.data?.error || err.message);
       })
@@ -595,7 +643,7 @@ const QuestDetail = () => {
                         </span>
                       </summary>
                       <div className="q-req-section-rows">
-                        {all.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onPick={handlePick} pickBusy={pickBusy} />)}
+                        {all.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onOpenPick={(questId, req) => setPickTarget({ questId, req })} onClearPick={handlePick} pickBusy={pickBusy} />)}
                       </div>
                     </details>
                   );
@@ -623,7 +671,7 @@ const QuestDetail = () => {
                     )}
                   </div>
                 ) : (
-                  visible.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onPick={handlePick} pickBusy={pickBusy} />)
+                  visible.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onOpenPick={(questId, req) => setPickTarget({ questId, req })} onClearPick={handlePick} pickBusy={pickBusy} />)
                 )
               )}
             </div>
@@ -631,6 +679,13 @@ const QuestDetail = () => {
         </div>
       </div>
       </div>
+      <PickDialog
+        pickTarget={pickTarget}
+        onClose={() => setPickTarget(null)}
+        onPick={handlePick}
+        onClearPick={handlePick}
+        busy={pickBusy}
+      />
       <CoinDialog coinId={openCoinId} onClose={() => setOpenCoinId(null)} onChanged={refresh} />
       <AwardDialog quest={quests.find((q) => q.id === awardQuestId)} quests={quests} open={!!awardQuestId} onClose={() => setAwardQuestId(null)} />
     </div>
