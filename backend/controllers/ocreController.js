@@ -259,14 +259,31 @@ async function getOcreDetailsJSON(ocreId, datasetName = 'ocre') {
     const id = String(ocreId).trim();
     const dataset = DATASETS[datasetName] || DATASETS.ocre;
 
+    // numismatics.org has flaky capacity windows (503s, hung connections) —
+    // ride out a bump with one spaced retry instead of failing the lookup.
+    const fetchNumismatics = async (url) => {
+        try {
+            return await axios.get(url, {
+                headers: { 'Accept': 'application/ld+json' },
+                timeout: 25000,
+            });
+        } catch (err) {
+            const status = err?.response?.status;
+            const isNetish = !status || status >= 500;
+            if (!isNetish) throw err;
+            console.log(`numismatics.org hiccup (status ${status || 'network'}) — retrying once...`);
+            return await axios.get(url, {
+                headers: { 'Accept': 'application/ld+json' },
+                timeout: 25000,
+            });
+        }
+    };
+
     try {
         console.log(`Fetching ${dataset.label} data for ID:`, id);
 
         const url = `https://numismatics.org/${dataset.idPath}/${encodeURIComponent(id)}.jsonld`;
-        const res = await axios.get(url, {
-            headers: { 'Accept': 'application/ld+json' },
-            timeout: 10000,
-        });
+        const res = await fetchNumismatics(url);
 
         const graph = res.data['@graph'];
         if (!graph || !Array.isArray(graph)) {
