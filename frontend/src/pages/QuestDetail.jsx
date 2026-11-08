@@ -89,7 +89,7 @@ const PickLine = ({ req, questId, onOpenPick, busy }) => {
         <span>{n === 1 ? 'Another coin also qualifies.' : `${n} other coins also qualify.`}</span>
       )}
       <button className="q-pick-open" type="button" disabled={busy} onClick={() => onOpenPick(questId, req)}>
-        {req.picked ? 'change which counts' : 'choose the counting coin'}
+        {req.picked ? 'Change which counts' : 'Choose the counting coin'}
       </button>
     </p>
   );
