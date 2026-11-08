@@ -2673,6 +2673,126 @@ module.exports.QUEST_CATALOG = [
     ]
   },
   {
+    "id": "signs-symbols",
+    "title": "Signs & Symbols",
+    "dates": "Any era",
+    "family": "Collecting themes",
+    "unit": "signs",
+    "unitSingular": "sign",
+    "summary": "Eight famous reverse signs: zodiac, beasts, and the legion's standards.",
+    "intro": "Roman reverses are full of signs that are not gods — Augustus' birthday zodiac, the eagle and lion of the legions, the she-wolf of Rome, the phoenix of the East. Eight of the most famous, one coin apiece.",
+    "badge": {
+      "name": "Signa",
+      "art": "zodiac"
+    },
+    "requirements": [
+      {
+        "id": "capricorn",
+        "ruler": "Capricorn",
+        "reign": "Sign · any era",
+        "qualifies": "A zodiac Capricorn on the reverse — Augustus' birthday sign above all.",
+        "kind": "reverseType",
+        "values": [
+          "capricorn"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": []
+      },
+      {
+        "id": "eagle",
+        "ruler": "Eagle",
+        "reign": "Sign · any era",
+        "qualifies": "An eagle (the legion's aquila) heading the reverse.",
+        "kind": "reverseType",
+        "values": [
+          "eagle"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": []
+      },
+      {
+        "id": "lion",
+        "ruler": "Lion",
+        "reign": "Sign · any era",
+        "qualifies": "A lion on the reverse — walking, crouching, or stalking.",
+        "kind": "reverseType",
+        "values": [
+          "lion"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": []
+      },
+      {
+        "id": "bull",
+        "ruler": "Bull",
+        "reign": "Sign · any era",
+        "qualifies": "A bull on the reverse — sacrificial or standing free.",
+        "kind": "reverseType",
+        "values": [
+          "bull"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": []
+      },
+      {
+        "id": "she-wolf",
+        "ruler": "She-wolf",
+        "reign": "Sign · any era",
+        "qualifies": "The she-wolf of Rome, suckling Romulus and Remus.",
+        "kind": "reverseType",
+        "values": [
+          "she wolf"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": []
+      },
+      {
+        "id": "peacock",
+        "ruler": "Peacock",
+        "reign": "Sign · any era",
+        "qualifies": "A peacock on the reverse — Juno's bird, and the consecration sign of a deified empress.",
+        "kind": "reverseType",
+        "values": [
+          "peacock"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": []
+      },
+      {
+        "id": "phoenix",
+        "ruler": "Phoenix",
+        "reign": "Sign · any era",
+        "qualifies": "A phoenix on the reverse — renewal, on the late-Roman follis.",
+        "kind": "reverseType",
+        "values": [
+          "phoenix"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": []
+      },
+      {
+        "id": "vexillum",
+        "ruler": "Vexillum",
+        "reign": "Sign · any era",
+        "qualifies": "A vexillum — the army's own standard — heading the reverse.",
+        "kind": "reverseType",
+        "values": [
+          "vexillum"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": []
+      }
+    ]
+  },
+  {
     "id": "imperial-women",
     "title": "The Imperial Women",
     "dates": "AD 98–491",

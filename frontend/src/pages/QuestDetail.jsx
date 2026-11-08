@@ -381,6 +381,10 @@ const RULES_BY_QUEST = {
     'Each slot reads the first clause of the reverse description — "Rev: Jupiter seated left…" counts as Jupiter.',
     'The obverse and the issuing claim are ignored here.',
   ],
+  'signs-symbols': [
+    'Each slot reads the first clause of the reverse description — "Capricorn, holding a globe…" fills the Capricorn sign.',
+    'The issuing ruler and era don\'t matter; the sign on the money is the subject.',
+  ],
   'mints-empire': [
     'Each slot reads the Mint: line of the label; a coin with no recorded mint fills no slot.',
     'Mints are matched as whole words — a mint recorded as "Londinium" never fills the Lugdunum slot.',

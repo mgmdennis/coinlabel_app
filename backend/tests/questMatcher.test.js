@@ -1,7 +1,8 @@
 // Quest matcher unit tests — pure logic, no DB needed.
 // Run: node --test backend/tests/questMatcher.test.js
-// Contract: the Open Design engine rewrite (2026-10-31) — 15 quests, 179
-// requirements (Postumus added 2026-11-03), families + sections + bad art keys. Ruler quests match the
+// Contract: the Open Design engine rewrite (2026-10-31) — 16 quests, 191
+// requirements (Postumus 2026-11-03; Signs & Symbols 2026-11-04), families
+// and sections + bad art keys. Ruler quests match the
 // effective issuer claim ("Ruler:/Issuer:/(X)" line or issuer field), OCRE
 // ranges, or the obverse portrait; theme quests match typed fields derived
 // from the composed details label.
@@ -13,7 +14,7 @@ const QUEST_IDS = [
   'five-good', 'twelve-caesars', 'year-of-four', 'julio-claudians', 'flavians',
   'severans', 'soldier-emperors', 'constantinians', 'every-emperor',
   'four-metals', 'big-denominations', 'moneyers-republic', 'twelve-powers',
-  'mints-empire', 'imperial-women',
+  'mints-empire', 'signs-symbols', 'imperial-women',
 ];
 
 const baseCoin = (id, extra = {}) => ({
@@ -30,7 +31,7 @@ const statusOf = (quests, questId, name) => {
   return req.status;
 };
 
-test('the catalog exposes fifteen quests in order with families', () => {
+test('the catalog exposes sixteen quests in order with families', () => {
   const quests = matchQuests([]);
   assert.deepEqual(quests.map(q => q.id), QUEST_IDS);
   const families = new Set(quests.map(q => q.family));

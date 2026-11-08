@@ -144,8 +144,7 @@ return `<path class="seal-line" d="M${x} ${top}v${bottom - top}M${x + 3.2} ${top
 }).join('');
 
 const BADGE_ART = {
-temple: `
-<path class="seal-wash" d="M26 48 60 27 94 48Z"></path>
+temple: `<path class="seal-wash" d="M26 48 60 27 94 48Z"></path>
 <path class="seal-line" d="M23 49 60 26 97 49"></path>
 <path class="seal-fine" d="M31 48 60 31 89 48"></path>
 <path class="seal-fill" d="M56 22h8v4h-8zM21 46h7v4h-7zM92 46h7v4h-7z"></path>
@@ -307,6 +306,15 @@ mint: `
 <path class="seal-line" d="M81 63v6M89 63v6M79 69h13"></path>
 <circle class="seal-fill" cx="60" cy="57" r="2"></circle>
 <path class="seal-hatch" d="M26 69l5 2m19-24 3 6m15-8 3 5m10 7-4 3m14-2-3 4"></path>
+`,
+zodiac: `
+<path class="seal-wash" d="M60 24 74 62 60 100 46 62Z M24 62 60 48 100 62 60 76Z"></path>
+<path class="seal-line" d="M60 24 74 62 60 100 46 62Z M24 62 60 48 100 62 60 76Z"></path>
+<path class="seal-ray" d="M35 37l7 7M85 37l-7 7M35 87l7-7M85 87l-7-7"></path>
+<circle class="seal-ground" cx="60" cy="62" r="11"></circle>
+<circle class="seal-line" cx="60" cy="62" r="11"></circle>
+<circle class="seal-fill" cx="60" cy="62" r="5"></circle>
+<circle class="seal-ground" cx="60" cy="62" r="2"></circle>
 `,
 };
 
