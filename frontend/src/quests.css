@@ -1566,7 +1566,7 @@
 .q-search-input::placeholder { color: var(--q-muted); }
 .q-search-input:focus { outline: 2px solid var(--q-blue);  outline-offset: 1px;  border-color: var(--q-blue); }
 .q-library-count { font-size: 0.8rem;  color: var(--q-muted);  font-variant-numeric: tabular-nums; }
-.q-library-meta { display: flex;  align-items: center;  justify-content: space-between;  gap: 16px; }
+.q-library-meta { display: flex;  align-items: center;  justify-content: space-between;  gap: 16px;  margin-bottom: 16px; }
 .q-sort-field { margin: 4px 0; }
 .q-sort-field select { min-height: 38px;  margin-left: 12px;  padding: 7px 34px 7px 16px;  border: 1px solid var(--q-line-strong);  border-radius: 999px;  background: #ffffff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b5b49' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 13px center;  color: var(--q-muted);  font: inherit;  font-size: 0.8rem;  cursor: pointer;  appearance: none; }
 .q-sort-field select:hover { border-color: var(--q-bronze-deep);  color: var(--q-bronze-deep); }
