@@ -424,7 +424,7 @@ const RecordPrompt = ({ recordTarget, onClose }) => {
     onClose();
   };
   return (
-    <dialog className="q-dialog q-pick-dialog" ref={ref} aria-labelledby="q-record-title">
+    <dialog className="q-dialog q-record-dialog" ref={ref} aria-labelledby="q-record-title">
       <div className="q-dialog-head">
         <div>
           <p className="q-eyebrow">Record a coin</p>

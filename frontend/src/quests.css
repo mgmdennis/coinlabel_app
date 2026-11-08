@@ -1060,6 +1060,12 @@
 .q-pick-open:disabled { opacity: 0.55; cursor: default; }
 .q-pick-auto { border: none; background: none; padding: 0; font: inherit; font-size: 0.78rem; color: var(--q-blue); text-decoration: underline; cursor: pointer; text-transform: none; }
 /* Record prompt — OCRE id capture before the create page */
+.q-record-dialog { width: min(100% - 32px, 470px); }
+.q-record-dialog .q-dialog-scroll { padding: 24px; }
+.q-record-dialog .q-dialog-foot { padding: 14px 24px; }
+.q-record-dialog .q-dialog-foot .q-btn-outline,
+.q-record-dialog .q-dialog-foot .q-btn-outline-blue { flex: 1 1 0; min-height: 44px; }
+.q-record-dialog .q-pick-counts { margin: 0; }
 .q-record-field { margin-top: 20px; }
 .q-record-field .q-search-label { display: block; margin-bottom: 8px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--q-muted); }
 .q-record-input { width: 100%; min-height: 46px; padding: 10px 14px; border: 1px solid var(--q-line-strong); border-radius: 8px; background: #ffffff; color: var(--q-ink); font: inherit; font-size: 0.95rem; }
