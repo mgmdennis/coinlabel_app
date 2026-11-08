@@ -1060,13 +1060,12 @@
 .q-pick-open:disabled { opacity: 0.55; cursor: default; }
 .q-pick-auto { border: none; background: none; padding: 0; font: inherit; font-size: 0.78rem; color: var(--q-blue); text-decoration: underline; cursor: pointer; text-transform: none; }
 /* Record prompt — OCRE id capture before the create page */
-.q-record-field { margin-top: 6px; }
-.q-record-field .q-search-label { display: block; margin-bottom: 6px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--q-muted); }
-.q-record-input { width: 100%; min-height: 42px; padding: 8px 12px; border: 1px solid var(--q-line-strong); border-radius: 6px; background: #ffffff; color: var(--q-ink); font: inherit; font-size: 0.9rem; }
+.q-record-field { margin-top: 20px; }
+.q-record-field .q-search-label { display: block; margin-bottom: 8px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--q-muted); }
+.q-record-input { width: 100%; min-height: 46px; padding: 10px 14px; border: 1px solid var(--q-line-strong); border-radius: 8px; background: #ffffff; color: var(--q-ink); font: inherit; font-size: 0.95rem; }
 .q-record-input::placeholder { color: rgba(107, 91, 73, 0.4); }
 .q-record-input:focus { outline: 2px solid var(--q-blue); outline-offset: 1px; border-color: var(--q-blue); }
-.q-record-hint { margin-top: 8px; font-size: 0.78rem; color: var(--q-muted); }
-.q-record-hint { margin-bottom: 12px; }
+.q-record-hint { margin: 10px 0 4px; font-size: 0.78rem; color: var(--q-muted); line-height: 1.5; }
 .q-pick-dialog { max-width: 420px; }
 .q-pick-counts { font-size: 0.8rem; color: var(--q-muted); }
 .q-pick-list { margin-top: 4px; }
