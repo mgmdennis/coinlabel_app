@@ -166,7 +166,7 @@ const PickDialog = ({ pickTarget, onClose, onPick, onClearPick, busy }) => {
   );
 };
 
-const ReqRow = ({ req, questId, index, total, onOpenCoin, onOpenPick, onClearPick, pickBusy }) => {
+const ReqRow = ({ req, questId, index, total, onOpenCoin, onOpenPick, onClearPick, pickBusy, onRecordPrompt }) => {
   const meta = CHIP_BY_STATUS[req.status];
   return (
     <article className={`q-req-row q-req-row--${req.status}`} id={`req-${req.name}`}>
@@ -225,7 +225,9 @@ const ReqRow = ({ req, questId, index, total, onOpenCoin, onOpenPick, onClearPic
           </button>
         )}
         {req.status === 'needed' && (
-          <Link className="q-btn-outline" to="/create">Record a coin</Link>
+          <button className="q-btn-outline" type="button" onClick={() => onRecordPrompt(questId, req)}>
+            Record a coin
+          </button>
         )}
       </div>
     </article>
@@ -391,6 +393,78 @@ const RULES_BY_QUEST = {
   ],
 };
 
+// Record prompt — capture the OCRE id up front so the create page opens
+// already pre-filled (Mark 2026-11-04). Empty submit just opens /create.
+const RecordPrompt = ({ recordTarget, onClose }) => {
+  const ref = useRef(null);
+  const inputRef = useRef(null);
+  const navigate = useNavigate();
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return undefined;
+    if (recordTarget) {
+      dialog.showModal();
+      dialog.addEventListener('cancel', (e) => e.preventDefault());
+      setValue('');
+      setTimeout(() => inputRef.current?.focus(), 30);
+    }
+    return () => { if (dialog.open) dialog.close(); };
+  }, [recordTarget]);
+
+  if (!recordTarget) return null;
+  const { req, explanation } = recordTarget;
+  const go = (id) => {
+    const trimmed = String(id || '').trim();
+    navigate(trimmed ? '/create' : '/create', {
+      state: trimmed ? { ocreId: trimmed } : undefined,
+      replace: false,
+    });
+    onClose();
+  };
+  return (
+    <dialog className="q-dialog q-pick-dialog" ref={ref} aria-labelledby="q-record-title">
+      <div className="q-dialog-head">
+        <div>
+          <p className="q-eyebrow">Record a coin</p>
+          <h2 id="q-record-title" tabIndex={-1}>{req?.name}</h2>
+        </div>
+        <button className="q-icon-btn" type="button" onClick={onClose} aria-label="Close record prompt">✕</button>
+      </div>
+      <div className="q-dialog-scroll">
+        <p className="q-pick-counts">{explanation}</p>
+        <div className="q-record-field">
+          <label className="q-search-label" htmlFor="record-ocre">OCRE / catalog id</label>
+          <input
+            ref={inputRef}
+            id="record-ocre"
+            className="q-record-input"
+            type="search"
+            placeholder="ric.2.tr.128"
+            autoComplete="off"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); setBusy(true); go(value); } }}
+          />
+          <p className="q-record-hint">
+            Have the OCRE id handy and the card fills itself; otherwise open the
+            create page empty and record the coin manually.
+          </p>
+        </div>
+      </div>
+      <div className="q-dialog-foot q-dialog-foot-split">
+        <button className="q-btn-outline" type="button" disabled={busy} onClick={() => { setBusy(true); go(''); }}>
+          Record manually
+        </button>
+        <button className="q-btn-outline-blue" type="button" disabled={busy} onClick={() => { setBusy(true); go(value); }}>
+          Look it up
+        </button>
+      </div>
+    </dialog>
+  );
+};
+
 const QuestDetail = () => {
   const { questId } = useParams();
   const [quests, setQuests] = useState(null);
@@ -421,6 +495,7 @@ const QuestDetail = () => {
   // The row keeps a quiet line; the candidates open in a picker modal.
   const [pickBusy, setPickBusy] = useState(false);
   const [pickTarget, setPickTarget] = useState(null);
+  const [recordTarget, setRecordTarget] = useState(null);
   const handlePick = useCallback((coinId, questId, requirementId) => {
     setPickBusy(true);
     axios.post(`${BASE_URL}/quests/pick`, {
@@ -645,7 +720,7 @@ const QuestDetail = () => {
                         </span>
                       </summary>
                       <div className="q-req-section-rows">
-                        {all.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onOpenPick={(questId, req) => setPickTarget({ questId, req })} onClearPick={handlePick} pickBusy={pickBusy} />)}
+                        {all.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onOpenPick={(questId, req) => setPickTarget({ questId, req })} onClearPick={handlePick} pickBusy={pickBusy} onRecordPrompt={(questId, req) => setRecordTarget({ req, explanation: req.explanation })} />)}
                       </div>
                     </details>
                   );
@@ -673,7 +748,7 @@ const QuestDetail = () => {
                     )}
                   </div>
                 ) : (
-                  visible.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onOpenPick={(questId, req) => setPickTarget({ questId, req })} onClearPick={handlePick} pickBusy={pickBusy} />)
+                  visible.map(({ req, index }) => <ReqRow key={req.name} req={req} questId={quest.id} index={index} total={quest.progress.total} onOpenCoin={setOpenCoinId} onOpenPick={(questId, req) => setPickTarget({ questId, req })} onClearPick={handlePick} pickBusy={pickBusy} onRecordPrompt={(questId, req) => setRecordTarget({ req, explanation: req.explanation })} />)
                 )
               )}
             </div>
@@ -681,6 +756,10 @@ const QuestDetail = () => {
         </div>
       </div>
       </div>
+      <RecordPrompt
+        recordTarget={recordTarget}
+        onClose={() => setRecordTarget(null)}
+      />
       <PickDialog
         pickTarget={pickTarget}
         onClose={() => setPickTarget(null)}
