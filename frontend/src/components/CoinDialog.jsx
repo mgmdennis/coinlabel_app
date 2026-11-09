@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { BASE_URL } from '../config';
 import '../quests.css';
+import './CoinDialog.css';
 import { Icon, coinPlaceholder } from '../quests-ui';
 
 const bareBustOf = (c) => String(c?.details || '').match(/bust\s+of\s+([^,\n.]+)/i)?.[1]?.replace(/\s+(right|left|facing|bareheaded|laureate|diademed|draped|cuirassed|veiled|helmeted)\b.*$/i, '').trim();
@@ -229,7 +230,7 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
   };
 
   return (
-    <dialog className="q-dialog" ref={ref} aria-labelledby="q-coin-dialog-title">
+    <dialog className="q-dialog q-coin-dialog" ref={ref} aria-labelledby="q-coin-dialog-title">
       <div className="q-dialog-head">
         <div>
           <p className="q-eyebrow">Cabinet coin</p>
@@ -338,12 +339,16 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
               </form>
             )}
 
-            <section className="q-dialog-section" style={{ marginTop: editing ? 20 : 0 }}>
-              <h3>Coin details</h3>
+            <section className="q-dialog-section q-coin-photo-panel" style={{ marginTop: editing ? 20 : 0 }}>
+              <h3>Collection Photos</h3>
               <div className="q-dialog-face-row">
                 <CoinFace coin={coin} side="obv" />
                 <CoinFace coin={coin} side="rev" />
               </div>
+            </section>
+
+            <section className="q-dialog-section q-coin-details">
+              <h3>Coin details</h3>
               <dl className="q-facts">
                 <Fact label="Issuer" value={coin.issuer} />
                 <Fact label="Attribution" value={claimUncertain ? 'Uncertain — needs confirmation' : 'Certain'} />

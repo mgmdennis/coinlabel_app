@@ -1,0 +1,132 @@
+.q-coin-dialog {
+  --coin-ink: #24313e;
+  --coin-muted: #5f6f80;
+  --coin-line: #dfe4e9;
+  --coin-slate: #24313e;
+  border-radius: 12px;
+  color: var(--coin-ink);
+}
+
+.q-coin-dialog .q-dialog-head {
+  border-bottom-color: var(--coin-line);
+}
+
+.q-coin-dialog .q-dialog-head .q-eyebrow {
+  color: var(--coin-muted);
+}
+
+.q-coin-dialog .q-dialog-head h2 {
+  color: var(--coin-ink);
+}
+
+.q-coin-dialog .q-dialog-scroll {
+  padding: 20px 24px;
+}
+
+.q-coin-dialog .q-dialog-section {
+  border-color: var(--coin-line);
+}
+
+.q-coin-dialog .q-dialog-section h3 {
+  color: var(--coin-ink);
+}
+
+.q-coin-dialog .q-coin-photo-panel {
+  margin: 0 0 20px !important;
+  padding: 20px;
+  border: 1px solid var(--coin-slate);
+  border-radius: 12px;
+  background: var(--coin-slate);
+  color: #f8f9fa;
+}
+
+.q-coin-dialog .q-coin-photo-panel h3 {
+  color: #d8b98c;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.q-coin-dialog .q-dialog-face-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 0;
+}
+
+.q-coin-dialog .q-coin-face {
+  min-width: 0;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--coin-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.q-coin-dialog .q-coin-img {
+  display: block;
+  width: 100%;
+  height: 148px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.q-coin-dialog .q-coin-face-label {
+  color: var(--coin-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.q-coin-dialog .q-coin-details {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.q-coin-dialog .q-facts {
+  gap: 0 20px;
+  margin-top: 8px;
+}
+
+.q-coin-dialog .q-fact {
+  min-width: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--coin-line);
+}
+
+.q-coin-dialog .q-fact dt {
+  color: var(--coin-muted);
+}
+
+.q-coin-dialog .q-fact dd {
+  color: var(--coin-ink);
+}
+
+.q-coin-dialog .q-dialog-foot {
+  border-top-color: var(--coin-line);
+}
+
+.q-coin-dialog :where(button, a, input):focus-visible {
+  outline: 3px solid #1864ab;
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .q-coin-dialog .q-dialog-scroll {
+    padding: 16px;
+  }
+
+  .q-coin-dialog .q-coin-photo-panel {
+    padding: 16px;
+  }
+
+  .q-coin-dialog .q-dialog-face-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .q-coin-dialog .q-coin-img {
+    height: 180px;
+  }
+}

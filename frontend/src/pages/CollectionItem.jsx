@@ -9,6 +9,7 @@ import { Pencil, Upload, X, Trash2, Printer } from 'lucide-react';
 import { BASE_URL } from '../config';
 import { GradeSelect } from '../components/GradeSelect';
 import { compressImage } from '../utils/compressImage';
+import './CollectionItem.css';
 
 const CollectionItem = () => {
     const { id } = useParams();
@@ -60,8 +61,8 @@ const CollectionItem = () => {
     };
 
     if (loading) return (
-        <Container size="md" py="lg">
-            <Group mb="lg">
+        <Container size="md" py="lg" className="collection-item-page">
+            <Group mb="lg" className="collection-item-loading-back">
                 <Skeleton height={28} width={80} radius="sm" />
             </Group>
             <Skeleton height={32} width="60%" radius="sm" mb="lg" />
@@ -85,7 +86,17 @@ const CollectionItem = () => {
             </Card>
         </Container>
     );
-    if (!item) return <Container size="md" py="lg"><Text>No item found.</Text></Container>;
+    if (!item) return (
+        <Container size="md" py="lg" className="collection-item-page">
+            <Box className="collection-item-empty">
+                <Text fw={700}>Collection item unavailable</Text>
+                <Text size="sm" c="dimmed">This item may have been removed or the link may be out of date.</Text>
+                <Button mt="md" variant="default" onClick={() => navigate('/', { state: { view: 'collection' } })}>
+                    Back to collection
+                </Button>
+            </Box>
+        </Container>
+    );
 
     const fields = [
         { key: 'issuer', label: 'Issuer', type: 'text' },
@@ -106,13 +117,14 @@ const CollectionItem = () => {
     ];
 
     return (
-        <Container size="md" py="lg">
-            <Group justify="space-between" align="center" wrap="wrap" mb="lg" gap="sm">
+        <Container size="md" py="lg" className="collection-item-page">
+            <Group justify="space-between" align="flex-end" wrap="wrap" mb="xl" gap="lg" className="collection-item-header">
                 <Stack gap={2}>
-                    <Title order={3}>
+                    <Text className="collection-item-eyebrow">Collection record</Text>
+                    <Title order={1} className="collection-item-title">
                         {item.issuer} {item.denomination} {item.year}
                     </Title>
-                    <Group gap="xs">
+                    <Group gap="xs" mt={4}>
                         <Badge color="green" variant="light" size="sm">Collection Item</Badge>
                         {item.isManual && <Badge color="gray" variant="light" size="sm">Manual</Badge>}
                         {item.ocreId && (
@@ -129,7 +141,7 @@ const CollectionItem = () => {
                         )}
                     </Group>
                 </Stack>
-                <Group gap="xs" wrap="nowrap">
+                <Group gap="xs" wrap="wrap" className="collection-item-actions">
                     {item.hasLabel === false && (
                         <Button
                             variant="light" color="blue" size="xs"
@@ -175,15 +187,19 @@ const CollectionItem = () => {
             </Group>
 
             {/* Collection photos */}
-            <Card withBorder shadow="sm" mb="lg" padding="md">
-                <Text fw={700} mb="sm">Collection Photos</Text>
-                <SimpleGrid cols={2} spacing="md">
-                    <Stack gap={4} align="center">
-                        <Text size="xs" c="dimmed">Obverse</Text>
+            <Card component="section" withBorder shadow="sm" mb="lg" padding="lg" className="collection-item-panel collection-item-photos">
+                <Group justify="space-between" align="flex-end" mb="md" wrap="wrap" gap="xs">
+                    <Box>
+                        <Text className="collection-item-section-kicker">Collection Photos</Text>
+                    </Box>
+                </Group>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                    <Stack gap="xs" className="collection-item-face">
+                        <Text className="collection-item-face-label">Obverse</Text>
                         {item.collectionObvImage ? (
-                            <Box pos="relative" style={{ width: '100%', textAlign: 'center' }}>
+                            <Box pos="relative" className="collection-item-photo-wrap">
                                 <img src={item.collectionObvImage} alt="Obverse"
-                                    style={{ maxWidth: '100%', maxHeight: 250, borderRadius: 8 }} />
+                                    className="collection-item-photo" />
                                 {editing && (
                                     <Button
                                         variant="light" color="red" size="xs" mt={4}
@@ -195,8 +211,8 @@ const CollectionItem = () => {
                                 )}
                             </Box>
                         ) : (
-                            <Box style={{ width: '100%', minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--mantine-color-gray-3)', borderRadius: 8 }}>
-                                <Text size="sm" c="dimmed">No photo</Text>
+                            <Box className="collection-item-photo-empty">
+                                <Text size="sm" c="dimmed">No obverse photo yet</Text>
                             </Box>
                         )}
                         {editing && (
@@ -208,12 +224,12 @@ const CollectionItem = () => {
                             />
                         )}
                     </Stack>
-                    <Stack gap={4} align="center">
-                        <Text size="xs" c="dimmed">Reverse</Text>
+                    <Stack gap="xs" className="collection-item-face">
+                        <Text className="collection-item-face-label">Reverse</Text>
                         {item.collectionRevImage ? (
-                            <Box pos="relative" style={{ width: '100%', textAlign: 'center' }}>
+                            <Box pos="relative" className="collection-item-photo-wrap">
                                 <img src={item.collectionRevImage} alt="Reverse"
-                                    style={{ maxWidth: '100%', maxHeight: 250, borderRadius: 8 }} />
+                                    className="collection-item-photo" />
                                 {editing && (
                                     <Button
                                         variant="light" color="red" size="xs" mt={4}
@@ -225,8 +241,8 @@ const CollectionItem = () => {
                                 )}
                             </Box>
                         ) : (
-                            <Box style={{ width: '100%', minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--mantine-color-gray-3)', borderRadius: 8 }}>
-                                <Text size="sm" c="dimmed">No photo</Text>
+                            <Box className="collection-item-photo-empty">
+                                <Text size="sm" c="dimmed">No reverse photo yet</Text>
                             </Box>
                         )}
                         {editing && (
@@ -242,9 +258,12 @@ const CollectionItem = () => {
             </Card>
 
             {/* Details */}
-            <Card withBorder shadow="sm" mb="lg" padding="md">
-                <Group justify="space-between" mb="sm">
-                    <Text fw={700}>Details</Text>
+            <Card component="section" withBorder shadow="sm" mb="lg" padding="lg" className="collection-item-panel">
+                <Group justify="space-between" mb="md" wrap="wrap" gap="sm" className="collection-item-details-head">
+                    <Box>
+                        <Text className="collection-item-section-kicker">Item information</Text>
+                        <Title order={2} className="collection-item-section-title">Details</Title>
+                    </Box>
                     {!editing ? (
                         <Button variant="default" size="xs" onClick={() => setEditing(true)} leftSection={<Pencil size={13} />}>
                             Edit
@@ -284,11 +303,11 @@ const CollectionItem = () => {
                         ))}
                     </Stack>
                 ) : (
-                    <SimpleGrid cols={2} spacing="xs">
+                    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" className="collection-item-fields">
                         {fields.map(f => (
-                            <Box key={f.key}>
-                                <Text size="xs" c="dimmed" fw={600}>{f.label}</Text>
-                                <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                            <Box key={f.key} className="collection-item-field">
+                                <Text className="collection-item-field-label">{f.label}</Text>
+                                <Text className="collection-item-field-value">
                                     {item[f.key] || '—'}
                                 </Text>
                             </Box>
