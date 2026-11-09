@@ -93,11 +93,13 @@ const CollectionItem = () => {
         { key: 'year', label: 'Year', type: 'text' },
         { key: 'legendObv', label: 'Obverse Legend', type: 'text' },
         { key: 'legendRev', label: 'Reverse Legend', type: 'text' },
+        { key: 'grade', label: 'Grade', type: 'text' },
         { key: 'gradeDetails', label: 'Grade Details', type: 'text' },
         { key: 'composition', label: 'Composition', type: 'text' },
         { key: 'physicalDetails', label: 'Physical Details', type: 'textarea', rows: 3 },
         { key: 'reference', label: 'Reference', type: 'text' },
         { key: 'mintage', label: 'Mintage', type: 'text' },
+        { key: 'dateAdded', label: 'Date Added', type: 'text' },
         { key: 'details', label: 'Details', type: 'textarea', rows: 4 },
         { key: 'numistaNumber', label: 'Numista Number', type: 'text' },
         { key: 'ocreId', label: 'OCRE ID', type: 'text' },
@@ -265,7 +267,8 @@ const CollectionItem = () => {
                             value={item.grade || ''}
                             onChange={e => handleFieldChange('grade', e.target.value)}
                         />
-                        {fields.map(f => f.type === 'textarea' ? (
+                        {/* Grade renders as GradeSelect above — skip it here. */}
+                        {fields.filter(f => f.key !== 'grade').map(f => f.type === 'textarea' ? (
                             <Textarea
                                 key={f.key} label={f.label}
                                 value={item[f.key] || ''}
