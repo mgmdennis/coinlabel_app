@@ -1071,7 +1071,10 @@
 .q-record-input { width: 100%; min-height: 46px; padding: 10px 14px; border: 1px solid var(--q-line-strong); border-radius: 8px; background: #ffffff; color: var(--q-ink); font: inherit; font-size: 0.95rem; }
 .q-record-input::placeholder { color: rgba(107, 91, 73, 0.4); }
 .q-record-input:focus { outline: 2px solid var(--q-blue); outline-offset: 1px; border-color: var(--q-blue); }
-.q-record-hint { margin: 22px 0 8px; font-size: 0.78rem; color: var(--q-muted); line-height: 1.5; }
+/* NOTE: .q-dialog p { margin: 0 } sits later with specificity (0,1,1) —
+   single-class rules lose to it. Anything inside a dialog needs the
+   .q-dialog-prefixed form. */
+.q-dialog .q-record-hint { margin: 22px 0 10px; font-size: 0.78rem; color: var(--q-muted); line-height: 1.5; }
 .q-pick-dialog { max-width: 420px; }
 .q-pick-counts { font-size: 0.8rem; color: var(--q-muted); }
 .q-pick-list { margin-top: 4px; }
