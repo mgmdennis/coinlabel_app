@@ -1271,6 +1271,66 @@
   }
 }
 
+/* ---------- responsive: phone (≤ 640px) — requirement rows compact ---------- */
+
+@media (max-width: 640px) {
+  .q-section-title { font-size: 1.35rem; }
+
+  /* filter pills scroll sideways instead of piling up; All/Collected/… stay tappable */
+  .q-req-filters {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .q-req-filters::-webkit-scrollbar { display: none; }
+  .q-req-filters .q-filter-btn { flex: none; min-height: 44px; }
+
+  /* rows: number circle shrinks to a prefix, content + action stack below */
+  .q-req-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 12px;
+    padding: 16px;
+    align-items: start;
+  }
+  .q-req-marker { padding-top: 0; }
+  .q-req-num { width: 32px; height: 32px; font-size: 0.8rem; }
+  .q-req-title-group h3 { font-size: 1.1rem; overflow-wrap: anywhere; }
+  .q-req-action { grid-column: 1 / -1; }
+  .q-req-action .q-btn-outline,
+  .q-req-action .q-btn-outline-blue { width: 100%; min-height: 44px; }
+  .q-req-card .q-btn-outline { min-height: 44px; }
+
+  /* collected rows: coin faces lead their own line (48px), text wraps full width */
+  .q-req-coin { display: block; min-width: 0; }
+  .q-req-coin .q-coin-faces { display: flex; gap: 16px; margin-bottom: 10px; }
+  .q-req-coin .q-coin-img { width: 48px; height: 48px; }
+  .q-match-line { flex-wrap: wrap; }
+  .q-match-line > span { min-width: 0; overflow-wrap: break-word; }
+  .q-reason { overflow-wrap: break-word; }
+
+  /* the quiet pick affordance keeps its dotted-underline look — just 44px tall */
+  .q-pick-line { margin-top: 6px; }
+  .q-pick-line .q-pick-open,
+  .q-pick-line .q-pick-auto { display: inline-block; padding: 12px 0; }
+
+  /* progress card + complete banner stack gracefully */
+  .q-progress-card { padding: 20px; }
+  .q-progress-visual { flex-wrap: wrap; gap: 12px; }
+  .q-progress-copy { min-width: 0; }
+  .q-complete-banner { flex-wrap: wrap; }
+  .q-complete-banner.q-complete-banner-btn { width: 100%; text-align: left; }
+
+  /* overflow guard rails (320px clones of Numistan spellings, long lines) */
+  .q-req-main,
+  .q-req-coin,
+  .q-progress-copy,
+  .q-rules { min-width: 0; overflow-wrap: break-word; }
+  .q-rules { padding: 16px; }
+}
+
 /* ---------- coin popup dialog (Quest rows + Collection list) ---------- */
 
 .q-dialog {
