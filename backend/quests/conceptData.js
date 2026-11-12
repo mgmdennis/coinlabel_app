@@ -781,8 +781,8 @@ module.exports.QUEST_CATALOG = [
     "family": "Long runs",
     "unit": "rulers",
     "unitSingular": "ruler",
-    "summary": "Eighty rulers from Augustus to Zeno: the long march through the imperial succession, dynasty by dynasty.",
-    "intro": "A complete run from Augustus to Zeno, grouped by dynasty and crisis. Eighty slots make this a lifetime quest rather than a weekend one; the cabinet recalculates it as the collection grows.",
+    "summary": "Eighty-one rulers from Augustus to Zeno: the long march through the imperial succession, dynasty by dynasty.",
+    "intro": "A complete run from Augustus to Zeno, grouped by dynasty and crisis. Eighty-one slots make this a lifetime quest rather than a weekend one; the cabinet recalculates it as the collection grows.",
     "badge": {
       "name": "The Long March",
       "art": "scroll"
@@ -1369,6 +1369,21 @@ module.exports.QUEST_CATALOG = [
         ],
         "aliases": [
           "Marcus Cassianus Latinius Postumus"
+        ],
+        "ocrePrefixes": [],
+        "section": "crisis"
+      },
+      {
+        "id": "saloninus",
+        "ruler": "Saloninus",
+        "reign": "AD 258–260",
+        "qualifies": "Any coin issued in this ruler’s name — Gallienus’ boy-Caesar, struck at Cologne before Postumus’ revolt.",
+        "issuers": [
+          "Saloninus"
+        ],
+        "aliases": [
+          "Cornelius Licinius Saloninus",
+          "Licinius Saloninus"
         ],
         "ocrePrefixes": [],
         "section": "crisis"
