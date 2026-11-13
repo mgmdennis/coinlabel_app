@@ -92,7 +92,10 @@ const attributionName = (coin) => {
     /^Issuer:\s*([^\n]+)/m.exec(details)?.[1] ||
     /^\(([^)\n]+)\)/m.exec(details)?.[1];
   if (fromLine) {
-    const name = String(fromLine).trim().replace(/\s*—.*$/, '');
+    // Quoted nicknames ride along on legacy labels ("Philip I "The Arab"",
+    // Mark 2026-11-11) — the epigraph never changes who the coin is; strip
+    // quoted asides the same way the — suffix is stripped.
+    const name = String(fromLine).trim().replace(/"[^"]*"/g, '').replace(/\s*—.*$/, '').replace(/\s+$/, '');
     if (name) return name;
   }
   return '';

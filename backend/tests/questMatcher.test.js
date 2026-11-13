@@ -324,8 +324,19 @@ test('a "Head of ..." obverse names the portrait just like "Bust of ..." (2026-1
   assert.equal(statusOf(quests, 'every-emperor', 'Lucius Verus'), 'collected');
   assert.equal(statusOf(quests, 'five-good', 'Marcus Aurelius'), 'needed');
 });
-test('Postumus fills slots in Soldier Emperors and Every Emperor (added 2026-11-03)', () => {
+test('quoted nicknames on the claim line never change identity (Philip I "The Arab", 2026-11-11)', () => {
   const quests = matchQuests([
+    baseCoin('c1', {
+      ocreId: 'ric.4.ph_i.53',
+      details: 'Ruler: Philip I "The Arab"\nObv: Bust of Philip, radiate, draped, cuirassed, right.\nRev: Nobilitas, draped, standing left.',
+    }),
+  ]);
+  assert.equal(statusOf(quests, 'soldier-emperors', 'Philip I'), 'collected');
+  assert.equal(statusOf(quests, 'every-emperor', 'Philip I'), 'collected');
+  // Exactly two slots take the coin (the two Philip I slots), nothing else.
+  assert.equal(quests.reduce((n, q) => n + q.requirements.filter(r => r.coin && String(r.coin._id) === 'c1').length, 0), 2);
+});
+test('Postumus fills slots in Soldier Emperors and Every Emperor (added 2026-11-03)', () => {  const quests = matchQuests([
     baseCoin('c1', {
       ocreId: 'ric.5.post.59',
       details: 'Ruler: Postumus\nObv: Bust, radiate, draped, right.\nRev: Fides, draped, standing left, holding two ensigns.',
