@@ -1,6 +1,6 @@
 // Quest matcher unit tests — pure logic, no DB needed.
 // Run: node --test backend/tests/questMatcher.test.js
-// Contract: the Open Design engine rewrite (2026-10-31) — 16 quests, 192
+// Contract: the Open Design engine rewrite (2026-10-31) — 16 quests, 195
 // requirements (Postumus 2026-11-03; Signs & Symbols 2026-11-04), families
 // and sections + bad art keys. Ruler quests match the
 // effective issuer claim ("Ruler:/Issuer:/(X)" line or issuer field), OCRE
@@ -38,7 +38,7 @@ test('the catalog exposes sixteen quests in order with families', () => {
   assert.deepEqual([...families], ['Imperial runs', 'Long runs', 'Collecting themes']);
   // The every-emperor quest carries its eight dynastic sections.
   const long = quests.find(q => q.id === 'every-emperor');
-  assert.equal(long.requirements.length, 81);
+  assert.equal(long.requirements.length, 84);
   assert.ok(long.sections.length === 8);
 });
 

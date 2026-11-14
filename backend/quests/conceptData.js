@@ -781,8 +781,8 @@ module.exports.QUEST_CATALOG = [
     "family": "Long runs",
     "unit": "rulers",
     "unitSingular": "ruler",
-    "summary": "Eighty-one rulers from Augustus to Zeno: the long march through the imperial succession, dynasty by dynasty.",
-    "intro": "A complete run from Augustus to Zeno, grouped by dynasty and crisis. Eighty-one slots make this a lifetime quest rather than a weekend one; the cabinet recalculates it as the collection grows.",
+    "summary": "Eighty-four rulers from Augustus to Zeno: the long march through the imperial succession, dynasty by dynasty.",
+    "intro": "A complete run from Augustus to Zeno, grouped by dynasty and crisis. Eighty-four slots make this a lifetime quest rather than a weekend one; the cabinet recalculates it as the collection grows.",
     "badge": {
       "name": "The Long March",
       "art": "scroll"
@@ -1404,6 +1404,21 @@ module.exports.QUEST_CATALOG = [
         "section": "crisis"
       },
       {
+        "id": "victorinus",
+        "ruler": "Victorinus",
+        "reign": "AD 269–271",
+        "qualifies": "Any coin issued in this ruler’s name — the Gallic Empire’s second and third years.",
+        "issuers": [
+          "Victorinus"
+        ],
+        "aliases": [
+          "Marcus Piavonius Victorinus",
+          "Piavonius Victorinus"
+        ],
+        "ocrePrefixes": [],
+        "section": "crisis"
+      },
+      {
         "id": "quintillus",
         "ruler": "Quintillus",
         "reign": "AD 270",
@@ -1427,6 +1442,36 @@ module.exports.QUEST_CATALOG = [
         ],
         "aliases": [
           "Lucius Domitius Aurelianus"
+        ],
+        "ocrePrefixes": [],
+        "section": "crisis"
+      },
+      {
+        "id": "tetricus-i",
+        "ruler": "Tetricus I",
+        "reign": "AD 271–274",
+        "qualifies": "Any coin issued in this ruler’s name — the last Gallic emperor, who laid down his arms to Aurelian.",
+        "issuers": [
+          "Tetricus I"
+        ],
+        "aliases": [
+          "Gaius Pius Esuvius Tetricus",
+          "Esuvius Tetricus"
+        ],
+        "ocrePrefixes": [],
+        "section": "crisis"
+      },
+      {
+        "id": "tetricus-ii",
+        "ruler": "Tetricus II",
+        "reign": "AD 273–274",
+        "qualifies": "Any coin issued in this ruler’s name — the young Caesar beside his father in Gaul.",
+        "issuers": [
+          "Tetricus II"
+        ],
+        "aliases": [
+          "Esuvius Tetricus the Younger",
+          "Tetricus Junior"
         ],
         "ocrePrefixes": [],
         "section": "crisis"
