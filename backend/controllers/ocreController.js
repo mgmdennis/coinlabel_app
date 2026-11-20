@@ -136,6 +136,21 @@ function simplifyReference(datasetName, reference) {
 // keeps the name ("Obv: Head of Antoninus Pius, bare, right.").
 const normName = (s) => String(s || '').toUpperCase().replace(/[^A-Z]/g, '');
 
+// Does a prefLabel segment name the record's mint? Exact equality is not
+// enough: uriToLabel expands compound nomisma ids ("heraclea_thracica" ->
+// "Heraclea Thracica") while the prefLabel keeps the bare mint ("RIC VII
+// Heraclea 97"), so either side containing the other catches the pairing.
+// Length floor keeps short tokens ("Aq") from matching by accident.
+const normMintToken = (s) => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+function nameMatchesMint(name, mintNorm) {
+    const n = normMintToken(name);
+    if (!n || !mintNorm) return false;
+    if (n === mintNorm) return true;
+    if (n.length >= 5 && mintNorm.includes(n)) return true;
+    if (mintNorm.length >= 5 && n.includes(mintNorm)) return true;
+    return false;
+}
+
 function composeObverseDescription(obvDesc, prefLabel, authorityNames = [], mintName = '') {
     // Ruler names come from the prefLabel's emperor segment (the RIC series
     // ruler — for joint reigns that is the numbering emperor alone). The
@@ -144,9 +159,8 @@ function composeObverseDescription(obvDesc, prefLabel, authorityNames = [], mint
     // Londinium 71") — those can leave only "Ruler: Londinium".
     const parsed = parsePrefLabel(prefLabel);
     const prefNames = (parsed && parsed.names && parsed.names.length) ? parsed.names : [];
-    const mintNorm = String(mintName || '').toLowerCase().replace(/[^a-z]/g, '');
-    const prefRulerNames = prefNames.filter((n) => !mintNorm
-        || String(n).toLowerCase().replace(/[^a-z]/g, '') !== mintNorm);
+    const mintNorm = normMintToken(mintName);
+    const prefRulerNames = prefNames.filter((n) => !nameMatchesMint(n, mintNorm));
     const rulerNames = prefRulerNames.length ? prefRulerNames : authorityNames;
     const text = String(obvDesc || '').trim().replace(/\.$/, '');
     const head = /^(?:(Laureate|Radiate|Draped|Cuirassed)\s+)?([Bb]ust|[Hh]ead|[Pp]ortrait)\s+of\s+([^.]+)$/.exec(text);
@@ -348,7 +362,7 @@ async function getOcreDetailsJSON(ocreId, datasetName = 'ocre') {
         // never strip a segment that names the record's mint.
         const mintName = String(mintLabel || '').toLowerCase().replace(/[^a-z]/g, '');
         const namesToStrip = [...((parsedLabel && parsedLabel.names) || [])]
-            .filter((name) => !mintName || name.toLowerCase().replace(/[^a-z]/g, '') !== mintName);
+            .filter((name) => !nameMatchesMint(name, mintName));
         let reference = prefLabel;
         for (const name of new Set([...authorityLabels, ...namesToStrip])) {
             const escaped = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

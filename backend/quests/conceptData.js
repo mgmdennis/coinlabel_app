@@ -2591,8 +2591,8 @@ module.exports.QUEST_CATALOG = [
     "family": "Collecting themes",
     "unit": "mints",
     "unitSingular": "mint",
-    "summary": "Nine striking places, from Rome and Lugdunum to Trier, Antioch, and Constantinople — the workshops behind the coinage.",
-    "intro": "Mint marks reveal where a coin was struck and how the empire organised production. This quest follows nine major mints across the imperial period.",
+    "summary": "Ten striking places, from Rome and Lugdunum to Trier, Antioch, and Constantinople — the workshops behind the coinage.",
+    "intro": "Mint marks reveal where a coin was struck and how the empire organised production. This quest follows ten major mints across the imperial period.",
     "badge": {
       "name": "Mints of the Empire",
       "art": "mint"
@@ -2729,6 +2729,20 @@ module.exports.QUEST_CATALOG = [
         "aliases": [],
         "ocrePrefixes": [],
         "addMint": "Siscia"
+      },
+      {
+        "id": "cyzicus",
+        "ruler": "Cyzicus",
+        "reign": "Mint · any era",
+        "qualifies": "A coin struck at Cyzicus.",
+        "kind": "mint",
+        "values": [
+          "cyzicus"
+        ],
+        "issuers": [],
+        "aliases": [],
+        "ocrePrefixes": [],
+        "addMint": "Cyzicus"
       }
     ]
   },
