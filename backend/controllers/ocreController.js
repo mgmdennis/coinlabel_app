@@ -173,8 +173,13 @@ function composeObverseDescription(obvDesc, prefLabel, authorityNames = [], mint
     }
 
     const parts = head[3].split(',').map((s) => s.trim()).filter(Boolean);
-    let effigy = parts.shift() || '';
-    effigy = effigy.replace(/\s+(the\s+[A-Za-z]+)$/i, '').replace(/\s+[IVX]+$/, '').trim();
+    // Display keeps the full name — regnal numerals are part of it
+    // ("Bust of Constantius II"), so Caesar-era coins read correctly.
+    const effigy = (parts.shift() || '').trim();
+    const effigyCompare = effigy
+        .replace(/\s+(the\s+[A-Za-z]+)$/i, '')
+        .replace(/\s+[IVX]+$/, '')
+        .trim();
 
     const mods = [];
     if (head[1]) mods.push(head[1].toLowerCase());
@@ -187,7 +192,7 @@ function composeObverseDescription(obvDesc, prefLabel, authorityNames = [], mint
     // The prefLabel can drag edition fragments in ("(second edition)
     // Hadrian") — clean them before comparing with the effigy name.
     const cleanLabelName = (rn) => normName(String(rn).replace(/\([^)]*\)/g, '').replace(/^\s*\S+\s+/, '').trim());
-    const effigyNorm = normName(effigy);
+    const effigyNorm = normName(effigyCompare);
     const same = effigyNorm && rulerNames.some((rn) => {
         const r = normName(String(rn).replace(/\([^)]*\)/g, '').trim());
         const r2 = normName(String(rn).replace(/\([^)]*\)/g, '').replace(/^\s*\S+\s+/, '').trim());
