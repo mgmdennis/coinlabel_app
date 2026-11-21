@@ -18,7 +18,14 @@ const CollectionItem = () => {
     const originalRef = useRef(null);
     const [loading, setLoading] = useState(true);
     const [editing, setEditing] = useState(false);
-    const [saving, setSaving] = useState(false);
+
+    // --- Autosave (mirrors create.jsx's diff-and-debounce pattern) ---
+    // While in Edit mode every change persists automatically: debounced,
+    // diffed against the last saved state, so photos only re-send when they
+    // actually changed. "Done" flushes before closing; unmount flushes too.
+    const [saveStatus, setSaveStatus] = useState('saved'); // 'saving', 'saved', 'error'
+    const saveTimerRef = useRef(null);
+    const saveNowRef = useRef(null);
 
     useEffect(() => {
         axios.get(`${BASE_URL}/coin/${id}`)
@@ -31,22 +38,54 @@ const CollectionItem = () => {
         setItem(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            const original = originalRef.current || {};
-            const { collectionObvImage, collectionRevImage, ...rest } = item;
-            const body = { ...rest };
-            // Only re-send a photo when it was uploaded or removed this session
-            if (collectionObvImage !== (original.collectionObvImage ?? "")) body.collectionObvImage = collectionObvImage;
-            if (collectionRevImage !== (original.collectionRevImage ?? "")) body.collectionRevImage = collectionRevImage;
-            await axios.put(`${BASE_URL}/coin/update/${item._id}`, body);
-            originalRef.current = { ...original, ...body };
-            setEditing(false);
-        } catch (err) {
-            console.error('Save error:', err);
+    // Fields that changed vs the last saved state; photos included only when
+    // they differ (never re-sent otherwise — they're the heavy payloads).
+    const diffItem = (latest, original) => {
+        const changed = {};
+        for (const key of Object.keys(latest || {})) {
+            if ((latest[key] ?? '') !== (original[key] ?? '')) changed[key] = latest[key];
         }
-        setSaving(false);
+        return changed;
+    };
+
+    const saveNow = () => {
+        const latest = item;
+        const original = originalRef.current || {};
+        const changed = diffItem(latest, original);
+        if (!latest || !Object.keys(changed).length) return undefined;
+        return axios.put(`${BASE_URL}/coin/update/${latest._id}`, changed)
+            .then(() => {
+                originalRef.current = { ...original, ...changed };
+                setSaveStatus('saved');
+            })
+            .catch(err => {
+                console.error('Save error:', err);
+                setSaveStatus('error');
+            });
+    };
+    saveNowRef.current = saveNow;
+
+    // Debounced autosave while editing. Skipping when there's no diff keeps
+    // merely opening Edit mode from firing a pointless request.
+    useEffect(() => {
+        if (!editing || !item || !originalRef.current) return;
+        if (!Object.keys(diffItem(item, originalRef.current)).length) return;
+        setSaveStatus('saving');
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => saveNowRef.current?.(), 800);
+        return () => clearTimeout(saveTimerRef.current);
+    }, [item, editing]);
+
+    // Leaving the page flushes whatever is still pending.
+    useEffect(() => () => {
+        clearTimeout(saveTimerRef.current);
+        saveNowRef.current?.();
+    }, []);
+
+    // "Done" — flush pending edits, then drop back to the read view.
+    const handleDone = () => {
+        clearTimeout(saveTimerRef.current);
+        Promise.resolve(saveNowRef.current?.()).finally(() => setEditing(false));
     };
 
     const handleImageUpload = async (side, file) => {
@@ -270,12 +309,12 @@ const CollectionItem = () => {
                             Edit
                         </Button>
                     ) : (
-                        <Group gap="xs">
-                            <Button variant="default" size="xs" onClick={() => setEditing(false)} disabled={saving}>
-                                Cancel
-                            </Button>
-                            <Button size="xs" onClick={handleSave} loading={saving}>
-                                Save
+                        <Group gap="sm">
+                            <Text size="sm" c={saveStatus === 'error' ? 'red.7' : saveStatus === 'saving' ? 'yellow.7' : 'green.7'}>
+                                {saveStatus === 'saving' ? '● Saving...' : saveStatus === 'error' ? '● Error saving!' : '● Saved'}
+                            </Text>
+                            <Button variant="default" size="xs" onClick={handleDone}>
+                                Done
                             </Button>
                         </Group>
                     )}
