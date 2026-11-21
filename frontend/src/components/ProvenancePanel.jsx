@@ -41,12 +41,16 @@ export const ProvenancePanel = ({ text, isEditable = false }) => {
             <p style={{
                 margin: `0 0 ${u(0.8)} 0`,
                 flexShrink: 0,
+                // Match the Obverse/Reverse captions: light weight, regular
+                // family, tracked-out uppercase, soft grey.
                 fontFamily: "'Fira Sans', sans-serif",
-                fontWeight: 700,
-                fontSize: u(2.2),
-                letterSpacing: u(0.25),
+                fontWeight: 300,
+                fontSize: u(2.6),
+                letterSpacing: '0.08em',
+                textAlign: 'center',
                 textTransform: 'uppercase',
-                borderBottom: '1px solid #999',
+                color: '#444',
+                borderBottom: '1px solid #ccc',
                 paddingBottom: u(0.6),
             }}>Provenance</p>
             <p
@@ -58,7 +62,7 @@ export const ProvenancePanel = ({ text, isEditable = false }) => {
                     overflow: 'hidden',
                     whiteSpace: 'pre-wrap',
                     wordWrap: 'break-word',
-                    fontFamily: "'Fira Sans', sans-serif",
+                    fontFamily: "'Fira Sans Extra Condensed', sans-serif",
                     lineHeight: 1.35,
                     fontSize: u(FONT_LADDER_MM[0]),
                 }}
