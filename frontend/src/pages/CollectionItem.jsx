@@ -9,6 +9,7 @@ import { Pencil, Upload, X, Trash2, Printer } from 'lucide-react';
 import { BASE_URL } from '../config';
 import { GradeSelect } from '../components/GradeSelect';
 import { compressImage } from '../utils/compressImage';
+import { notifySaveFailure, clearSaveFailureToast } from '../utils/saveFailureToast';
 import './CollectionItem.css';
 
 const CollectionItem = () => {
@@ -25,6 +26,7 @@ const CollectionItem = () => {
     // actually changed. "Done" flushes before closing; unmount flushes too.
     const [saveStatus, setSaveStatus] = useState('saved'); // 'saving', 'saved', 'error'
     const saveTimerRef = useRef(null);
+    const retryTimerRef = useRef(null);
     const saveNowRef = useRef(null);
 
     useEffect(() => {
@@ -57,10 +59,19 @@ const CollectionItem = () => {
             .then(() => {
                 originalRef.current = { ...original, ...changed };
                 setSaveStatus('saved');
+                clearSaveFailureToast();
+                clearTimeout(retryTimerRef.current);
             })
             .catch(err => {
                 console.error('Save error:', err);
                 setSaveStatus('error');
+                notifySaveFailure(err);
+                // Retry the current diff every 5s — the retry re-diffs, so
+                // edits made during the outage ride along. A 401 means the
+                // session died: the expiry bounce handles it, no hammering.
+                if (err?.response?.status === 401) return;
+                clearTimeout(retryTimerRef.current);
+                retryTimerRef.current = setTimeout(() => saveNowRef.current?.(), 5000);
             });
     };
     saveNowRef.current = saveNow;
@@ -76,9 +87,11 @@ const CollectionItem = () => {
         return () => clearTimeout(saveTimerRef.current);
     }, [item, editing]);
 
-    // Leaving the page flushes whatever is still pending.
+    // Leaving the page flushes whatever is still pending (a retry loop that's
+    // mid-outage is stopped — same trade-off as the create page).
     useEffect(() => () => {
         clearTimeout(saveTimerRef.current);
+        clearTimeout(retryTimerRef.current);
         saveNowRef.current?.();
     }, []);
 

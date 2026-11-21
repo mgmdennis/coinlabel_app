@@ -4,6 +4,7 @@ import axios from "axios";
 import { Button, Container, Grid, Group, Modal, Text, TextInput } from '@mantine/core';
 import { ProvenanceCard } from '../components/ProvenanceCard';
 import { notifications } from '@mantine/notifications';
+import { notifySaveFailure as notifySaveFailureShared, clearSaveFailureToast as clearSaveFailureToastShared } from '../utils/saveFailureToast';
 
 import { BASE_URL } from '../config';
 
@@ -409,26 +410,10 @@ const handleDiameterChange = (e) => {
         return changed;
     };
 
-    // Sticky toast for failed saves — autosaves fire on a 1s debounce and the
-    // little "● Error saving!" line in the preview card is easy to miss when
-    // the backend is unreachable. A shared notification id keeps repeated
-    // failures updating ONE toast instead of stacking; dismissed on the next
-    // successful save. 401s are skipped — the session-expiry bounce covers it.
-    const notifySaveFailure = (err) => {
-        const status = err?.response?.status;
-        if (status === 401) return;
-        const unreachable = !status || status >= 500;
-        notifications.show({
-            id: "numistag-save-error",
-            title: "Not saved",
-            color: "red",
-            autoClose: false,
-            message: unreachable
-                ? "Can't reach the server — your edits are NOT being saved. They'll go through once the connection is back."
-                : `Save failed (server error ${status}). Your edits stay on this page until a save succeeds.`,
-        });
-    };
-    const clearSaveFailureToast = () => notifications.hide("numistag-save-error");
+    // Sticky toast for failed saves — extracted to utils/saveFailureToast.js
+    // so the collection item page's autosave shares the exact same behavior.
+    const notifySaveFailure = notifySaveFailureShared;
+    const clearSaveFailureToast = clearSaveFailureToastShared;
 
     const createCoin = useCallback((overridePayload) => {
         if (isCreatingCoin.current) return;
