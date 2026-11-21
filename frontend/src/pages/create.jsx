@@ -2,6 +2,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { Button, Container, Grid, Group, Modal, Text, TextInput } from '@mantine/core';
+import { ProvenanceCard } from '../components/ProvenanceCard';
 import { notifications } from '@mantine/notifications';
 
 import { BASE_URL } from '../config';
@@ -41,11 +42,12 @@ const isEmptyCoinPayload = (p) => {
     if (Array.isArray(p.marks) && p.marks.length) return false;
     const typed = p.isManual
         ? [p.numistaNumber, p.ocreId, p.year, p.issuer, p.denomination, p.grade,
-           p.gradeDetails, p.details, p.reference, p.composition, p.physicalDetails,
+           p.gradeDetails, p.details, p.provenance, p.reference, p.composition,
+           p.physicalDetails,
            p.mintage, p.legendObv, p.legendRev, p.collectionObvImage,
            p.collectionRevImage, p.sketchId, p.marksPicture]
         : [p.year, p.issuer, p.denomination, p.grade, p.gradeDetails, p.details,
-           p.reference, p.composition, p.physicalDetails, p.mintage,
+           p.provenance, p.reference, p.composition, p.physicalDetails, p.mintage,
            p.legendObv, p.legendRev, p.collectionObvImage, p.collectionRevImage,
            p.sketchId, p.marksPicture];
     return !typed.some(v => v && String(v).trim());
@@ -73,6 +75,9 @@ const Create = () => {
     // --- Label Field State ---
     const [year, setYear] = useState("");
     const [details, setDetails] = useState("");
+    // Free-text provenance — never auto-filled by lookups; printed on the
+    // inside of the folded booklet (print.jsx duplex verso). (2026-11-21)
+    const [provenance, setProvenance] = useState("");
     const [detailsWidth, setDetailsWidth] = useState(45);
     const [denomination, setDenomination] = useState("");
     const [grade, setGrade] = useState("");
@@ -374,12 +379,12 @@ const handleDiameterChange = (e) => {
 
     const buildPayload = useCallback(() => ({
         numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails,
-        details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
+        details, provenance, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks,
         visualTarget, visualMethod, sketchId, isManual: isManualMode,
         detailsWidth,
         legendObv, legendRev,
         isCollectionItem, collectionObvImage, collectionRevImage
-    }), [numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, detailsWidth, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
+    }), [numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, provenance, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, detailsWidth, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
 
     // Latest-values mirrors for leave-page cleanup / draft stash (the unmount
     // cleanup and pagehide handlers must never fire on a stale closure).
@@ -689,6 +694,7 @@ const handleDiameterChange = (e) => {
                     setGrade(c.grade || "");
                     setGradeDetails(c.gradeDetails || "");
                     setDetails(c.details || "");
+                    setProvenance(c.provenance || "");
                     setReference(c.reference || "");
                     setComposition(c.composition || "");
                     setPhysicalDetails(c.physicalDetails || "");
@@ -721,6 +727,7 @@ const handleDiameterChange = (e) => {
                         grade: c.grade || "",
                         gradeDetails: c.gradeDetails || "",
                         details: c.details || "",
+                        provenance: c.provenance || "",
                         reference: c.reference || "",
                         composition: c.composition || "",
                         physicalDetails: c.physicalDetails || "",
@@ -784,7 +791,7 @@ const handleDiameterChange = (e) => {
             }, 1000);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, numistaNumber, ocreId, detailsWidth, updateCoinRemote, coinId, initialLoadComplete]);
+    }, [year, details, provenance, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, numistaNumber, ocreId, detailsWidth, updateCoinRemote, coinId, initialLoadComplete]);
 
     // --- Session-expiry draft stash ---
     // If the session dies before the record ever got saved (coinId still null
@@ -869,6 +876,7 @@ const handleDiameterChange = (e) => {
         setGrade(d.grade || "");
         setGradeDetails(d.gradeDetails || "");
         setDetails(d.details || "");
+        setProvenance(d.provenance || "");
         setReference(d.reference || "");
         setComposition(d.composition || "");
         setPhysicalDetails(d.physicalDetails || "");
@@ -1110,6 +1118,11 @@ const handleDiameterChange = (e) => {
                         onGradeChange={(e) => setGrade(e.target.value)}
                     />
 
+                    <ProvenanceCard
+                        provenance={provenance}
+                        onProvenanceChange={(e) => setProvenance(e.target.value)}
+                    />
+
                     {isManualMode && (
                         <ManualPhysicalFields
                             mass={mass}
@@ -1201,6 +1214,7 @@ const handleDiameterChange = (e) => {
                         legendObv={legendObv} setLegendObv={setLegendObv}
                         legendRev={legendRev} setLegendRev={setLegendRev}
                         concordanceSource={concordanceSource}
+                        provenance={provenance}
                     />
                 </Grid.Col>
             </Grid>

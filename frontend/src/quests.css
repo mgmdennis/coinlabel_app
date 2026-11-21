@@ -2042,3 +2042,9 @@ dialog.q-award-dialog { width: min(100% - 32px, 500px); }
   opacity: 0.55;
   cursor: default;
 }
+
+/* Multiline facts (provenance) span the full facts grid so the lines read
+   naturally instead of squeezing into one half-width column. */
+.q-fact-wide {
+  grid-column: 1 / -1;
+}

@@ -2,6 +2,7 @@ import { Anchor, Badge, Box, Button, Card, Group, Stack, Text } from '@mantine/c
 import axios from 'axios';
 import { useState } from 'react';
 import { FrontLabelContainer, BackLabelContainer } from "../pages/label";
+import { ProvenancePanel } from "./ProvenancePanel";
 
 export const PreviewCard = ({
     year, setYear,
@@ -30,6 +31,7 @@ export const PreviewCard = ({
     legendObv, setLegendObv,
     legendRev, setLegendRev,
     concordanceSource,
+    provenance = "",
 }) => {
     const [resetting, setResetting] = useState(false);
     const handleReset = async () => {
@@ -94,6 +96,19 @@ export const PreviewCard = ({
                             />
                         </div>
                     </Stack>
+                    {provenance.trim() && (
+                        <Stack align="center" gap="xs" w="100%" pt="xl" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+                            <Badge color="gray" variant="filled">Inside (Booklet)</Badge>
+                            <Text size="xs" c="dimmed">
+                                Printed on the back of the sheet — shows through the fold inside the booklet
+                            </Text>
+                            <div className="label-edit-scale-wrapper">
+                                <div className="parent-label-for-edit">
+                                    <ProvenancePanel text={provenance} isEditable />
+                                </div>
+                            </div>
+                        </Stack>
+                    )}
                 </Stack>
 
                 <Card.Section withBorder py="sm" px="md">

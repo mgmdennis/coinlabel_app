@@ -33,10 +33,10 @@ const CoinFace = ({ coin, side }) => (
   </span>
 );
 
-const Fact = ({ label, value }) => (
-  <div className="q-fact">
+const Fact = ({ label, value, preWrap }) => (
+  <div className={`q-fact${preWrap ? ' q-fact-wide' : ''}`}>
     <dt>{label}</dt>
-    <dd>{value || '—'}</dd>
+    <dd style={preWrap ? { whiteSpace: 'pre-wrap' } : undefined}>{value || '—'}</dd>
   </div>
 );
 
@@ -358,6 +358,9 @@ const CoinDialog = ({ coinId, onClose, onChanged }) => {
                 <Fact label="Reference" value={coin.reference} />
                 <Fact label="OCRE ID" value={coin.ocreId} />
                 <Fact label="Acquired" value={coin.acquired || (coin.createdAt ? formatDate(coin.createdAt) : null)} />
+                {coin.provenance && (
+                  <Fact label="Provenance" value={coin.provenance} preWrap />
+                )}
               </dl>
             </section>
 

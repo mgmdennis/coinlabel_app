@@ -112,6 +112,7 @@ const CollectionItem = () => {
         { key: 'mintage', label: 'Mintage', type: 'text' },
         { key: 'dateAdded', label: 'Date Added', type: 'text' },
         { key: 'details', label: 'Details', type: 'textarea', rows: 4 },
+        { key: 'provenance', label: 'Provenance', type: 'textarea', rows: 4 },
         { key: 'numistaNumber', label: 'Numista Number', type: 'text' },
         { key: 'ocreId', label: 'OCRE ID', type: 'text' },
     ];

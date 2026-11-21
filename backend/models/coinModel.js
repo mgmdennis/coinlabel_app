@@ -36,6 +36,14 @@ const CoinSchema = new Schema({
         type: String,
         trim: true,
     },
+    // Free-text ownership/auction history. Never auto-filled by lookups;
+    // printed on the INSIDE of the folded label booklet (sheet verso),
+    // so print runs that include it switch to duplex layout. (2026-11-21)
+    provenance: {
+        type: String,
+        trim: true,
+        default: "",
+    },
     reference: {
         type: String,
         trim: true,
