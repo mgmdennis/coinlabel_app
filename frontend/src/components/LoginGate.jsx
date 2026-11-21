@@ -1,4 +1,6 @@
-import { Button, Card, Center, Divider, Stack, Text } from '@mantine/core';
+import { useState } from 'react';
+import { Alert, Button, Card, Center, Divider, Stack, Text } from '@mantine/core';
+import { AlertCircle } from 'lucide-react';
 import { BASE_URL } from '../config';
 
 const GoogleIcon = ({ size = 18 }) => (
@@ -11,6 +13,13 @@ const GoogleIcon = ({ size = 18 }) => (
 );
 
 const LoginGate = () => {
+    // Set by the global axios interceptor when a protected API call returned
+    // 401 — i.e. the user was kicked here mid-session, not by choice.
+    const [expired] = useState(() => {
+        const was = sessionStorage.getItem('numistag-session-expired');
+        sessionStorage.removeItem('numistag-session-expired');
+        return was === '1';
+    });
     const handleLogin = () => {
         window.location.href = `${BASE_URL}/auth/login`;
     };
@@ -31,6 +40,16 @@ const LoginGate = () => {
                             <Text span fw={300} c="dimmed" style={{ fontSize: '1.4rem', marginLeft: 2 }}>TAG</Text>
                         </Text>
                     </Stack>
+                    {expired && (
+                        <Alert
+                            icon={<AlertCircle size={18} />}
+                            color="red"
+                            variant="light"
+                            w="100%"
+                        >
+                            Your session has expired — log in again.
+                        </Alert>
+                    )}
                     <Button onClick={handleLogin} fullWidth>
                         Login with Numista
                     </Button>

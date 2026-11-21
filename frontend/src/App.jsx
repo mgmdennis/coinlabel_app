@@ -26,6 +26,15 @@ function App() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Any 401 from a protected API call (session destroyed server-side — e.g.
+  // a Heroku restart) drops the user back to the login gate immediately,
+  // rather than leaving them typing into a form that can't save.
+  useEffect(() => {
+    const handleAuthExpired = () => setUser(null);
+    window.addEventListener("numistag:auth-expired", handleAuthExpired);
+    return () => window.removeEventListener("numistag:auth-expired", handleAuthExpired);
+  }, []);
+
   if (loading) {
     return <QuestLoading hint="Opening your cabinet…" />;
   }

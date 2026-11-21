@@ -23,6 +23,34 @@ import { PasteNumistaAccordion } from "../components/PasteNumistaAccordion";
 import { VisualCustomizationCard } from "../components/VisualCustomizationCard";
 import { PreviewCard } from "../components/PreviewCard";
 
+// sessionStorage key holding an unsaved entry stashed when the session
+// expired mid-entry (offered back via the "Resume unsaved draft?" modal).
+const DRAFT_KEY = "numistag-create-draft";
+
+// True when the record holds no data at all beyond the bare lookup key — the
+// kind of auto-created stub that litters the collection when a page is opened
+// and abandoned (or the catalogue fetch failed/never populated). Data the
+// lookup actually RETURNED counts as content (Mark, 2026-11-21): a Numista or
+// OCRE entry auto-filled with year/issuer/denomination/etc. is a real record
+// and is kept even if the user never curated it. In manual mode everything is
+// typed, so everything counts. Collection-linked labels are never considered
+// empty.
+const isEmptyCoinPayload = (p) => {
+    if (!p) return true;
+    if (p.isCollectionItem) return false;
+    if (Array.isArray(p.marks) && p.marks.length) return false;
+    const typed = p.isManual
+        ? [p.numistaNumber, p.ocreId, p.year, p.issuer, p.denomination, p.grade,
+           p.gradeDetails, p.details, p.reference, p.composition, p.physicalDetails,
+           p.mintage, p.legendObv, p.legendRev, p.collectionObvImage,
+           p.collectionRevImage, p.sketchId, p.marksPicture]
+        : [p.year, p.issuer, p.denomination, p.grade, p.gradeDetails, p.details,
+           p.reference, p.composition, p.physicalDetails, p.mintage,
+           p.legendObv, p.legendRev, p.collectionObvImage, p.collectionRevImage,
+           p.sketchId, p.marksPicture];
+    return !typed.some(v => v && String(v).trim());
+};
+
 const Create = () => {
     const { numistaNumber: paramNumistaNumber } = useParams();
     const navigate = useNavigate();
@@ -89,6 +117,16 @@ const Create = () => {
 
     // --- Save Status State ---
     const [saveStatus, setSaveStatus] = useState("saved"); // 'saving', 'saved', 'error'
+
+    // Unsaved draft stashed by the session-expiry watchdog — offer to restore
+    // it before anything auto-creates a fresh record.
+    const [draftAvailable, setDraftAvailable] = useState(() => {
+        try {
+            return !isEmptyCoinPayload(JSON.parse(sessionStorage.getItem(DRAFT_KEY)));
+        } catch {
+            return false;
+        }
+    });
 
     // --- Logic Functions ---
 
@@ -343,6 +381,16 @@ const handleDiameterChange = (e) => {
         isCollectionItem, collectionObvImage, collectionRevImage
     }), [numistaNumber, ocreId, year, issuer, denomination, grade, gradeDetails, details, reference, composition, physicalDetails, mintage, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, isManualMode, detailsWidth, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage]);
 
+    // Latest-values mirrors for leave-page cleanup / draft stash (the unmount
+    // cleanup and pagehide handlers must never fire on a stale closure).
+    const coinIdRef = useRef(null);
+    const payloadRef = useRef(null);
+    // Set once the user has chosen to leave/discard — suppresses the empty
+    // cleanup and tells an in-flight auto-create to undo itself.
+    const discardedRef = useRef(false);
+    coinIdRef.current = coinId;
+    payloadRef.current = buildPayload();
+
     const diffAgainstSnapshot = (payload) => {
         const snapshot = lastSavedRef.current;
         const changed = {};
@@ -357,21 +405,56 @@ const handleDiameterChange = (e) => {
         return changed;
     };
 
-    const createCoin = useCallback(() => {
+    // Sticky toast for failed saves — autosaves fire on a 1s debounce and the
+    // little "● Error saving!" line in the preview card is easy to miss when
+    // the backend is unreachable. A shared notification id keeps repeated
+    // failures updating ONE toast instead of stacking; dismissed on the next
+    // successful save. 401s are skipped — the session-expiry bounce covers it.
+    const notifySaveFailure = (err) => {
+        const status = err?.response?.status;
+        if (status === 401) return;
+        const unreachable = !status || status >= 500;
+        notifications.show({
+            id: "numistag-save-error",
+            title: "Not saved",
+            color: "red",
+            autoClose: false,
+            message: unreachable
+                ? "Can't reach the server — your edits are NOT being saved. They'll go through once the connection is back."
+                : `Save failed (server error ${status}). Your edits stay on this page until a save succeeds.`,
+        });
+    };
+    const clearSaveFailureToast = () => notifications.hide("numistag-save-error");
+
+    const createCoin = useCallback((overridePayload) => {
         if (isCreatingCoin.current) return;
         isCreatingCoin.current = true;
-        const payload = buildPayload();
+        const payload = overridePayload || buildPayload();
         axios.post(`${BASE_URL}/coin/new`, payload)
         .then((res) => {
+            // User left the page (or discarded) while this POST was in flight
+            // and the entry is empty — don't leave the stub behind.
+            if (discardedRef.current && isEmptyCoinPayload(payload)) {
+                axios.delete(`${BASE_URL}/coin/delete/${res.data._id}`).catch(() => {});
+                isCreatingCoin.current = false;
+                return;
+            }
             lastSavedRef.current = payload;
             setCoinId(res.data._id);
             setInitialLoadComplete(true);
+            clearSaveFailureToast();
         })
         .catch((err) => {
             console.error("Error creating coin:", err);
+            notifySaveFailure(err);
             isCreatingCoin.current = false;
         });
     }, [buildPayload]);
+
+    // Self-reference for the retry loop below (a useCallback can't close over
+    // itself); also cleared when the page unmounts.
+    const updateCoinRemoteRef = useRef(null);
+    const saveRetryTimer = useRef(null);
 
     const updateCoinRemote = useCallback(() => {
         if (!coinId) return;
@@ -382,13 +465,25 @@ const handleDiameterChange = (e) => {
         .then(() => {
             lastSavedRef.current = { ...(lastSavedRef.current || {}), ...changed };
             setSaveStatus("saved");
+            clearSaveFailureToast();
+            if (saveRetryTimer.current) { clearTimeout(saveRetryTimer.current); saveRetryTimer.current = null; }
             console.log("Auto-saved fields:", Object.keys(changed).join(", "));
         })
         .catch((err) => {
             setSaveStatus("error");
             console.error("Error updating coin:", err);
+            notifySaveFailure(err);
+            // Retry the current diff every 5s so pending edits really DO go
+            // through once the connection (or backend) is back — the retry
+            // re-diffs, so newer keystrokes ride along. A 401 means the
+            // session died while we were offline: the expiry bounce handles
+            // it, no point hammering a dead session.
+            if (err?.response?.status === 401) return;
+            if (saveRetryTimer.current) clearTimeout(saveRetryTimer.current);
+            saveRetryTimer.current = setTimeout(() => updateCoinRemoteRef.current?.(), 5000);
         });
     }, [coinId, buildPayload]);
+    updateCoinRemoteRef.current = updateCoinRemote;
 
     // --- Effects ---
 
@@ -663,6 +758,7 @@ const handleDiameterChange = (e) => {
         // In manual mode, create coin immediately if not editing
         if (isManualMode) {
             setTitle("Manual Entry");
+            if (draftAvailable) return; // wait for restore/discard decision
             const editCoinId = location?.state?.coinId;
             if (!coinId && !editCoinId) {
                 createCoin();
@@ -673,11 +769,12 @@ const handleDiameterChange = (e) => {
         if (!numistaDetails.denomination) return;
 
         // Create a new coin if not editing
+        if (draftAvailable) return; // wait for restore/discard decision
         const editCoinId = location?.state?.coinId;
         if (!coinId && !editCoinId) {
             createCoin();
         }
-    }, [numistaDetails, coinId, location, dateAdded, createCoin, isManualMode]);
+    }, [numistaDetails, coinId, location, dateAdded, createCoin, isManualMode, draftAvailable]);
 
     useEffect(() => {
         if (coinId && initialLoadComplete) {
@@ -689,13 +786,130 @@ const handleDiameterChange = (e) => {
         }
     }, [year, details, denomination, grade, gradeDetails, issuer, reference, mintage, composition, physicalDetails, dateAdded, marksPicture, marks, visualTarget, visualMethod, sketchId, legendObv, legendRev, isCollectionItem, collectionObvImage, collectionRevImage, numistaNumber, ocreId, detailsWidth, updateCoinRemote, coinId, initialLoadComplete]);
 
+    // --- Session-expiry draft stash ---
+    // If the session dies before the record ever got saved (coinId still null
+    // — e.g. the expiry blocked the auto-create, or the user typed into a
+    // lookup entry that hadn't been created yet), everything lives only in
+    // React state and would be lost by the bounce to the login gate. Stash it
+    // to sessionStorage; the "Resume unsaved draft?" modal offers it back on
+    // the next visit to this page after re-login.
+    const stashDraft = useCallback((payload) => {
+        if (!payload || coinIdRef.current) return; // already saved server-side
+        if (isEmptyCoinPayload(payload)) return;   // nothing worth keeping
+        let json;
+        try { json = JSON.stringify(payload); } catch { return; }
+        // sessionStorage is ~5MB; drop the heavy base64 payloads if needed —
+        // text fields are what matter in a draft.
+        if (json.length > 4_000_000) {
+            const slim = { ...payload, collectionObvImage: "", collectionRevImage: "", marksPicture: null };
+            try { json = JSON.stringify(slim); } catch { return; }
+        }
+        try { sessionStorage.setItem(DRAFT_KEY, json); } catch { /* quota */ }
+    }, []);
+
+    useEffect(() => {
+        const handleAuthExpired = () => stashDraft(payloadRef.current);
+        window.addEventListener("numistag:auth-expired", handleAuthExpired);
+        return () => window.removeEventListener("numistag:auth-expired", handleAuthExpired);
+    }, [stashDraft]);
+
+    // Tab close / full navigation with an unsaved (never-created) entry:
+    // stash the draft; with an empty created record: best-effort delete so the
+    // tab can't litter either.
+    useEffect(() => {
+        const handlePageHide = () => {
+            if (discardedRef.current) return;
+            if (coinIdRef.current) {
+                if (isEmptyCoinPayload(payloadRef.current)) {
+                    discardedRef.current = true;
+                    fetch(`${BASE_URL}/coin/delete/${coinIdRef.current}`, {
+                        method: "DELETE", credentials: "include", keepalive: true,
+                    }).catch(() => {});
+                }
+            } else {
+                stashDraft(payloadRef.current);
+            }
+        };
+        window.addEventListener("pagehide", handlePageHide);
+        return () => window.removeEventListener("pagehide", handlePageHide);
+    }, [stashDraft]);
+
+    // SPA navigation away with a totally-empty record: delete the stub so it
+    // never reaches the collection list. (An in-flight auto-create undoes
+    // itself via discardedRef in createCoin's .then.)
+    useEffect(() => () => {
+        if (saveRetryTimer.current) clearTimeout(saveRetryTimer.current);
+        if (discardedRef.current || !coinIdRef.current) return;
+        if (isEmptyCoinPayload(payloadRef.current)) {
+            discardedRef.current = true;
+            axios.delete(`${BASE_URL}/coin/delete/${coinIdRef.current}`).catch(() => {});
+        }
+    }, []);
+
+    // A draft pending while entering via an existing coin's edit flow would
+    // overwrite the loaded coin — drop the stale draft in that case.
+    useEffect(() => {
+        if (draftAvailable && location?.state?.coinId) {
+            sessionStorage.removeItem(DRAFT_KEY);
+            setDraftAvailable(false);
+        }
+    }, [draftAvailable, location]);
+
+    const restoreDraft = () => {
+        let d = null;
+        try { d = JSON.parse(sessionStorage.getItem(DRAFT_KEY)); } catch { /* corrupt */ }
+        sessionStorage.removeItem(DRAFT_KEY);
+        setDraftAvailable(false);
+        if (!d) return;
+        setNumistaNumber(d.numistaNumber || "");
+        setOcreId(d.ocreId || "");
+        setYear(d.year || "");
+        setIssuer(d.issuer || "");
+        setDenomination(d.denomination || "");
+        setGrade(d.grade || "");
+        setGradeDetails(d.gradeDetails || "");
+        setDetails(d.details || "");
+        setReference(d.reference || "");
+        setComposition(d.composition || "");
+        setPhysicalDetails(d.physicalDetails || "");
+        setMintage(d.mintage || "");
+        setMarksPicture(d.marksPicture ?? null);
+        setMarks(Array.isArray(d.marks) ? d.marks : []);
+        setLegendObv(d.legendObv || "");
+        setLegendRev(d.legendRev || "");
+        setIsCollectionItem(!!d.isCollectionItem);
+        setCollectionObvImage(d.collectionObvImage || "");
+        setCollectionRevImage(d.collectionRevImage || "");
+        setVisualTarget(d.visualTarget || "QR");
+        setVisualMethod(d.visualMethod || "SCRIPT");
+        setSketchId(d.sketchId || "");
+        setDetailsWidth(d.detailsWidth || 45);
+        setIsManualMode(!!d.isManual);
+        if (d.isManual) setTitle("Manual Entry");
+        splitPhysicalDetails(d.physicalDetails || "");
+        createCoin(d);
+        notifications.show({ message: "Draft restored — saving as a new entry.", color: "green" });
+    };
+
+    const discardDraft = () => {
+        sessionStorage.removeItem(DRAFT_KEY);
+        setDraftAvailable(false);
+        // Manual mode auto-create was held back while the modal was up.
+        if (isManualMode) {
+            setTitle("Manual Entry");
+            if (!coinId && !location?.state?.coinId) createCoin();
+        }
+    };
+
     const handleDiscard = () => {
         if (isCollectionItem) {
             if (window.confirm("This coin is saved to your collection. Delete the label only and keep the collection item?")) {
+                discardedRef.current = true;
                 axios.put(`${BASE_URL}/coin/detach-label/${coinId}`).then(() => navigate("/"));
             }
         } else {
             if (window.confirm("Are you sure you want to discard this entry?")) {
+                discardedRef.current = true;
                 axios.delete(`${BASE_URL}/coin/delete/${coinId}`).then(() => navigate("/"));
             }
         }
@@ -727,9 +941,30 @@ const handleDiameterChange = (e) => {
                 numistaNumber={numistaNumber}
                 onDuplicate={handleDuplicate}
                 onDiscard={handleDiscard}
-                onDone={() => navigate("/")}
+                onDone={() => {
+                    if (!discardedRef.current && isEmptyCoinPayload(buildPayload())) {
+                        discardedRef.current = true;
+                        if (coinId) axios.delete(`${BASE_URL}/coin/delete/${coinId}`).catch(() => {});
+                    }
+                    navigate("/");
+                }}
                 saveStatus={saveStatus}
             />
+
+            <Modal
+                opened={draftAvailable}
+                onClose={discardDraft}
+                title="Resume unsaved draft?"
+                centered
+            >
+                <Text mb="md">
+                    Your session expired before this entry was saved. Restore it, or start fresh?
+                </Text>
+                <Group justify="flex-end">
+                    <Button variant="default" onClick={discardDraft}>Discard</Button>
+                    <Button onClick={restoreDraft}>Restore draft</Button>
+                </Group>
+            </Modal>
 
             <ManualModeToggle
                 isManualMode={isManualMode}
