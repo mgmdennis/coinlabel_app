@@ -16,7 +16,6 @@ import { formatObverse } from "../utils/condenseDetails";
 import { AIConfirmModal } from "../components/AIConfirmModal";
 import { CreateHeader } from "../components/CreateHeader";
 import { ManualModeToggle } from "../components/ManualModeToggle";
-import { ManualPhysicalFields } from "../components/ManualPhysicalFields";
 import { CollectionSettingsCard } from "../components/CollectionSettingsCard";
 import { NumistaDataCard } from "../components/NumistaDataCard";
 import { LabelSpecificsCard } from "../components/LabelSpecificsCard";
@@ -1116,23 +1115,14 @@ const handleDiameterChange = (e) => {
                     <LabelSpecificsCard
                         grade={grade}
                         onGradeChange={(e) => setGrade(e.target.value)}
-                    />
-
-                    <ProvenanceCard
-                        provenance={provenance}
-                        onProvenanceChange={(e) => setProvenance(e.target.value)}
-                    />
-
-                    {isManualMode && (
-                        <ManualPhysicalFields
-                            mass={mass}
-                            onMassChange={handleMassChange}
-                            diameter={diameter}
-                            onDiameterChange={handleDiameterChange}
-                            orientation={orientation}
-                            onOrientationChange={handleOrientationChange}
-                        />
-                    )}
+                        isManualMode={isManualMode}
+                        mass={mass}
+                        onMassChange={handleMassChange}
+                        diameter={diameter}
+                        onDiameterChange={handleDiameterChange}
+                        orientation={orientation}
+                        onOrientationChange={handleOrientationChange}
+                     />
 
                     {isManualMode && (
                         <PasteNumistaAccordion
@@ -1172,6 +1162,11 @@ const handleDiameterChange = (e) => {
                         onLegendObvChange={(e) => setLegendObv(e.target.value)}
                         legendRev={legendRev}
                         onLegendRevChange={(e) => setLegendRev(e.target.value)}
+                    />
+
+                    <ProvenanceCard
+                        provenance={provenance}
+                        onProvenanceChange={(e) => setProvenance(e.target.value)}
                     />
 
                     <CollectionSettingsCard

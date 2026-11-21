@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Badge, Box, Button, Card, Checkbox, Group, Loader, Modal, Radio, Stack, Switch, Text, Textarea, ThemeIcon } from '@mantine/core';
+import { Accordion, Badge, Box, Button, Checkbox, Group, Loader, Modal, Radio, Stack, Switch, Text, Textarea, ThemeIcon } from '@mantine/core';
 import { Sparkles, Code, QrCode, Image, Grid3x3, Camera, FlaskConical, FolderOpen, ExternalLink, ScrollText } from 'lucide-react';
 import { SketchGallery } from './SketchGallery';
 import { PasteImageInput } from './PasteImageInput';
@@ -36,6 +36,8 @@ export const VisualCustomizationCard = ({
     const fileInputRef = useRef(null);
     const [showBeta, setShowBeta] = useState(false);
     const [imageModal, setImageModal] = useState(null); // { url, side } | null
+    // Accordion collapse state — collapsed by default, user-toggled.
+    const [open, setOpen] = useState(false);
 
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
@@ -295,34 +297,56 @@ export const VisualCustomizationCard = ({
             </Stack>
         </Modal>
 
-        <Card withBorder shadow="sm" mb="lg" padding="md" style={{ borderColor: 'var(--mantine-color-blue-6)' }}>
-            <Card.Section withBorder inheritPadding py="xs" bg="blue.6" c="white">
-                <Group justify="space-between">
-                    <Text fw={700}>Visual Customization</Text>
-                    <Badge
-                        variant={isManualMode ? 'white' : 'filled'}
-                        color={isManualMode ? 'gray' : 'cyan'}
-                        radius="xl"
-                    >
-                        {isManualMode ? "Manual Mode" : "Numista Mode"}
-                    </Badge>
-                </Group>
-            </Card.Section>
-
-            <Stack gap="lg" mt="md">
-                {steps.map((step, i) => (
-                    <Group key={i} align="flex-start" wrap="nowrap" gap="sm">
-                        <ThemeIcon radius="xl" size={26} variant="filled" color="blue" style={{ flexShrink: 0 }}>
-                            <Text size="xs" fw={700}>{i + 1}</Text>
-                        </ThemeIcon>
-                        <Box style={{ flex: 1, minWidth: 0 }}>
-                            <Text fw={700} mb={8}>{step.title}</Text>
-                            {step.content}
-                        </Box>
+        <Accordion
+            variant="separated"
+            mb="lg"
+            value={open ? 'visual' : null}
+            onChange={(v) => setOpen(!!v)}
+        >
+            <Accordion.Item
+                value="visual"
+                style={{ borderColor: 'var(--mantine-color-blue-6)' }}
+            >
+                <Accordion.Control
+                    style={{
+                        background: 'var(--mantine-color-blue-6)',
+                        color: 'white',
+                        /* Separated variant rounds the item shell, not the
+                           Control — match the radius so the bar isn't square
+                           (top corners only while open). */
+                        borderRadius: open
+                            ? 'var(--accordion-radius) var(--accordion-radius) 0 0'
+                            : 'var(--accordion-radius)',
+                    }}
+                >
+                    <Group justify="space-between" wrap="nowrap" style={{ flex: 1 }}>
+                        <Text fw={700} c="white">Visual Customization</Text>
+                        <Badge
+                            variant={isManualMode ? 'white' : 'filled'}
+                            color={isManualMode ? 'gray' : 'cyan'}
+                            radius="xl"
+                        >
+                            {isManualMode ? "Manual Mode" : "Numista Mode"}
+                        </Badge>
                     </Group>
-                ))}
-            </Stack>
-        </Card>
+                </Accordion.Control>
+                <Accordion.Panel>
+                    <Stack gap="lg">
+                        {steps.map((step, i) => (
+                            <Group key={i} align="flex-start" wrap="nowrap" gap="sm">
+                                <ThemeIcon radius="xl" size={26} variant="filled" color="blue" style={{ flexShrink: 0 }}>
+                                    <Text size="xs" fw={700}>{i + 1}</Text>
+                                </ThemeIcon>
+                                <Box style={{ flex: 1, minWidth: 0 }}>
+                                    <Text fw={700} mb={8}>{step.title}</Text>
+                                    {step.content}
+                                </Box>
+                            </Group>
+                        ))}
+                    </Stack>
+                </Accordion.Panel>
+            </Accordion.Item>
+        </Accordion>
         </>
     );
 };
